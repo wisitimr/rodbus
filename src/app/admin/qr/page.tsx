@@ -6,7 +6,11 @@ import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import AdminQRCode from "./admin-qr-code";
 
-export default async function QRPage() {
+export default async function QRPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ carId?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   if (user.role !== Role.ADMIN) redirect("/dashboard");
@@ -15,9 +19,11 @@ export default async function QRPage() {
   const locale = detectLocale(headersList.get("accept-language"));
   const t = getTranslations(locale);
 
-  const myCars = await prisma.car.findMany({
-    where: { ownerId: user.id },
+  const { carId } = await searchParams;
+
+  const allCars = await prisma.car.findMany({
     select: { id: true, name: true, licensePlate: true },
+    orderBy: { name: "asc" },
   });
 
   return (
@@ -40,15 +46,16 @@ export default async function QRPage() {
       </header>
 
       <div className="animate-fade-in-up">
-        {myCars.length === 0 ? (
+        {allCars.length === 0 ? (
           <p className="text-gray-500">{t.noCarsRegistered}</p>
         ) : (
           <AdminQRCode
-            cars={myCars.map((c) => ({
+            cars={allCars.map((c) => ({
               id: c.id,
               name: c.name,
               licensePlate: c.licensePlate,
             }))}
+            initialCarId={carId}
           />
         )}
       </div>

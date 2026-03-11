@@ -6,11 +6,13 @@ import { useT } from "@/lib/i18n-context";
 
 interface AdminQRCodeProps {
   cars: { id: string; name: string; licensePlate: string | null }[];
+  initialCarId?: string;
 }
 
-export default function AdminQRCode({ cars }: AdminQRCodeProps) {
+export default function AdminQRCode({ cars, initialCarId }: AdminQRCodeProps) {
   const { t } = useT();
-  const [selectedCarId, setSelectedCarId] = useState(cars[0]?.id ?? "");
+  const defaultCar = initialCarId && cars.some((c) => c.id === initialCarId) ? initialCarId : cars[0]?.id ?? "";
+  const [selectedCarId, setSelectedCarId] = useState(defaultCar);
 
   const selectedCar = cars.find((c) => c.id === selectedCarId);
   const baseUrl =

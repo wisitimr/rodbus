@@ -125,13 +125,21 @@ export default function CarManagement({ cars, users }: CarManagementProps) {
                   {t.owner}: {car.ownerName ?? "Unknown"}
                 </p>
               </div>
-              <button
-                onClick={() => handleDelete(car.id)}
-                disabled={isPending}
-                className="shrink-0 rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50"
-              >
-                {t.deleteCar}
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <a
+                  href={`/admin/qr?carId=${car.id}`}
+                  className="rounded-lg border border-blue-300 px-3 py-1.5 text-sm text-blue-700 transition hover:bg-blue-50 active:scale-[0.98]"
+                >
+                  {t.qrCode}
+                </a>
+                <button
+                  onClick={() => handleDelete(car.id)}
+                  disabled={isPending}
+                  className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {t.deleteCar}
+                </button>
+              </div>
             </li>
           ))}
         </ul>

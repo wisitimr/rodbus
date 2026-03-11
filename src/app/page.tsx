@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { SignInButton, SignOutButton } from "@clerk/nextjs";
+import { SignInButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 
 export default async function Home() {
   const user = await currentUser();
+  if (user) redirect("/dashboard");
+
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
   const t = getTranslations(locale);
@@ -81,19 +84,11 @@ export default async function Home() {
           <span className="relative z-10">{t.goToDashboard}</span>
           <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 transition-opacity group-hover:opacity-100" />
         </Link>
-        {user ? (
-          <SignOutButton>
-            <button className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white/80 px-8 py-4 font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition-all hover:border-gray-300 hover:shadow-md active:scale-[0.98] sm:py-3.5">
-              {t.signOut}
-            </button>
-          </SignOutButton>
-        ) : (
-          <SignInButton>
-            <button className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white/80 px-8 py-4 font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition-all hover:border-gray-300 hover:shadow-md active:scale-[0.98] sm:py-3.5">
-              {t.signIn}
-            </button>
-          </SignInButton>
-        )}
+        <SignInButton>
+          <button className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white/80 px-8 py-4 font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition-all hover:border-gray-300 hover:shadow-md active:scale-[0.98] sm:py-3.5">
+            {t.signIn}
+          </button>
+        </SignInButton>
       </div>
     </main>
   );

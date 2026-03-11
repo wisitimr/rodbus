@@ -75,12 +75,6 @@ export default async function AdminPage() {
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <a
-              href="/admin/qr"
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md sm:px-4"
-            >
-              {t.qrCode}
-            </a>
-            <a
               href="/dashboard"
               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 sm:px-4"
             >
