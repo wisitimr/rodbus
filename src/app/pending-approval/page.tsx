@@ -9,12 +9,12 @@ export default async function PendingApprovalPage() {
   if (user.role !== Role.PENDING) redirect("/dashboard");
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-100">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+    <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12 sm:px-6 sm:py-16">
+      <div className="animate-scale-in w-full max-w-md overflow-hidden rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-100 sm:p-10">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-50">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-amber-500"
+            className="h-10 w-10 text-amber-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

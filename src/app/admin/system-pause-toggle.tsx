@@ -17,15 +17,15 @@ export default function SystemPauseToggle({ isPaused }: SystemPauseToggleProps) 
   }
 
   return (
-    <div className="flex items-center justify-between">
-      <div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
         <p className="font-medium">
           NFC Tap System:{" "}
           <span className={isPaused ? "text-red-600" : "text-green-600"}>
             {isPaused ? "PAUSED" : "ACTIVE"}
           </span>
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="mt-0.5 text-sm text-gray-500">
           {isPaused
             ? "The system is completely paused. No NFC taps will be recorded."
             : "The system is running normally. NFC taps are being recorded."}
@@ -34,7 +34,7 @@ export default function SystemPauseToggle({ isPaused }: SystemPauseToggleProps) 
       <button
         onClick={handleToggle}
         disabled={isPending}
-        className={`rounded px-6 py-2 text-sm font-medium text-white disabled:opacity-50 ${
+        className={`w-full shrink-0 rounded-xl px-6 py-3 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2 ${
           isPaused
             ? "bg-green-600 hover:bg-green-700"
             : "bg-red-600 hover:bg-red-700"

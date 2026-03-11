@@ -56,10 +56,10 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
       {usersWithDebt.map((d) => (
         <div
           key={d.userId}
-          className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+          className="rounded-xl border border-gray-200 bg-gray-50 p-4"
         >
-          <div className="flex items-start justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <p className="font-medium">{d.userName ?? "Unknown"}</p>
               <p className="text-sm text-gray-500">
                 Accrued: ${d.totalDebt.toFixed(2)} &middot; Paid:{" "}
@@ -72,16 +72,16 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
             <button
               onClick={() => handleClearFull(d.userId)}
               disabled={isPending}
-              className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+              className="w-full shrink-0 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2"
             >
               Clear Full Balance
             </button>
           </div>
 
           {/* Custom partial payment */}
-          <div className="mt-3 flex items-end gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
             {cars.length > 1 && (
-              <div className="flex-shrink-0">
+              <div className="sm:shrink-0">
                 <label className="mb-1 block text-xs text-gray-500">Car</label>
                 <select
                   value={selectedCars[d.userId] || ""}
@@ -91,7 +91,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
                       [d.userId]: e.target.value,
                     }))
                   }
-                  className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                  className="w-full rounded-lg border border-gray-300 px-2 py-2 text-sm sm:w-auto sm:py-1.5"
                 >
                   {cars.map((car) => (
                     <option key={car.id} value={car.id}>
@@ -117,7 +117,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
                   }))
                 }
                 placeholder="0.00"
-                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:py-1.5"
               />
             </div>
             <button
@@ -127,7 +127,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
                 !customAmounts[d.userId] ||
                 parseFloat(customAmounts[d.userId] || "0") <= 0
               }
-              className="flex-shrink-0 rounded border border-blue-600 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+              className="w-full shrink-0 rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-1.5"
             >
               Record Payment
             </button>

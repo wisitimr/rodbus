@@ -29,22 +29,27 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
     });
   }
 
+  const inputClass =
+    "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none sm:py-2.5";
+
   return (
     <div className="space-y-6">
       <form onSubmit={handleDisable} className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">Date</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Date
+            </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2"
+              className={inputClass}
               required
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
               Reason (optional)
             </label>
             <input
@@ -52,14 +57,14 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g., Public holiday"
-              className="w-full rounded-md border border-gray-300 px-3 py-2"
+              className={inputClass}
             />
           </div>
         </div>
         <button
           type="submit"
           disabled={isPending || !date}
-          className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2"
         >
           Disable Date
         </button>
@@ -74,9 +79,9 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
             {disabledDates.map((d) => (
               <li
                 key={d.id}
-                className="flex items-center justify-between rounded-md bg-red-50 px-4 py-2"
+                className="flex items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-3"
               >
-                <div>
+                <div className="min-w-0">
                   <span className="font-medium">{d.date}</span>
                   {d.reason && (
                     <span className="ml-2 text-sm text-gray-500">
@@ -87,7 +92,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
                 <button
                   onClick={() => handleEnable(d.date)}
                   disabled={isPending}
-                  className="rounded border border-green-600 px-3 py-1 text-sm text-green-700 hover:bg-green-50 disabled:opacity-50"
+                  className="shrink-0 rounded-lg border border-green-600 px-3 py-1.5 text-sm text-green-700 transition hover:bg-green-50 active:scale-[0.98] disabled:opacity-50"
                 >
                   Re-enable
                 </button>

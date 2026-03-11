@@ -14,7 +14,6 @@ export default async function DashboardPage() {
   const userId = user.id;
   const isAdmin = user.role === Role.ADMIN;
 
-  // Date range: current month
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -22,7 +21,6 @@ export default async function DashboardPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Fetch all data in parallel
   const [myCars, todaysTrips, recentTrips, debts, myPayments] =
     await Promise.all([
       prisma.car.findMany({ where: { ownerId: userId } }),
@@ -48,301 +46,408 @@ export default async function DashboardPage() {
   const myDebt = debts.find((d) => d.userId === userId);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
       {/* Header */}
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Welcome, {user.name ?? user.email}
+      <header className="animate-fade-in mb-6 sm:mb-8">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+              Dashboard
+            </h1>
+            <p className="mt-0.5 truncate text-sm text-gray-500">
+              Welcome, {user.name ?? user.email}
+              {isAdmin && (
+                <span className="ml-2 inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 ring-1 ring-red-500/20 ring-inset">
+                  Admin
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
             {isAdmin && (
-              <span className="ml-2 inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 ring-1 ring-red-500/20 ring-inset">
+              <a
+                href="/admin"
+                className="rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md sm:px-4"
+              >
                 Admin
-              </span>
+              </a>
             )}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <a
-              href="/admin"
-              className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
-            >
-              Admin
-            </a>
-          )}
-          <SignOutButton>
-            <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 hover:shadow-md">
-              Sign Out
-            </button>
-          </SignOutButton>
+            <SignOutButton>
+              <button className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 hover:shadow-md sm:px-4">
+                Sign Out
+              </button>
+            </SignOutButton>
+          </div>
         </div>
       </header>
 
-      {/* Debt Card — prominent */}
-      <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Your Pending Debt
-          </h2>
-        </div>
-        <div className="px-6 py-5">
-          {myDebt && myDebt.pendingDebt > 0 ? (
-            <div>
-              <p className="text-4xl font-extrabold tracking-tight text-red-600">
-                ${myDebt.pendingDebt.toFixed(2)}
-              </p>
-              <p className="mt-2 text-sm text-gray-500">
-                Accrued{" "}
-                <span className="font-medium text-gray-700">
-                  ${myDebt.totalDebt.toFixed(2)}
-                </span>{" "}
-                &middot; Paid{" "}
-                <span className="font-medium text-green-600">
-                  ${myDebt.totalPaid.toFixed(2)}
+      <div className="stagger-children space-y-4 sm:space-y-6">
+        {/* Debt Card */}
+        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+              Your Pending Debt
+            </h2>
+          </div>
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            {myDebt && myDebt.pendingDebt > 0 ? (
+              <div>
+                <p className="text-3xl font-extrabold tracking-tight text-red-600 sm:text-4xl">
+                  ${myDebt.pendingDebt.toFixed(2)}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500">
+                  <span>
+                    Accrued{" "}
+                    <span className="font-medium text-gray-700">
+                      ${myDebt.totalDebt.toFixed(2)}
+                    </span>
+                  </span>
+                  <span>&middot;</span>
+                  <span>
+                    Paid{" "}
+                    <span className="font-medium text-green-600">
+                      ${myDebt.totalPaid.toFixed(2)}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-2xl font-extrabold tracking-tight text-green-600 sm:text-3xl">
+                $0.00
+                <span className="ml-2 text-base font-normal text-gray-400">
+                  All clear!
                 </span>
               </p>
-            </div>
-          ) : (
-            <p className="text-3xl font-extrabold tracking-tight text-green-600">
-              $0.00
-              <span className="ml-2 text-base font-normal text-gray-400">
-                All clear!
-              </span>
-            </p>
-          )}
+            )}
 
-          {myDebt && myDebt.breakdown.length > 0 && (
-            <details className="mt-4">
-              <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
-                View cost breakdown
-              </summary>
-              <ul className="mt-3 divide-y divide-gray-100 text-sm">
-                {myDebt.breakdown.map((b, i) => (
-                  <li key={i} className="flex justify-between py-2">
-                    <span className="text-gray-600">
-                      {b.carName} &mdash;{" "}
-                      {b.date.toLocaleDateString()} ({b.passengerCount} riders)
+            {myDebt && myDebt.breakdown.length > 0 && (
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
+                  View cost breakdown
+                </summary>
+                <ul className="mt-3 divide-y divide-gray-100 text-sm">
+                  {myDebt.breakdown.map((b, i) => (
+                    <li key={i} className="flex items-center justify-between gap-3 py-2.5">
+                      <span className="min-w-0 truncate text-gray-600">
+                        {b.carName} &mdash;{" "}
+                        {b.date.toLocaleDateString()} ({b.passengerCount} riders)
+                      </span>
+                      <span className="shrink-0 font-medium text-gray-900">
+                        ${b.share.toFixed(2)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        </section>
+
+        {/* Today's Rides */}
+        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+              Today&apos;s Rides
+            </h2>
+          </div>
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            {todaysTrips.length === 0 ? (
+              <p className="text-sm text-gray-400">No rides logged today.</p>
+            ) : (
+              <ul className="space-y-2">
+                {todaysTrips.map((trip) => (
+                  <li
+                    key={trip.id}
+                    className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
+                  >
+                    <span className="font-medium text-gray-800">
+                      {trip.car.name}
                     </span>
-                    <span className="font-medium text-gray-900">
-                      ${b.share.toFixed(2)}
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        trip.type === "MORNING"
+                          ? "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 ring-inset"
+                          : "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20 ring-inset"
+                      }`}
+                    >
+                      {trip.type === "MORNING" ? "Morning (In)" : "Evening (Out)"}
                     </span>
                   </li>
                 ))}
               </ul>
-            </details>
-          )}
-        </div>
-      </section>
-
-      {/* Today's Rides */}
-      <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Today&apos;s Rides
-          </h2>
-        </div>
-        <div className="px-6 py-5">
-          {todaysTrips.length === 0 ? (
-            <p className="text-sm text-gray-400">No rides logged today.</p>
-          ) : (
-            <ul className="space-y-2">
-              {todaysTrips.map((trip) => (
-                <li
-                  key={trip.id}
-                  className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
-                >
-                  <span className="font-medium text-gray-800">
-                    {trip.car.name}
-                  </span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      trip.type === "MORNING"
-                        ? "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 ring-inset"
-                        : "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20 ring-inset"
-                    }`}
-                  >
-                    {trip.type === "MORNING" ? "Morning (In)" : "Evening (Out)"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      {/* Recent Trips */}
-      <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Recent Trips
-          </h2>
-        </div>
-        <div className="px-6 py-5">
-          {recentTrips.length === 0 ? (
-            <p className="text-sm text-gray-400">No trip history yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                    <th className="pb-3 font-semibold">Date</th>
-                    <th className="pb-3 font-semibold">Time</th>
-                    <th className="pb-3 font-semibold">Car</th>
-                    <th className="pb-3 text-right font-semibold">Type</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {recentTrips.map((trip) => (
-                    <tr key={trip.id} className="hover:bg-gray-50/50">
-                      <td className="py-3 text-gray-700">
-                        {trip.date.toLocaleDateString()}
-                      </td>
-                      <td className="py-3 text-gray-500">
-                        {trip.tappedAt.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="py-3 font-medium text-gray-800">
-                        {trip.car.name}
-                      </td>
-                      <td className="py-3 text-right">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            trip.type === "MORNING"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-indigo-50 text-indigo-700"
-                          }`}
-                        >
-                          {trip.type === "MORNING" ? "Morning" : "Evening"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Payment History */}
-      <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Payment History
-          </h2>
-        </div>
-        <div className="px-6 py-5">
-          {myPayments.length === 0 ? (
-            <p className="text-sm text-gray-400">No payments recorded yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                    <th className="pb-3 font-semibold">Date</th>
-                    <th className="pb-3 font-semibold">Car</th>
-                    <th className="pb-3 font-semibold">Note</th>
-                    <th className="pb-3 text-right font-semibold">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {myPayments.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50/50">
-                      <td className="py-3 text-gray-700">
-                        {p.date.toLocaleDateString()}
-                      </td>
-                      <td className="py-3 font-medium text-gray-800">
-                        {p.car.name}
-                      </td>
-                      <td className="py-3 text-gray-400">
-                        {p.note ?? "\u2014"}
-                      </td>
-                      <td className="py-3 text-right font-semibold text-green-600">
-                        ${p.amount.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Monthly Summary */}
-      <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Monthly Summary &mdash;{" "}
-            {now.toLocaleString("default", { month: "long" })}
-          </h2>
-        </div>
-        <div className="px-6 py-5">
-          {debts.length === 0 ? (
-            <p className="text-sm text-gray-400">
-              No costs recorded this month.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                    <th className="pb-3 font-semibold">Passenger</th>
-                    <th className="pb-3 text-right font-semibold">Accrued</th>
-                    <th className="pb-3 text-right font-semibold">Paid</th>
-                    <th className="pb-3 text-right font-semibold">Pending</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {debts.map((d) => (
-                    <tr
-                      key={d.userId}
-                      className={`${d.userId === userId ? "bg-blue-50/60 font-semibold" : "hover:bg-gray-50/50"}`}
-                    >
-                      <td className="py-3 text-gray-800">
-                        {d.userName ?? "Unknown"}
-                        {d.userId === userId && (
-                          <span className="ml-1.5 text-xs font-normal text-blue-500">
-                            (you)
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 text-right text-gray-700">
-                        ${d.totalDebt.toFixed(2)}
-                      </td>
-                      <td className="py-3 text-right text-green-600">
-                        ${d.totalPaid.toFixed(2)}
-                      </td>
-                      <td className="py-3 text-right text-red-600">
-                        ${d.pendingDebt.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Driver: Enter Costs */}
-      {myCars.length > 0 && (
-        <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="border-b border-gray-100 px-6 py-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-              Enter Daily Costs
-            </h2>
-          </div>
-          <div className="px-6 py-5">
-            <CostForm cars={myCars.map((c) => ({ id: c.id, name: c.name }))} />
+            )}
           </div>
         </section>
-      )}
+
+        {/* Recent Trips */}
+        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+              Recent Trips
+            </h2>
+          </div>
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            {recentTrips.length === 0 ? (
+              <p className="text-sm text-gray-400">No trip history yet.</p>
+            ) : (
+              <>
+                {/* Mobile: card layout */}
+                <div className="space-y-2 sm:hidden">
+                  {recentTrips.map((trip) => (
+                    <div
+                      key={trip.id}
+                      className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800">
+                          {trip.car.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {trip.date.toLocaleDateString()} &middot;{" "}
+                          {trip.tappedAt.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          trip.type === "MORNING"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-indigo-50 text-indigo-700"
+                        }`}
+                      >
+                        {trip.type === "MORNING" ? "AM" : "PM"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop: table layout */}
+                <div className="hidden sm:block">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
+                        <th className="pb-3 font-semibold">Date</th>
+                        <th className="pb-3 font-semibold">Time</th>
+                        <th className="pb-3 font-semibold">Car</th>
+                        <th className="pb-3 text-right font-semibold">Type</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {recentTrips.map((trip) => (
+                        <tr key={trip.id} className="hover:bg-gray-50/50">
+                          <td className="py-3 text-gray-700">
+                            {trip.date.toLocaleDateString()}
+                          </td>
+                          <td className="py-3 text-gray-500">
+                            {trip.tappedAt.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="py-3 font-medium text-gray-800">
+                            {trip.car.name}
+                          </td>
+                          <td className="py-3 text-right">
+                            <span
+                              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                trip.type === "MORNING"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-indigo-50 text-indigo-700"
+                              }`}
+                            >
+                              {trip.type === "MORNING" ? "Morning" : "Evening"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Payment History */}
+        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+              Payment History
+            </h2>
+          </div>
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            {myPayments.length === 0 ? (
+              <p className="text-sm text-gray-400">No payments recorded yet.</p>
+            ) : (
+              <>
+                {/* Mobile: card layout */}
+                <div className="space-y-2 sm:hidden">
+                  {myPayments.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800">
+                          {p.car.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {p.date.toLocaleDateString()}
+                          {p.note && <> &middot; {p.note}</>}
+                        </p>
+                      </div>
+                      <span className="shrink-0 font-semibold text-green-600">
+                        ${p.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop: table layout */}
+                <div className="hidden sm:block">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
+                        <th className="pb-3 font-semibold">Date</th>
+                        <th className="pb-3 font-semibold">Car</th>
+                        <th className="pb-3 font-semibold">Note</th>
+                        <th className="pb-3 text-right font-semibold">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {myPayments.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50/50">
+                          <td className="py-3 text-gray-700">
+                            {p.date.toLocaleDateString()}
+                          </td>
+                          <td className="py-3 font-medium text-gray-800">
+                            {p.car.name}
+                          </td>
+                          <td className="py-3 text-gray-400">
+                            {p.note ?? "\u2014"}
+                          </td>
+                          <td className="py-3 text-right font-semibold text-green-600">
+                            ${p.amount.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Monthly Summary */}
+        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+              Monthly Summary &mdash;{" "}
+              {now.toLocaleString("default", { month: "long" })}
+            </h2>
+          </div>
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            {debts.length === 0 ? (
+              <p className="text-sm text-gray-400">
+                No costs recorded this month.
+              </p>
+            ) : (
+              <>
+                {/* Mobile: card layout */}
+                <div className="space-y-2 sm:hidden">
+                  {debts.map((d) => (
+                    <div
+                      key={d.userId}
+                      className={`rounded-xl px-4 py-3 ${
+                        d.userId === userId
+                          ? "bg-blue-50 ring-1 ring-blue-200"
+                          : "bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-gray-800">
+                          {d.userName ?? "Unknown"}
+                          {d.userId === userId && (
+                            <span className="ml-1.5 text-xs font-normal text-blue-500">
+                              (you)
+                            </span>
+                          )}
+                        </p>
+                        <p className="font-bold text-red-600">
+                          ${d.pendingDebt.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="mt-1 flex gap-3 text-xs text-gray-500">
+                        <span>Accrued: ${d.totalDebt.toFixed(2)}</span>
+                        <span className="text-green-600">
+                          Paid: ${d.totalPaid.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop: table layout */}
+                <div className="hidden sm:block">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
+                        <th className="pb-3 font-semibold">Passenger</th>
+                        <th className="pb-3 text-right font-semibold">Accrued</th>
+                        <th className="pb-3 text-right font-semibold">Paid</th>
+                        <th className="pb-3 text-right font-semibold">Pending</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {debts.map((d) => (
+                        <tr
+                          key={d.userId}
+                          className={`${d.userId === userId ? "bg-blue-50/60 font-semibold" : "hover:bg-gray-50/50"}`}
+                        >
+                          <td className="py-3 text-gray-800">
+                            {d.userName ?? "Unknown"}
+                            {d.userId === userId && (
+                              <span className="ml-1.5 text-xs font-normal text-blue-500">
+                                (you)
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 text-right text-gray-700">
+                            ${d.totalDebt.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-right text-green-600">
+                            ${d.totalPaid.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-right text-red-600">
+                            ${d.pendingDebt.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Driver: Enter Costs */}
+        {myCars.length > 0 && (
+          <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+            <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+                Enter Daily Costs
+              </h2>
+            </div>
+            <div className="px-5 py-4 sm:px-6 sm:py-5">
+              <CostForm cars={myCars.map((c) => ({ id: c.id, name: c.name }))} />
+            </div>
+          </section>
+        )}
+      </div>
     </main>
   );
 }

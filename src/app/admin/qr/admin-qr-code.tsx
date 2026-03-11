@@ -15,16 +15,21 @@ export default function AdminQRCode({ cars }: AdminQRCodeProps) {
     typeof window !== "undefined" ? window.location.origin : "";
   const tapUrl = `${baseUrl}/api/tap?carId=${selectedCarId}`;
 
+  const inputClass =
+    "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none sm:py-2.5";
+
   return (
     <div className="space-y-6">
       {/* Car selector */}
       {cars.length > 1 && (
         <div>
-          <label className="mb-1 block text-sm font-medium">Select Car</label>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Select Car
+          </label>
           <select
             value={selectedCarId}
             onChange={(e) => setSelectedCarId(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
+            className={inputClass}
           >
             {cars.map((car) => (
               <option key={car.id} value={car.id}>
@@ -37,13 +42,13 @@ export default function AdminQRCode({ cars }: AdminQRCodeProps) {
       )}
 
       {/* QR Code display */}
-      <div className="flex flex-col items-center rounded-lg bg-white p-8 shadow">
-        <div className="rounded-lg border-4 border-gray-100 bg-white p-4">
-          <QRCodeSVG value={tapUrl} size={256} level="H" />
+      <div className="flex flex-col items-center overflow-hidden rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 sm:p-8">
+        <div className="rounded-2xl border-4 border-gray-100 bg-white p-3 sm:p-4">
+          <QRCodeSVG value={tapUrl} size={220} level="H" className="h-auto w-full max-w-[220px] sm:max-w-[256px]" />
         </div>
 
         <div className="mt-4 text-center">
-          <p className="text-lg font-semibold">
+          <p className="text-lg font-semibold text-gray-900">
             {selectedCar?.name}
           </p>
           {selectedCar?.licensePlate && (
@@ -53,7 +58,7 @@ export default function AdminQRCode({ cars }: AdminQRCodeProps) {
           )}
         </div>
 
-        <p className="mt-4 max-w-xs text-center text-sm text-gray-500">
+        <p className="mt-4 max-w-xs text-center text-sm leading-relaxed text-gray-500">
           Passengers scan this code with their phone camera to check in.
           It works exactly like the NFC sticker.
         </p>
@@ -64,7 +69,7 @@ export default function AdminQRCode({ cars }: AdminQRCodeProps) {
         <summary className="cursor-pointer text-gray-500 hover:underline">
           View tap URL
         </summary>
-        <code className="mt-1 block break-all rounded bg-gray-100 p-2 text-xs">
+        <code className="mt-2 block break-all rounded-xl bg-gray-100 p-3 text-xs">
           {tapUrl}
         </code>
       </details>

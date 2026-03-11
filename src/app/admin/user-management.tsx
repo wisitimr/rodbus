@@ -51,16 +51,16 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
             {pendingUsers.map((user) => (
               <li
                 key={user.id}
-                className="flex items-center justify-between rounded-md bg-yellow-50 px-4 py-3"
+                className="flex items-center justify-between gap-3 rounded-xl bg-yellow-50 px-4 py-3"
               >
-                <div>
-                  <p className="font-medium">{user.name ?? "No name"}</p>
-                  <p className="text-sm text-gray-500">{user.email}</p>
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{user.name ?? "No name"}</p>
+                  <p className="truncate text-sm text-gray-500">{user.email}</p>
                 </div>
                 <button
                   onClick={() => handleApprove(user.id)}
                   disabled={isPending}
-                  className="rounded bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                  className="shrink-0 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50"
                 >
                   Approve
                 </button>
@@ -83,42 +83,44 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
           {activeUsers.map((user) => (
             <li
               key={user.id}
-              className="flex items-center justify-between rounded-md bg-gray-50 px-4 py-3"
+              className="rounded-xl bg-gray-50 px-4 py-3"
             >
-              <div className="flex items-center gap-3">
-                <div>
-                  <p className="font-medium">{user.name ?? "No name"}</p>
-                  <p className="text-sm text-gray-500">{user.email}</p>
-                </div>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge[user.role]}`}
-                >
-                  {user.role}
-                </span>
-              </div>
-              {user.id !== currentUserId && (
-                <div className="flex items-center gap-2">
-                  {user.role === "USER" && (
-                    <button
-                      onClick={() => handleRevoke(user.id)}
-                      disabled={isPending}
-                      className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      Revoke
-                    </button>
-                  )}
-                  <select
-                    value={user.role}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value as Role)}
-                    disabled={isPending}
-                    className="rounded border border-gray-300 px-2 py-1 text-sm disabled:opacity-50"
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{user.name ?? "No name"}</p>
+                    <p className="truncate text-sm text-gray-500">{user.email}</p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge[user.role]}`}
                   >
-                    <option value="USER">USER</option>
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="PENDING">PENDING</option>
-                  </select>
+                    {user.role}
+                  </span>
                 </div>
-              )}
+                {user.id !== currentUserId && (
+                  <div className="flex shrink-0 items-center gap-2">
+                    {user.role === "USER" && (
+                      <button
+                        onClick={() => handleRevoke(user.id)}
+                        disabled={isPending}
+                        className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                    <select
+                      value={user.role}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value as Role)}
+                      disabled={isPending}
+                      className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm disabled:opacity-50"
+                    >
+                      <option value="USER">USER</option>
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="PENDING">PENDING</option>
+                    </select>
+                  </div>
+                )}
+              </div>
             </li>
           ))}
         </ul>

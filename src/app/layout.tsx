@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Carpool NFC Tracker",
   description: "Track carpool rides via NFC and split costs fairly",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#3b82f6",
 };
 
 export default function RootLayout({
@@ -27,7 +34,7 @@ export default function RootLayout({
             rel="stylesheet"
           />
         </head>
-        <body className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/40 font-sans text-gray-900 antialiased">
+        <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 font-sans text-gray-900 antialiased">
           {children}
         </body>
       </html>
