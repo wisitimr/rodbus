@@ -10,22 +10,27 @@ export async function getCurrentUser(): Promise<User | null> {
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
 
-  const user = await prisma.user.upsert({
-    where: { clerkId: clerkUser.id },
-    update: {
-      name: clerkUser.fullName ?? clerkUser.firstName,
-      email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
-      image: clerkUser.imageUrl,
-    },
-    create: {
-      clerkId: clerkUser.id,
-      name: clerkUser.fullName ?? clerkUser.firstName,
-      email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
-      image: clerkUser.imageUrl,
-    },
-  });
+  try {
+    const user = await prisma.user.upsert({
+      where: { clerkId: clerkUser.id },
+      update: {
+        name: clerkUser.fullName ?? clerkUser.firstName,
+        email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+        image: clerkUser.imageUrl,
+      },
+      create: {
+        clerkId: clerkUser.id,
+        name: clerkUser.fullName ?? clerkUser.firstName,
+        email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+        image: clerkUser.imageUrl,
+      },
+    });
 
-  return user;
+    return user;
+  } catch (error) {
+    console.error("[getCurrentUser] DB error:", error);
+    return null;
+  }
 }
 
 /**
