@@ -5,8 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import CostForm from "./cost-form";
-import UserManagement from "./user-management";
-import DateManagement from "./date-management";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -21,38 +19,33 @@ export default async function DashboardPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  // Fetch user's cars (as driver)
-  const myCars = await prisma.car.findMany({
-    where: { driverId: userId },
-  });
-
-  // Fetch today's trips for the user
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const todaysTrips = await prisma.trip.findMany({
-    where: { userId, date: today },
-    include: { car: true },
-  });
+  // Fetch all data in parallel
+  const [myCars, todaysTrips, recentTrips, debts, myPayments] =
+    await Promise.all([
+      prisma.car.findMany({ where: { ownerId: userId } }),
+      prisma.trip.findMany({
+        where: { userId, date: today },
+        include: { car: true },
+      }),
+      prisma.trip.findMany({
+        where: { userId },
+        include: { car: true },
+        orderBy: { tappedAt: "desc" },
+        take: 20,
+      }),
+      calculateDebts(startOfMonth, endOfMonth),
+      prisma.payment.findMany({
+        where: { userId },
+        include: { car: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
+    ]);
 
-  // Calculate debts for the month
-  const debts = await calculateDebts(startOfMonth, endOfMonth);
   const myDebt = debts.find((d) => d.userId === userId);
-
-  // Admin data
-  const allUsers = isAdmin
-    ? await prisma.user.findMany({
-        select: { id: true, name: true, email: true, role: true },
-        orderBy: [{ role: "asc" }, { name: "asc" }],
-      })
-    : [];
-
-  const disabledDates = isAdmin
-    ? await prisma.disabledDate.findMany({
-        where: { date: { gte: today } },
-        orderBy: { date: "asc" },
-      })
-    : [];
 
   return (
     <main className="mx-auto max-w-3xl p-6">
@@ -68,13 +61,61 @@ export default async function DashboardPage() {
             )}
           </p>
         </div>
-        <a
-          href="/api/auth/signout"
-          className="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
-        >
-          Sign Out
-        </a>
+        <div className="flex gap-3">
+          {isAdmin && (
+            <a
+              href="/admin"
+              className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+            >
+              Admin Panel
+            </a>
+          )}
+          <a
+            href="/api/auth/signout"
+            className="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
+          >
+            Sign Out
+          </a>
+        </div>
       </header>
+
+      {/* Current Pending Debt */}
+      <section className="mb-8 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-2 text-lg font-semibold">Your Pending Debt</h2>
+        {myDebt && myDebt.pendingDebt > 0 ? (
+          <div>
+            <p className="text-3xl font-bold text-red-600">
+              ${myDebt.pendingDebt.toFixed(2)}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              Total accrued: ${myDebt.totalDebt.toFixed(2)} &middot; Paid:{" "}
+              ${myDebt.totalPaid.toFixed(2)}
+            </p>
+          </div>
+        ) : (
+          <p className="text-2xl font-bold text-green-600">$0.00</p>
+        )}
+
+        {/* Breakdown */}
+        {myDebt && myDebt.breakdown.length > 0 && (
+          <details className="mt-4">
+            <summary className="cursor-pointer text-sm text-blue-600 hover:underline">
+              View cost breakdown
+            </summary>
+            <ul className="mt-2 space-y-1 text-sm text-gray-600">
+              {myDebt.breakdown.map((b, i) => (
+                <li key={i} className="flex justify-between">
+                  <span>
+                    {b.carName} — {b.date.toLocaleDateString()} ({b.passengerCount}{" "}
+                    riders)
+                  </span>
+                  <span>${b.share.toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </section>
 
       {/* Today's Rides */}
       <section className="mb-8 rounded-lg bg-white p-6 shadow">
@@ -104,7 +145,92 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* Monthly Debt Summary */}
+      {/* Recent Trip History */}
+      <section className="mb-8 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-lg font-semibold">Recent Trips</h2>
+        {recentTrips.length === 0 ? (
+          <p className="text-gray-500">No trip history yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b text-gray-500">
+                  <th className="pb-2">Date</th>
+                  <th className="pb-2">Time</th>
+                  <th className="pb-2">Car</th>
+                  <th className="pb-2 text-right">Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTrips.map((trip) => (
+                  <tr key={trip.id} className="border-b">
+                    <td className="py-2">
+                      {trip.date.toLocaleDateString()}
+                    </td>
+                    <td className="py-2">
+                      {trip.tappedAt.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-2">{trip.car.name}</td>
+                    <td className="py-2 text-right">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          trip.type === "MORNING"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-indigo-100 text-indigo-800"
+                        }`}
+                      >
+                        {trip.type === "MORNING" ? "Morning" : "Evening"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Payment History */}
+      <section className="mb-8 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-lg font-semibold">Payment History</h2>
+        {myPayments.length === 0 ? (
+          <p className="text-gray-500">No payments recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b text-gray-500">
+                  <th className="pb-2">Date</th>
+                  <th className="pb-2">Car</th>
+                  <th className="pb-2">Note</th>
+                  <th className="pb-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myPayments.map((p) => (
+                  <tr key={p.id} className="border-b">
+                    <td className="py-2">
+                      {p.date.toLocaleDateString()}
+                    </td>
+                    <td className="py-2">{p.car.name}</td>
+                    <td className="py-2 text-gray-500">
+                      {p.note ?? "—"}
+                    </td>
+                    <td className="py-2 text-right font-medium text-green-600">
+                      ${p.amount.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Monthly Summary Table */}
       <section className="mb-8 rounded-lg bg-white p-6 shadow">
         <h2 className="mb-4 text-lg font-semibold">
           Monthly Summary ({now.toLocaleString("default", { month: "long" })})
@@ -117,7 +243,9 @@ export default async function DashboardPage() {
               <thead>
                 <tr className="border-b text-gray-500">
                   <th className="pb-2">Passenger</th>
-                  <th className="pb-2 text-right">Total Owed</th>
+                  <th className="pb-2 text-right">Accrued</th>
+                  <th className="pb-2 text-right">Paid</th>
+                  <th className="pb-2 text-right">Pending</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,74 +255,29 @@ export default async function DashboardPage() {
                     className={`border-b ${d.userId === userId ? "bg-blue-50 font-semibold" : ""}`}
                   >
                     <td className="py-2">{d.userName ?? "Unknown"}</td>
-                    <td className="py-2 text-right">${d.totalDebt.toFixed(2)}</td>
+                    <td className="py-2 text-right">
+                      ${d.totalDebt.toFixed(2)}
+                    </td>
+                    <td className="py-2 text-right text-green-600">
+                      ${d.totalPaid.toFixed(2)}
+                    </td>
+                    <td className="py-2 text-right text-red-600">
+                      ${d.pendingDebt.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-
-        {/* Breakdown for current user */}
-        {myDebt && myDebt.breakdown.length > 0 && (
-          <details className="mt-4">
-            <summary className="cursor-pointer text-sm text-blue-600 hover:underline">
-              View your breakdown
-            </summary>
-            <ul className="mt-2 space-y-1 text-sm text-gray-600">
-              {myDebt.breakdown.map((b, i) => (
-                <li key={i} className="flex justify-between">
-                  <span>
-                    {b.carName} — {b.date.toLocaleDateString()} ({b.passengerCount}{" "}
-                    riders)
-                  </span>
-                  <span>${b.share.toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
       </section>
 
-      {/* Driver: Enter Costs */}
+      {/* Driver: Enter Costs (quick access) */}
       {myCars.length > 0 && (
         <section className="mb-8 rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-lg font-semibold">Enter Daily Costs</h2>
           <CostForm cars={myCars.map((c) => ({ id: c.id, name: c.name }))} />
         </section>
-      )}
-
-      {/* Admin Panels */}
-      {isAdmin && (
-        <>
-          <section className="mb-8 rounded-lg border-2 border-red-200 bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold text-red-700">
-              Admin: User Management
-            </h2>
-            <UserManagement
-              users={allUsers.map((u) => ({
-                id: u.id,
-                name: u.name,
-                email: u.email,
-                role: u.role,
-              }))}
-              currentUserId={userId}
-            />
-          </section>
-
-          <section className="rounded-lg border-2 border-red-200 bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold text-red-700">
-              Admin: Operating Days
-            </h2>
-            <DateManagement
-              disabledDates={disabledDates.map((d) => ({
-                id: d.id,
-                date: d.date.toISOString().split("T")[0],
-                reason: d.reason,
-              }))}
-            />
-          </section>
-        </>
       )}
     </main>
   );

@@ -31,7 +31,6 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
 
   return (
     <div className="space-y-6">
-      {/* Add disabled date */}
       <form onSubmit={handleDisable} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -66,7 +65,6 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
         </button>
       </form>
 
-      {/* Current disabled dates */}
       {disabledDates.length > 0 && (
         <div>
           <h3 className="mb-2 text-sm font-semibold text-gray-600">

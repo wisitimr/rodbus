@@ -26,6 +26,13 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    // Expose role in the JWT token for middleware access
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
+    },
   },
   pages: {
     signIn: "/login",

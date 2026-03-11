@@ -4,6 +4,8 @@ export interface UserDebt {
   userId: string;
   userName: string | null;
   totalDebt: number;
+  totalPaid: number;
+  pendingDebt: number;
   breakdown: {
     carId: string;
     carName: string;
@@ -14,6 +16,10 @@ export interface UserDebt {
   }[];
 }
 
+/**
+ * Calculate debts for all users within a date range.
+ * pendingDebt = totalDebt (accumulated cost shares) - totalPaid (sum of payments)
+ */
 export async function calculateDebts(
   startDate: Date,
   endDate: Date
@@ -54,6 +60,8 @@ export async function calculateDebts(
           userId: trip.userId,
           userName: trip.user.name,
           totalDebt: 0,
+          totalPaid: 0,
+          pendingDebt: 0,
           breakdown: [],
         };
         debtMap.set(trip.userId, entry);
@@ -71,10 +79,65 @@ export async function calculateDebts(
     }
   }
 
-  // Round totals
-  for (const entry of debtMap.values()) {
-    entry.totalDebt = Math.round(entry.totalDebt * 100) / 100;
+  // Fetch all payments within the date range and subtract from debt
+  const payments = await prisma.payment.findMany({
+    where: {
+      date: { gte: startDate, lte: endDate },
+    },
+  });
+
+  for (const payment of payments) {
+    const entry = debtMap.get(payment.userId);
+    if (entry) {
+      entry.totalPaid += payment.amount;
+    }
   }
 
-  return Array.from(debtMap.values()).sort((a, b) => b.totalDebt - a.totalDebt);
+  // Round and compute pending
+  for (const entry of debtMap.values()) {
+    entry.totalDebt = Math.round(entry.totalDebt * 100) / 100;
+    entry.totalPaid = Math.round(entry.totalPaid * 100) / 100;
+    entry.pendingDebt = Math.round((entry.totalDebt - entry.totalPaid) * 100) / 100;
+  }
+
+  return Array.from(debtMap.values()).sort((a, b) => b.pendingDebt - a.pendingDebt);
+}
+
+/**
+ * Calculate pending debt for a single user (all-time).
+ * Used for the "Clear Full Balance" action.
+ */
+export async function calculateUserPendingDebt(userId: string): Promise<number> {
+  // Get all cost shares for this user
+  const dailyCosts = await prisma.dailyCost.findMany({
+    include: { car: true },
+  });
+
+  let totalDebt = 0;
+
+  for (const cost of dailyCosts) {
+    const totalCost = cost.gasCost + cost.parkingCost;
+    if (totalCost === 0) continue;
+
+    const trips = await prisma.trip.findMany({
+      where: { carId: cost.carId, date: cost.date },
+      distinct: ["userId"],
+    });
+
+    if (trips.length === 0) continue;
+
+    const isPassenger = trips.some((t) => t.userId === userId);
+    if (isPassenger) {
+      totalDebt += totalCost / trips.length;
+    }
+  }
+
+  // Subtract all payments
+  const paymentsAgg = await prisma.payment.aggregate({
+    where: { userId },
+    _sum: { amount: true },
+  });
+
+  const totalPaid = paymentsAgg._sum.amount ?? 0;
+  return Math.round((totalDebt - totalPaid) * 100) / 100;
 }

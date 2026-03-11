@@ -22,8 +22,9 @@ model User {
   role          Role      @default(PENDING)
   accounts      Account[]
   sessions      Session[]
-  cars          Car[]     @relation("OwnedCars")
+  ownedCars     Car[]     @relation("OwnedCars")
   trips         Trip[]
+  payments      Payment[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -66,10 +67,11 @@ model Car {
   id           String      @id @default(cuid())
   name         String
   licensePlate String?
-  driverId     String
-  driver       User        @relation("OwnedCars", fields: [driverId], references: [id], onDelete: Cascade)
+  ownerId      String
+  owner        User        @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
   trips        Trip[]
   dailyCosts   DailyCost[]
+  payments     Payment[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -106,8 +108,30 @@ model DailyCost {
   @@unique([carId, date])
 }
 
+model Payment {
+  id        String   @id @default(cuid())
+  userId    String
+  carId     String
+  amount    Float
+  note      String?
+  date      DateTime @db.Date
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([carId])
+}
+
 model DisabledDate {
   id     String   @id @default(cuid())
   date   DateTime @unique @db.Date
   reason String?
+}
+
+/// Global system configuration (singleton-style, key-value)
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
 }

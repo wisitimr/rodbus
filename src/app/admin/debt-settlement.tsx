@@ -1,0 +1,139 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { recordPayment, clearFullBalance } from "@/lib/admin-actions";
+
+interface DebtEntry {
+  userId: string;
+  userName: string | null;
+  pendingDebt: number;
+  totalDebt: number;
+  totalPaid: number;
+}
+
+interface DebtSettlementProps {
+  debts: DebtEntry[];
+  cars: { id: string; name: string }[];
+}
+
+export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
+  const [isPending, startTransition] = useTransition();
+  const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
+  const [selectedCars, setSelectedCars] = useState<Record<string, string>>(() => {
+    const defaults: Record<string, string> = {};
+    for (const d of debts) {
+      defaults[d.userId] = cars[0]?.id ?? "";
+    }
+    return defaults;
+  });
+
+  function handleClearFull(userId: string) {
+    const carId = selectedCars[userId];
+    if (!carId) return;
+    startTransition(async () => {
+      await clearFullBalance(userId, carId);
+    });
+  }
+
+  function handleRecordCustom(userId: string) {
+    const carId = selectedCars[userId];
+    const amount = parseFloat(customAmounts[userId] || "0");
+    if (!carId || amount <= 0) return;
+    startTransition(async () => {
+      await recordPayment(userId, carId, amount);
+      setCustomAmounts((prev) => ({ ...prev, [userId]: "" }));
+    });
+  }
+
+  const usersWithDebt = debts.filter((d) => d.pendingDebt > 0);
+
+  if (usersWithDebt.length === 0) {
+    return <p className="text-sm text-gray-500">All balances are cleared.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {usersWithDebt.map((d) => (
+        <div
+          key={d.userId}
+          className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="font-medium">{d.userName ?? "Unknown"}</p>
+              <p className="text-sm text-gray-500">
+                Accrued: ${d.totalDebt.toFixed(2)} &middot; Paid:{" "}
+                ${d.totalPaid.toFixed(2)}
+              </p>
+              <p className="text-lg font-bold text-red-600">
+                Pending: ${d.pendingDebt.toFixed(2)}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearFull(d.userId)}
+              disabled={isPending}
+              className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            >
+              Clear Full Balance
+            </button>
+          </div>
+
+          {/* Custom partial payment */}
+          <div className="mt-3 flex items-end gap-2">
+            {cars.length > 1 && (
+              <div className="flex-shrink-0">
+                <label className="mb-1 block text-xs text-gray-500">Car</label>
+                <select
+                  value={selectedCars[d.userId] || ""}
+                  onChange={(e) =>
+                    setSelectedCars((prev) => ({
+                      ...prev,
+                      [d.userId]: e.target.value,
+                    }))
+                  }
+                  className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                >
+                  {cars.map((car) => (
+                    <option key={car.id} value={car.id}>
+                      {car.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="flex-1">
+              <label className="mb-1 block text-xs text-gray-500">
+                Custom Amount ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={customAmounts[d.userId] || ""}
+                onChange={(e) =>
+                  setCustomAmounts((prev) => ({
+                    ...prev,
+                    [d.userId]: e.target.value,
+                  }))
+                }
+                placeholder="0.00"
+                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <button
+              onClick={() => handleRecordCustom(d.userId)}
+              disabled={
+                isPending ||
+                !customAmounts[d.userId] ||
+                parseFloat(customAmounts[d.userId] || "0") <= 0
+              }
+              className="flex-shrink-0 rounded border border-blue-600 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+            >
+              Record Payment
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

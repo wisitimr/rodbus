@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   // Verify the user owns this car
   const car = await prisma.car.findUnique({ where: { id: carId } });
-  if (!car || car.driverId !== session.user.id) {
+  if (!car || car.ownerId !== session.user.id) {
     return NextResponse.json({ error: "Forbidden: you do not own this car" }, { status: 403 });
   }
 

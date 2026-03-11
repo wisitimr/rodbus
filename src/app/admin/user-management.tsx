@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { approveUser, setUserRole } from "@/lib/admin-actions";
+import { approveUser, revokeUser, setUserRole } from "@/lib/admin-actions";
 import type { Role } from "@prisma/client";
 
 interface UserManagementProps {
@@ -21,6 +21,12 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
   function handleApprove(userId: string) {
     startTransition(async () => {
       await approveUser(userId);
+    });
+  }
+
+  function handleRevoke(userId: string) {
+    startTransition(async () => {
+      await revokeUser(userId);
     });
   }
 
@@ -64,6 +70,10 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
         </div>
       )}
 
+      {pendingUsers.length === 0 && (
+        <p className="text-sm text-gray-500">No pending users.</p>
+      )}
+
       {/* Active Users */}
       <div>
         <h3 className="mb-2 text-sm font-semibold text-gray-600">
@@ -87,16 +97,27 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                 </span>
               </div>
               {user.id !== currentUserId && (
-                <select
-                  value={user.role}
-                  onChange={(e) => handleRoleChange(user.id, e.target.value as Role)}
-                  disabled={isPending}
-                  className="rounded border border-gray-300 px-2 py-1 text-sm disabled:opacity-50"
-                >
-                  <option value="USER">USER</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="PENDING">PENDING</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  {user.role === "USER" && (
+                    <button
+                      onClick={() => handleRevoke(user.id)}
+                      disabled={isPending}
+                      className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Revoke
+                    </button>
+                  )}
+                  <select
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value as Role)}
+                    disabled={isPending}
+                    className="rounded border border-gray-300 px-2 py-1 text-sm disabled:opacity-50"
+                  >
+                    <option value="USER">USER</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="PENDING">PENDING</option>
+                  </select>
+                </div>
               )}
             </li>
           ))}
