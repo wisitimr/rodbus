@@ -1,17 +1,16 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import AdminQRCode from "./admin-qr-code";
 
 export default async function QRPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
-  if (session.user.role !== Role.ADMIN) redirect("/dashboard");
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+  if (user.role !== Role.ADMIN) redirect("/dashboard");
 
   const myCars = await prisma.car.findMany({
-    where: { ownerId: session.user.id },
+    where: { ownerId: user.id },
     select: { id: true, name: true, licensePlate: true },
   });
 

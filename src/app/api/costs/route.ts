@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // POST /api/costs — Driver sets gas & parking for their car on a given date
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const user = await getCurrentUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,7 +18,7 @@ export async function POST(request: NextRequest) {
 
   // Verify the user owns this car
   const car = await prisma.car.findUnique({ where: { id: carId } });
-  if (!car || car.ownerId !== session.user.id) {
+  if (!car || car.ownerId !== user.id) {
     return NextResponse.json({ error: "Forbidden: you do not own this car" }, { status: 403 });
   }
 

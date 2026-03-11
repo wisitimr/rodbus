@@ -1,9 +1,9 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
+import { SignOutButton } from "@clerk/nextjs";
 import UserManagement from "./user-management";
 import DateManagement from "./date-management";
 import CostManagement from "./cost-management";
@@ -11,11 +11,11 @@ import SystemPauseToggle from "./system-pause-toggle";
 import DebtSettlement from "./debt-settlement";
 
 export default async function AdminPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
-  if (session.user.role !== Role.ADMIN) redirect("/dashboard");
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+  if (user.role !== Role.ADMIN) redirect("/dashboard");
 
-  const userId = session.user.id;
+  const userId = user.id;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -53,7 +53,7 @@ export default async function AdminPage() {
         <div>
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <p className="text-sm text-gray-500">
-            Car Owner: {session.user.name ?? session.user.email}
+            Car Owner: {user.name ?? user.email}
             <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
               Admin
             </span>
@@ -72,12 +72,11 @@ export default async function AdminPage() {
           >
             Dashboard
           </a>
-          <a
-            href="/api/auth/signout"
-            className="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
-          >
-            Sign Out
-          </a>
+          <SignOutButton>
+            <button className="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100">
+              Sign Out
+            </button>
+          </SignOutButton>
         </div>
       </header>
 

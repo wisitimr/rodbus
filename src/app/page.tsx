@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { SignInButton, SignOutButton } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 
-export default function Home() {
+export default async function Home() {
+  const user = await currentUser();
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
       <h1 className="mb-4 text-4xl font-bold">Carpool NFC Tracker</h1>
@@ -15,12 +19,19 @@ export default function Home() {
         >
           Dashboard
         </Link>
-        <Link
-          href="/login"
-          className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-100"
-        >
-          Sign In
-        </Link>
+        {user ? (
+          <SignOutButton>
+            <button className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-100">
+              Sign Out
+            </button>
+          </SignOutButton>
+        ) : (
+          <SignInButton>
+            <button className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-100">
+              Sign In
+            </button>
+          </SignInButton>
+        )}
       </div>
     </main>
   );

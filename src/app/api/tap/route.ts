@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TripType, Role } from "@prisma/client";
 
@@ -14,16 +13,15 @@ function startOfDay(date: Date): Date {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const user = await getCurrentUser();
 
-  if (!session?.user?.id) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", request.url);
+  if (!user) {
+    const loginUrl = new URL("/sign-in", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   // --- Check: user must not be PENDING ---
-  if (session.user.role === Role.PENDING) {
+  if (user.role === Role.PENDING) {
     const pendingUrl = new URL("/pending-approval", request.url);
     return NextResponse.redirect(pendingUrl);
   }
@@ -38,7 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Car not found" }, { status: 404 });
   }
 
-  const userId = session.user.id;
+  const userId = user.id;
   const now = new Date();
   const today = startOfDay(now);
 

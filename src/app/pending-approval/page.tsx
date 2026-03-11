@@ -1,13 +1,12 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { Role } from "@prisma/client";
+import { SignOutButton } from "@clerk/nextjs";
 
 export default async function PendingApprovalPage() {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) redirect("/login");
-  if (session.user.role !== Role.PENDING) redirect("/dashboard");
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+  if (user.role !== Role.PENDING) redirect("/dashboard");
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
@@ -19,14 +18,13 @@ export default async function PendingApprovalPage() {
           able to use the carpool system once your account has been approved.
         </p>
         <p className="text-sm text-gray-400">
-          Signed in as {session.user.email}
+          Signed in as {user.email}
         </p>
-        <a
-          href="/api/auth/signout"
-          className="mt-4 inline-block text-sm text-blue-600 underline hover:text-blue-800"
-        >
-          Sign Out
-        </a>
+        <SignOutButton>
+          <button className="mt-4 inline-block text-sm text-blue-600 underline hover:text-blue-800">
+            Sign Out
+          </button>
+        </SignOutButton>
       </div>
     </main>
   );
