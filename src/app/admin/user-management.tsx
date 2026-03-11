@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { approveUser, revokeUser, setUserRole } from "@/lib/admin-actions";
+import { useT } from "@/lib/i18n-context";
 import type { Role } from "@prisma/client";
 
 interface UserManagementProps {
@@ -16,6 +17,7 @@ const roleBadge: Record<Role, string> = {
 };
 
 export default function UserManagement({ users, currentUserId }: UserManagementProps) {
+  const { t } = useT();
   const [isPending, startTransition] = useTransition();
 
   function handleApprove(userId: string) {
@@ -45,7 +47,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
       {pendingUsers.length > 0 && (
         <div>
           <h3 className="mb-2 text-sm font-semibold text-yellow-700">
-            Pending Approval ({pendingUsers.length})
+            {t.pendingApproval} ({pendingUsers.length})
           </h3>
           <ul className="space-y-2">
             {pendingUsers.map((user) => (
@@ -54,7 +56,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                 className="flex items-center justify-between gap-3 rounded-xl bg-yellow-50 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{user.name ?? "No name"}</p>
+                  <p className="truncate font-medium">{user.name ?? t.noName}</p>
                   <p className="truncate text-sm text-gray-500">{user.email}</p>
                 </div>
                 <button
@@ -62,7 +64,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                   disabled={isPending}
                   className="shrink-0 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50"
                 >
-                  Approve
+                  {t.approve}
                 </button>
               </li>
             ))}
@@ -71,13 +73,13 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
       )}
 
       {pendingUsers.length === 0 && (
-        <p className="text-sm text-gray-500">No pending users.</p>
+        <p className="text-sm text-gray-500">{t.noPendingUsers}</p>
       )}
 
       {/* Active Users */}
       <div>
         <h3 className="mb-2 text-sm font-semibold text-gray-600">
-          Active Users ({activeUsers.length})
+          {t.activeUsers} ({activeUsers.length})
         </h3>
         <ul className="space-y-2">
           {activeUsers.map((user) => (
@@ -88,7 +90,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{user.name ?? "No name"}</p>
+                    <p className="truncate font-medium">{user.name ?? t.noName}</p>
                     <p className="truncate text-sm text-gray-500">{user.email}</p>
                   </div>
                   <span
@@ -105,7 +107,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                         disabled={isPending}
                         className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50"
                       >
-                        Revoke
+                        {t.revoke}
                       </button>
                     )}
                     <select

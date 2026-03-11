@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { updateDailyCost } from "@/lib/admin-actions";
+import { useT } from "@/lib/i18n-context";
 
 interface CostManagementProps {
   cars: { id: string; name: string }[];
 }
 
 export default function CostManagement({ cars }: CostManagementProps) {
+  const { t } = useT();
   const [isPending, startTransition] = useTransition();
   const [carId, setCarId] = useState(cars[0]?.id ?? "");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -43,7 +45,7 @@ export default function CostManagement({ cars }: CostManagementProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Car
+            {t.car}
           </label>
           <select
             value={carId}
@@ -59,7 +61,7 @@ export default function CostManagement({ cars }: CostManagementProps) {
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Date
+            {t.date}
           </label>
           <input
             type="date"
@@ -73,7 +75,7 @@ export default function CostManagement({ cars }: CostManagementProps) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Gas ($)
+            {t.gasCost}
           </label>
           <input
             type="number"
@@ -87,7 +89,7 @@ export default function CostManagement({ cars }: CostManagementProps) {
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Parking ($)
+            {t.parkingCost}
           </label>
           <input
             type="number"
@@ -106,11 +108,11 @@ export default function CostManagement({ cars }: CostManagementProps) {
         disabled={isPending}
         className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2.5"
       >
-        {isPending ? "Saving..." : status === "saved" ? "Saved!" : "Save Costs"}
+        {isPending ? t.saving : status === "saved" ? t.saved : t.saveCosts}
       </button>
 
       {status === "error" && (
-        <p className="text-sm font-medium text-red-600">Failed to save. Please try again.</p>
+        <p className="text-sm font-medium text-red-600">{t.failedToSave}</p>
       )}
     </form>
   );

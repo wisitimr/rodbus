@@ -15,6 +15,15 @@ input,
 select,
 textarea {
   font-size: 16px; /* Prevents iOS zoom on focus */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix date input on iOS */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
 }
 
 /* Custom scrollbar */

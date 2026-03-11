@@ -3,8 +3,10 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import { useT } from "@/lib/i18n-context";
 
 function TapResult() {
+  const { t } = useT();
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
   const type = searchParams.get("type");
@@ -16,8 +18,8 @@ function TapResult() {
     { title: string; description: string; color: string; icon: React.ReactNode }
   > = {
     recorded: {
-      title: "Ride Logged!",
-      description: `Your ${type} ride in ${car ?? "the car"} has been recorded.`,
+      title: t.rideLogged,
+      description: `${type} ${car ?? "the car"} ${t.rideRecorded}`,
       color: "green",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -26,8 +28,8 @@ function TapResult() {
       ),
     },
     already_recorded: {
-      title: "Already Recorded",
-      description: `Your ride in ${car ?? "the car"} was already logged. No duplicate created.`,
+      title: t.alreadyRecorded,
+      description: `${car ?? "the car"} ${t.alreadyRecordedDesc}`,
       color: "blue",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -36,8 +38,8 @@ function TapResult() {
       ),
     },
     too_soon: {
-      title: "Too Soon for Evening",
-      description: `Not enough time has passed since your morning tap in ${car ?? "the car"}. Try again later.`,
+      title: t.tooSoon,
+      description: t.tooSoonDesc,
       color: "amber",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -46,8 +48,8 @@ function TapResult() {
       ),
     },
     disabled: {
-      title: "System Disabled",
-      description: reason ?? "The carpool system is disabled for today.",
+      title: t.systemDisabled,
+      description: reason ?? t.systemDisabledDesc,
       color: "red",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -58,8 +60,8 @@ function TapResult() {
   };
 
   const msg = messages[status ?? ""] ?? {
-    title: "Tap Received",
-    description: "Your tap has been processed.",
+    title: t.tapReceived,
+    description: t.tapProcessed,
     color: "blue",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -93,7 +95,7 @@ function TapResult() {
           href="/dashboard"
           className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md active:scale-[0.98] sm:w-auto sm:py-2.5"
         >
-          Go to Dashboard
+          {t.goToDashboard}
         </Link>
       </div>
     </main>

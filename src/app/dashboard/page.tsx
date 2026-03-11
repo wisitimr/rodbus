@@ -4,12 +4,18 @@ import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { SignOutButton } from "@clerk/nextjs";
+import { headers } from "next/headers";
+import { detectLocale, getTranslations } from "@/lib/i18n";
 import CostForm from "./cost-form";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   if (user.role === Role.PENDING) redirect("/pending-approval");
+
+  const headersList = await headers();
+  const locale = detectLocale(headersList.get("accept-language"));
+  const t = getTranslations(locale);
 
   const userId = user.id;
   const isAdmin = user.role === Role.ADMIN;
@@ -50,15 +56,15 @@ export default async function DashboardPage() {
       {/* Header */}
       <header className="animate-fade-in mb-6 sm:mb-8">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-              Dashboard
+              {t.dashboard}
             </h1>
-            <p className="mt-0.5 truncate text-sm text-gray-500">
-              Welcome, {user.name ?? user.email}
+            <p className="mt-0.5 text-sm text-gray-500">
+              {t.welcome}, {user.name ?? user.email}
               {isAdmin && (
                 <span className="ml-2 inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 ring-1 ring-red-500/20 ring-inset">
-                  Admin
+                  {t.admin}
                 </span>
               )}
             </p>
@@ -69,12 +75,12 @@ export default async function DashboardPage() {
                 href="/admin"
                 className="rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md sm:px-4"
               >
-                Admin
+                {t.admin}
               </a>
             )}
             <SignOutButton>
               <button className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 hover:shadow-md sm:px-4">
-                Sign Out
+                {t.signOut}
               </button>
             </SignOutButton>
           </div>
@@ -86,7 +92,7 @@ export default async function DashboardPage() {
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              Your Pending Debt
+              {t.yourPendingDebt}
             </h2>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
@@ -97,14 +103,14 @@ export default async function DashboardPage() {
                 </p>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500">
                   <span>
-                    Accrued{" "}
+                    {t.accrued}{" "}
                     <span className="font-medium text-gray-700">
                       ${myDebt.totalDebt.toFixed(2)}
                     </span>
                   </span>
                   <span>&middot;</span>
                   <span>
-                    Paid{" "}
+                    {t.paid}{" "}
                     <span className="font-medium text-green-600">
                       ${myDebt.totalPaid.toFixed(2)}
                     </span>
@@ -115,7 +121,7 @@ export default async function DashboardPage() {
               <p className="text-2xl font-extrabold tracking-tight text-green-600 sm:text-3xl">
                 $0.00
                 <span className="ml-2 text-base font-normal text-gray-400">
-                  All clear!
+                  {t.allClear}
                 </span>
               </p>
             )}
@@ -123,14 +129,14 @@ export default async function DashboardPage() {
             {myDebt && myDebt.breakdown.length > 0 && (
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
-                  View cost breakdown
+                  {t.viewCostBreakdown}
                 </summary>
                 <ul className="mt-3 divide-y divide-gray-100 text-sm">
                   {myDebt.breakdown.map((b, i) => (
                     <li key={i} className="flex items-center justify-between gap-3 py-2.5">
                       <span className="min-w-0 truncate text-gray-600">
                         {b.carName} &mdash;{" "}
-                        {b.date.toLocaleDateString()} ({b.passengerCount} riders)
+                        {b.date.toLocaleDateString(locale)} ({b.passengerCount} {t.riders})
                       </span>
                       <span className="shrink-0 font-medium text-gray-900">
                         ${b.share.toFixed(2)}
@@ -147,12 +153,12 @@ export default async function DashboardPage() {
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              Today&apos;s Rides
+              {t.todaysRides}
             </h2>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {todaysTrips.length === 0 ? (
-              <p className="text-sm text-gray-400">No rides logged today.</p>
+              <p className="text-sm text-gray-400">{t.noRidesToday}</p>
             ) : (
               <ul className="space-y-2">
                 {todaysTrips.map((trip) => (
@@ -170,7 +176,7 @@ export default async function DashboardPage() {
                           : "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20 ring-inset"
                       }`}
                     >
-                      {trip.type === "MORNING" ? "Morning (In)" : "Evening (Out)"}
+                      {trip.type === "MORNING" ? t.morningIn : t.eveningOut}
                     </span>
                   </li>
                 ))}
@@ -183,12 +189,12 @@ export default async function DashboardPage() {
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              Recent Trips
+              {t.recentTrips}
             </h2>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {recentTrips.length === 0 ? (
-              <p className="text-sm text-gray-400">No trip history yet.</p>
+              <p className="text-sm text-gray-400">{t.noTripHistory}</p>
             ) : (
               <>
                 {/* Mobile: card layout */}
@@ -203,8 +209,8 @@ export default async function DashboardPage() {
                           {trip.car.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {trip.date.toLocaleDateString()} &middot;{" "}
-                          {trip.tappedAt.toLocaleTimeString([], {
+                          {trip.date.toLocaleDateString(locale)} &middot;{" "}
+                          {trip.tappedAt.toLocaleTimeString(locale, {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
@@ -228,20 +234,20 @@ export default async function DashboardPage() {
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="pb-3 font-semibold">Date</th>
-                        <th className="pb-3 font-semibold">Time</th>
-                        <th className="pb-3 font-semibold">Car</th>
-                        <th className="pb-3 text-right font-semibold">Type</th>
+                        <th className="pb-3 font-semibold">{t.date}</th>
+                        <th className="pb-3 font-semibold">{t.time}</th>
+                        <th className="pb-3 font-semibold">{t.car}</th>
+                        <th className="pb-3 text-right font-semibold">{t.type}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {recentTrips.map((trip) => (
                         <tr key={trip.id} className="hover:bg-gray-50/50">
                           <td className="py-3 text-gray-700">
-                            {trip.date.toLocaleDateString()}
+                            {trip.date.toLocaleDateString(locale)}
                           </td>
                           <td className="py-3 text-gray-500">
-                            {trip.tappedAt.toLocaleTimeString([], {
+                            {trip.tappedAt.toLocaleTimeString(locale, {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
@@ -257,7 +263,7 @@ export default async function DashboardPage() {
                                   : "bg-indigo-50 text-indigo-700"
                               }`}
                             >
-                              {trip.type === "MORNING" ? "Morning" : "Evening"}
+                              {trip.type === "MORNING" ? t.morning : t.evening}
                             </span>
                           </td>
                         </tr>
@@ -274,12 +280,12 @@ export default async function DashboardPage() {
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              Payment History
+              {t.paymentHistory}
             </h2>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {myPayments.length === 0 ? (
-              <p className="text-sm text-gray-400">No payments recorded yet.</p>
+              <p className="text-sm text-gray-400">{t.noPayments}</p>
             ) : (
               <>
                 {/* Mobile: card layout */}
@@ -294,7 +300,7 @@ export default async function DashboardPage() {
                           {p.car.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {p.date.toLocaleDateString()}
+                          {p.date.toLocaleDateString(locale)}
                           {p.note && <> &middot; {p.note}</>}
                         </p>
                       </div>
@@ -310,17 +316,17 @@ export default async function DashboardPage() {
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="pb-3 font-semibold">Date</th>
-                        <th className="pb-3 font-semibold">Car</th>
-                        <th className="pb-3 font-semibold">Note</th>
-                        <th className="pb-3 text-right font-semibold">Amount</th>
+                        <th className="pb-3 font-semibold">{t.date}</th>
+                        <th className="pb-3 font-semibold">{t.car}</th>
+                        <th className="pb-3 font-semibold">{t.note}</th>
+                        <th className="pb-3 text-right font-semibold">{t.amount}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {myPayments.map((p) => (
                         <tr key={p.id} className="hover:bg-gray-50/50">
                           <td className="py-3 text-gray-700">
-                            {p.date.toLocaleDateString()}
+                            {p.date.toLocaleDateString(locale)}
                           </td>
                           <td className="py-3 font-medium text-gray-800">
                             {p.car.name}
@@ -345,14 +351,14 @@ export default async function DashboardPage() {
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              Monthly Summary &mdash;{" "}
-              {now.toLocaleString("default", { month: "long" })}
+              {t.monthlySummary} &mdash;{" "}
+              {now.toLocaleString(locale, { month: "long" })}
             </h2>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {debts.length === 0 ? (
               <p className="text-sm text-gray-400">
-                No costs recorded this month.
+                {t.noCostsThisMonth}
               </p>
             ) : (
               <>
@@ -372,7 +378,7 @@ export default async function DashboardPage() {
                           {d.userName ?? "Unknown"}
                           {d.userId === userId && (
                             <span className="ml-1.5 text-xs font-normal text-blue-500">
-                              (you)
+                              ({t.you})
                             </span>
                           )}
                         </p>
@@ -381,9 +387,9 @@ export default async function DashboardPage() {
                         </p>
                       </div>
                       <div className="mt-1 flex gap-3 text-xs text-gray-500">
-                        <span>Accrued: ${d.totalDebt.toFixed(2)}</span>
+                        <span>{t.accrued}: ${d.totalDebt.toFixed(2)}</span>
                         <span className="text-green-600">
-                          Paid: ${d.totalPaid.toFixed(2)}
+                          {t.paid}: ${d.totalPaid.toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -395,10 +401,10 @@ export default async function DashboardPage() {
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="pb-3 font-semibold">Passenger</th>
-                        <th className="pb-3 text-right font-semibold">Accrued</th>
-                        <th className="pb-3 text-right font-semibold">Paid</th>
-                        <th className="pb-3 text-right font-semibold">Pending</th>
+                        <th className="pb-3 font-semibold">{t.passenger}</th>
+                        <th className="pb-3 text-right font-semibold">{t.accrued}</th>
+                        <th className="pb-3 text-right font-semibold">{t.paid}</th>
+                        <th className="pb-3 text-right font-semibold">{t.pending}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -411,7 +417,7 @@ export default async function DashboardPage() {
                             {d.userName ?? "Unknown"}
                             {d.userId === userId && (
                               <span className="ml-1.5 text-xs font-normal text-blue-500">
-                                (you)
+                                ({t.you})
                               </span>
                             )}
                           </td>
@@ -439,7 +445,7 @@ export default async function DashboardPage() {
           <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
             <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-                Enter Daily Costs
+                {t.enterDailyCosts}
               </h2>
             </div>
             <div className="px-5 py-4 sm:px-6 sm:py-5">

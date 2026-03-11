@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
+import { detectLocale, getTranslations } from "@/lib/i18n";
 
 export default async function Home() {
   const user = await currentUser();
+  const headersList = await headers();
+  const locale = detectLocale(headersList.get("accept-language"));
+  const t = getTranslations(locale);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12 sm:px-6 sm:py-16">
@@ -39,8 +44,7 @@ export default async function Home() {
         className="animate-fade-in-up mt-4 max-w-xs text-center text-base leading-relaxed text-gray-500 sm:max-w-sm sm:text-lg"
         style={{ animationDelay: "100ms" }}
       >
-        Tap the NFC sticker in your car to log your ride. Costs are split
-        automatically.
+        {t.heroDescription}
       </p>
 
       {/* Feature pills */}
@@ -49,9 +53,9 @@ export default async function Home() {
         style={{ animationDelay: "200ms" }}
       >
         {[
-          { label: "NFC Tap-In", icon: "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" },
-          { label: "Auto Split", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
-          { label: "Monthly Reports", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
+          { label: t.nfcTapIn, icon: "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" },
+          { label: t.autoSplit, icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
+          { label: t.monthlyReports, icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
         ].map((f) => (
           <span
             key={f.label}
@@ -74,19 +78,19 @@ export default async function Home() {
           href="/dashboard"
           className="group relative flex items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] sm:py-3.5"
         >
-          <span className="relative z-10">Go to Dashboard</span>
+          <span className="relative z-10">{t.goToDashboard}</span>
           <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 transition-opacity group-hover:opacity-100" />
         </Link>
         {user ? (
           <SignOutButton>
             <button className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white/80 px-8 py-4 font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition-all hover:border-gray-300 hover:shadow-md active:scale-[0.98] sm:py-3.5">
-              Sign Out
+              {t.signOut}
             </button>
           </SignOutButton>
         ) : (
           <SignInButton>
             <button className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white/80 px-8 py-4 font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition-all hover:border-gray-300 hover:shadow-md active:scale-[0.98] sm:py-3.5">
-              Sign In
+              {t.signIn}
             </button>
           </SignInButton>
         )}

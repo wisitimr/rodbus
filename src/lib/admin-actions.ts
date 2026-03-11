@@ -158,6 +158,48 @@ export async function isSystemPaused(): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
+// Car Management
+// ---------------------------------------------------------------------------
+
+/** Add a new car */
+export async function addCar(name: string, licensePlate: string | null, ownerId: string) {
+  await requireAdmin();
+
+  if (!name.trim()) {
+    throw new Error("Car name is required");
+  }
+
+  const owner = await prisma.user.findUnique({ where: { id: ownerId } });
+  if (!owner) {
+    throw new Error("Owner not found");
+  }
+
+  await prisma.car.create({
+    data: {
+      name: name.trim(),
+      licensePlate: licensePlate?.trim() || null,
+      ownerId,
+    },
+  });
+
+  revalidatePath("/admin");
+}
+
+/** Delete a car and all associated data */
+export async function deleteCar(carId: string) {
+  await requireAdmin();
+
+  const car = await prisma.car.findUnique({ where: { id: carId } });
+  if (!car) {
+    throw new Error("Car not found");
+  }
+
+  await prisma.car.delete({ where: { id: carId } });
+
+  revalidatePath("/admin");
+}
+
+// ---------------------------------------------------------------------------
 // Payment / Debt Settlement
 // ---------------------------------------------------------------------------
 

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { recordPayment, clearFullBalance } from "@/lib/admin-actions";
+import { useT } from "@/lib/i18n-context";
 
 interface DebtEntry {
   userId: string;
@@ -17,6 +18,7 @@ interface DebtSettlementProps {
 }
 
 export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
+  const { t } = useT();
   const [isPending, startTransition] = useTransition();
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
   const [selectedCars, setSelectedCars] = useState<Record<string, string>>(() => {
@@ -48,7 +50,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
   const usersWithDebt = debts.filter((d) => d.pendingDebt > 0);
 
   if (usersWithDebt.length === 0) {
-    return <p className="text-sm text-gray-500">All balances are cleared.</p>;
+    return <p className="text-sm text-gray-500">{t.allBalancesCleared}</p>;
   }
 
   return (
@@ -62,11 +64,11 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
             <div className="min-w-0">
               <p className="font-medium">{d.userName ?? "Unknown"}</p>
               <p className="text-sm text-gray-500">
-                Accrued: ${d.totalDebt.toFixed(2)} &middot; Paid:{" "}
+                {t.accrued}: ${d.totalDebt.toFixed(2)} &middot; {t.paid}:{" "}
                 ${d.totalPaid.toFixed(2)}
               </p>
               <p className="text-lg font-bold text-red-600">
-                Pending: ${d.pendingDebt.toFixed(2)}
+                {t.pending}: ${d.pendingDebt.toFixed(2)}
               </p>
             </div>
             <button
@@ -74,7 +76,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
               disabled={isPending}
               className="w-full shrink-0 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2"
             >
-              Clear Full Balance
+              {t.clearFullBalance}
             </button>
           </div>
 
@@ -82,7 +84,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
             {cars.length > 1 && (
               <div className="sm:shrink-0">
-                <label className="mb-1 block text-xs text-gray-500">Car</label>
+                <label className="mb-1 block text-xs text-gray-500">{t.car}</label>
                 <select
                   value={selectedCars[d.userId] || ""}
                   onChange={(e) =>
@@ -103,7 +105,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
             )}
             <div className="flex-1">
               <label className="mb-1 block text-xs text-gray-500">
-                Custom Amount ($)
+                {t.customAmount}
               </label>
               <input
                 type="number"
@@ -129,7 +131,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
               }
               className="w-full shrink-0 rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-1.5"
             >
-              Record Payment
+              {t.recordPayment}
             </button>
           </div>
         </div>

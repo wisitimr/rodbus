@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { useT } from "@/lib/i18n-context";
 
 interface AdminQRCodeProps {
   cars: { id: string; name: string; licensePlate: string | null }[];
 }
 
 export default function AdminQRCode({ cars }: AdminQRCodeProps) {
+  const { t } = useT();
   const [selectedCarId, setSelectedCarId] = useState(cars[0]?.id ?? "");
 
   const selectedCar = cars.find((c) => c.id === selectedCarId);
@@ -24,7 +26,7 @@ export default function AdminQRCode({ cars }: AdminQRCodeProps) {
       {cars.length > 1 && (
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Select Car
+            {t.selectCar}
           </label>
           <select
             value={selectedCarId}
@@ -59,15 +61,14 @@ export default function AdminQRCode({ cars }: AdminQRCodeProps) {
         </div>
 
         <p className="mt-4 max-w-xs text-center text-sm leading-relaxed text-gray-500">
-          Passengers scan this code with their phone camera to check in.
-          It works exactly like the NFC sticker.
+          {t.qrScanInstructions}
         </p>
       </div>
 
       {/* URL preview */}
       <details className="text-sm">
         <summary className="cursor-pointer text-gray-500 hover:underline">
-          View tap URL
+          {t.viewTapUrl}
         </summary>
         <code className="mt-2 block break-all rounded-xl bg-gray-100 p-3 text-xs">
           {tapUrl}

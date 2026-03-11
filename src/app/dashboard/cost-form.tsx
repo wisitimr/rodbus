@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n-context";
 
 interface CostFormProps {
   cars: { id: string; name: string }[];
 }
 
 export default function CostForm({ cars }: CostFormProps) {
+  const { t } = useT();
   const [carId, setCarId] = useState(cars[0]?.id ?? "");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [gasCost, setGasCost] = useState("");
@@ -45,7 +47,7 @@ export default function CostForm({ cars }: CostFormProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Car
+            {t.car}
           </label>
           <select
             value={carId}
@@ -61,7 +63,7 @@ export default function CostForm({ cars }: CostFormProps) {
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Date
+            {t.date}
           </label>
           <input
             type="date"
@@ -75,7 +77,7 @@ export default function CostForm({ cars }: CostFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Gas ($)
+            {t.gasCost}
           </label>
           <input
             type="number"
@@ -89,7 +91,7 @@ export default function CostForm({ cars }: CostFormProps) {
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Parking ($)
+            {t.parkingCost}
           </label>
           <input
             type="number"
@@ -109,15 +111,15 @@ export default function CostForm({ cars }: CostFormProps) {
         className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2.5"
       >
         {status === "saving"
-          ? "Saving..."
+          ? t.saving
           : status === "saved"
-            ? "Saved!"
-            : "Save Costs"}
+            ? t.saved
+            : t.saveCosts}
       </button>
 
       {status === "error" && (
         <p className="text-sm font-medium text-red-600">
-          Failed to save. Please try again.
+          {t.failedToSave}
         </p>
       )}
     </form>

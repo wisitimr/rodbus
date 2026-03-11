@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { headers } from "next/headers";
+import { detectLocale } from "@/lib/i18n";
+import { I18nProvider } from "@/lib/i18n-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,14 +17,17 @@ export const viewport: Viewport = {
   themeColor: "#3b82f6",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const locale = detectLocale(headersList.get("accept-language"));
+
   return (
     <ClerkProvider dynamic>
-      <html lang="en">
+      <html lang={locale}>
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link
@@ -35,7 +41,7 @@ export default function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 font-sans text-gray-900 antialiased">
-          {children}
+          <I18nProvider locale={locale}>{children}</I18nProvider>
         </body>
       </html>
     </ClerkProvider>

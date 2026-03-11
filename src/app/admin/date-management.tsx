@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { disableDate, enableDate } from "@/lib/admin-actions";
+import { useT } from "@/lib/i18n-context";
 
 interface DateManagementProps {
   disabledDates: { id: string; date: string; reason: string | null }[];
 }
 
 export default function DateManagement({ disabledDates }: DateManagementProps) {
+  const { t } = useT();
   const [isPending, startTransition] = useTransition();
   const [date, setDate] = useState("");
   const [reason, setReason] = useState("");
@@ -38,7 +40,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Date
+              {t.date}
             </label>
             <input
               type="date"
@@ -50,7 +52,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Reason (optional)
+              {t.reason}
             </label>
             <input
               type="text"
@@ -66,14 +68,14 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
           disabled={isPending || !date}
           className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2"
         >
-          Disable Date
+          {t.disableDate}
         </button>
       </form>
 
       {disabledDates.length > 0 && (
         <div>
           <h3 className="mb-2 text-sm font-semibold text-gray-600">
-            Disabled Dates (upcoming)
+            {t.disabledDatesUpcoming}
           </h3>
           <ul className="space-y-2">
             {disabledDates.map((d) => (
@@ -94,7 +96,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
                   disabled={isPending}
                   className="shrink-0 rounded-lg border border-green-600 px-3 py-1.5 text-sm text-green-700 transition hover:bg-green-50 active:scale-[0.98] disabled:opacity-50"
                 >
-                  Re-enable
+                  {t.reEnable}
                 </button>
               </li>
             ))}
@@ -104,7 +106,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
 
       {disabledDates.length === 0 && (
         <p className="text-sm text-gray-500">
-          No upcoming dates are disabled. The system is operating normally.
+          {t.noDisabledDates}
         </p>
       )}
     </div>

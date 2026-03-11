@@ -1,7 +1,13 @@
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
+import { headers } from "next/headers";
+import { detectLocale, getTranslations } from "@/lib/i18n";
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const headersList = await headers();
+  const locale = detectLocale(headersList.get("accept-language"));
+  const t = getTranslations(locale);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12 sm:px-6 sm:py-16">
       <div className="animate-fade-in-up mb-8 text-center">
@@ -13,7 +19,7 @@ export default function SignInPage() {
             </span>
           </h1>
         </Link>
-        <p className="mt-2 text-sm text-gray-500">Sign in to track your rides</p>
+        <p className="mt-2 text-sm text-gray-500">{t.signInSubtitle}</p>
       </div>
       <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
         <SignIn forceRedirectUrl="/dashboard" afterSignOutUrl="/" />
