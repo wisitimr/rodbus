@@ -1,7 +1,6 @@
 "use server";
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -10,14 +9,14 @@ import { revalidatePath } from "next/cache";
 // Reusable authorization guard — ensures only ADMIN (Car Owners) can proceed
 // ---------------------------------------------------------------------------
 export async function requireAdmin() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("Not authenticated");
   }
-  if (session.user.role !== Role.ADMIN) {
+  if (user.role !== Role.ADMIN) {
     throw new Error("Forbidden: admin access required");
   }
-  return session.user;
+  return user;
 }
 
 // ---------------------------------------------------------------------------

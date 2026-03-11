@@ -1,18 +1,18 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
+import { SignOutButton } from "@clerk/nextjs";
 import CostForm from "./cost-form";
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
-  if (session.user.role === Role.PENDING) redirect("/pending-approval");
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+  if (user.role === Role.PENDING) redirect("/pending-approval");
 
-  const userId = session.user.id;
-  const isAdmin = session.user.role === Role.ADMIN;
+  const userId = user.id;
+  const isAdmin = user.role === Role.ADMIN;
 
   // Date range: current month
   const now = new Date();
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-gray-500">
-            Welcome, {session.user.name ?? session.user.email}
+            Welcome, {user.name ?? user.email}
             {isAdmin && (
               <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                 Admin
@@ -70,12 +70,11 @@ export default async function DashboardPage() {
               Admin Panel
             </a>
           )}
-          <a
-            href="/api/auth/signout"
-            className="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
-          >
-            Sign Out
-          </a>
+          <SignOutButton>
+            <button className="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100">
+              Sign Out
+            </button>
+          </SignOutButton>
         </div>
       </header>
 
@@ -217,7 +216,7 @@ export default async function DashboardPage() {
                     </td>
                     <td className="py-2">{p.car.name}</td>
                     <td className="py-2 text-gray-500">
-                      {p.note ?? "—"}
+                      {p.note ?? "\u2014"}
                     </td>
                     <td className="py-2 text-right font-medium text-green-600">
                       ${p.amount.toFixed(2)}

@@ -1,40 +1,38 @@
-import { NextAuthOptions } from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import GoogleProvider from "next-auth/providers/google";
+import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import type { User } from "@prisma/client";
 
-const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
+/**
+ * Get the current authenticated user from the database.
+ * If the user doesn't exist in the DB yet, create them (with PENDING role).
+ */
+export async function getCurrentUser(): Promise<User | null> {
+  const clerkUser = await currentUser();
+  if (!clerkUser) return null;
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  session: {
-    strategy: "database",
-    maxAge: ONE_YEAR_IN_SECONDS,
-    updateAge: 24 * 60 * 60, // refresh session token every 24h
-  },
-  callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-        session.user.role = user.role;
-      }
-      return session;
+  const user = await prisma.user.upsert({
+    where: { clerkId: clerkUser.id },
+    update: {
+      name: clerkUser.fullName ?? clerkUser.firstName,
+      email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+      image: clerkUser.imageUrl,
     },
-    // Expose role in the JWT token for middleware access
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-      }
-      return token;
+    create: {
+      clerkId: clerkUser.id,
+      name: clerkUser.fullName ?? clerkUser.firstName,
+      email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+      image: clerkUser.imageUrl,
     },
-  },
-  pages: {
-    signIn: "/login",
-  },
-};
+  });
+
+  return user;
+}
+
+/**
+ * Require an authenticated user or throw/redirect.
+ */
+export async function requireUser(): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  return user;
+}
