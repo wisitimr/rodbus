@@ -15,7 +15,7 @@ export default function SignInPage() {
         </Link>
         <p className="mt-2 text-sm text-gray-500">Sign in to track your rides</p>
       </div>
-      <SignIn afterSignOutUrl="/" />
+      <SignIn afterSignInUrl="/dashboard" afterSignOutUrl="/" />
     </main>
   );
 }

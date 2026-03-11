@@ -15,7 +15,7 @@ export default function SignUpPage() {
         </Link>
         <p className="mt-2 text-sm text-gray-500">Create an account to get started</p>
       </div>
-      <SignUp afterSignOutUrl="/" />
+      <SignUp afterSignUpUrl="/dashboard" afterSignOutUrl="/" />
     </main>
   );
 }
