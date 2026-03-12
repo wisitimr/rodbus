@@ -25,21 +25,38 @@ export default async function HistoryPage() {
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const endOfYear = new Date(now.getFullYear(), 11, 31);
 
-  const [recentTrips, dayDebts, monthDebts, yearDebts, myPayments] = await Promise.all([
+  const [
+    recentTrips,
+    dayDebts,
+    monthDebts,
+    yearDebts,
+    dayPayments,
+    monthPayments,
+    yearPayments,
+  ] = await Promise.all([
     prisma.trip.findMany({
       where: { userId },
       include: { car: true },
       orderBy: { tappedAt: "desc" },
-      take: 50,
+      take: 100,
     }),
     calculateDebts(today, today),
     calculateDebts(startOfMonth, endOfMonth),
     calculateDebts(startOfYear, endOfYear),
     prisma.payment.findMany({
-      where: { userId },
-      include: { car: true },
+      where: { date: today },
+      include: { car: true, user: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
-      take: 50,
+    }),
+    prisma.payment.findMany({
+      where: { date: { gte: startOfMonth, lte: endOfMonth } },
+      include: { car: true, user: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.payment.findMany({
+      where: { date: { gte: startOfYear, lte: endOfYear } },
+      include: { car: true, user: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -47,19 +64,12 @@ export default async function HistoryPage() {
     id: trip.id,
     carName: trip.car.name,
     date: trip.date.toLocaleDateString(locale),
+    dateISO: trip.date.toISOString().split("T")[0],
     time: trip.tappedAt.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     }),
     type: trip.type as "MORNING" | "EVENING",
-  }));
-
-  const payments = myPayments.map((p) => ({
-    id: p.id,
-    carName: p.car.name,
-    date: p.date.toLocaleDateString(locale),
-    amount: p.amount,
-    note: p.note,
   }));
 
   const serializeDebts = (debts: typeof dayDebts) =>
@@ -69,6 +79,16 @@ export default async function HistoryPage() {
       totalDebt: d.totalDebt,
       totalPaid: d.totalPaid,
       pendingDebt: d.pendingDebt,
+    }));
+
+  const serializePayments = (payments: typeof dayPayments) =>
+    payments.map((p) => ({
+      id: p.id,
+      userId: p.userId,
+      carName: p.car.name,
+      date: p.date.toLocaleDateString(locale),
+      amount: p.amount,
+      note: p.note,
     }));
 
   const monthLabel = now.toLocaleString(locale, { month: "long" });
@@ -91,17 +111,18 @@ export default async function HistoryPage() {
 
       <HistoryContent
         trips={trips}
-        payments={payments}
         dayDebts={serializeDebts(dayDebts)}
         monthDebts={serializeDebts(monthDebts)}
         yearDebts={serializeDebts(yearDebts)}
+        dayPayments={serializePayments(dayPayments)}
+        monthPayments={serializePayments(monthPayments)}
+        yearPayments={serializePayments(yearPayments)}
         currentUserId={userId}
         todayLabel={todayLabel}
         monthLabel={monthLabel}
         yearLabel={yearLabel}
         t={{
           trips: t.trips,
-          payments: t.payments,
           summary: t.summary,
           day: t.day,
           month: t.month,
@@ -124,6 +145,7 @@ export default async function HistoryPage() {
           paid: t.paid,
           pending: t.pending,
           you: t.you,
+          paymentHistory: t.paymentHistory,
         }}
       />
     </main>

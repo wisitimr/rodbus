@@ -1,20 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type Tab = "trips" | "payments" | "summary";
+type Tab = "trips" | "summary";
 type SummaryPeriod = "day" | "month" | "year";
 
 interface Trip {
   id: string;
   carName: string;
   date: string;
+  dateISO: string;
   time: string;
   type: "MORNING" | "EVENING";
 }
 
-interface Payment {
+interface PaymentRecord {
   id: string;
+  userId: string;
   carName: string;
   date: string;
   amount: number;
@@ -31,17 +33,18 @@ interface DebtSummary {
 
 interface HistoryContentProps {
   trips: Trip[];
-  payments: Payment[];
   dayDebts: DebtSummary[];
   monthDebts: DebtSummary[];
   yearDebts: DebtSummary[];
+  dayPayments: PaymentRecord[];
+  monthPayments: PaymentRecord[];
+  yearPayments: PaymentRecord[];
   currentUserId: string;
   todayLabel: string;
   monthLabel: string;
   yearLabel: string;
   t: {
     trips: string;
-    payments: string;
     summary: string;
     day: string;
     month: string;
@@ -64,6 +67,7 @@ interface HistoryContentProps {
     paid: string;
     pending: string;
     you: string;
+    paymentHistory: string;
   };
 }
 
@@ -104,17 +108,31 @@ function useInfiniteScroll<T>(items: T[]) {
 
 function DebtTable({
   debts,
+  payments,
   currentUserId,
   emptyMessage,
   label,
   t,
 }: {
   debts: DebtSummary[];
+  payments: PaymentRecord[];
   currentUserId: string;
   emptyMessage: string;
   label: string;
   t: HistoryContentProps["t"];
 }) {
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+
+  const paymentsByUser = useMemo(() => {
+    const map = new Map<string, PaymentRecord[]>();
+    for (const p of payments) {
+      const list = map.get(p.userId) || [];
+      list.push(p);
+      map.set(p.userId, list);
+    }
+    return map;
+  }, [payments]);
+
   if (debts.length === 0) {
     return <p className="text-sm text-gray-400">{emptyMessage}</p>;
   }
@@ -122,78 +140,79 @@ function DebtTable({
   return (
     <>
       <p className="mb-3 text-xs font-medium text-gray-500">{label}</p>
-      {/* Mobile */}
-      <div className="space-y-2 sm:hidden">
-        {debts.map((d) => (
-          <div
-            key={d.userId}
-            className={`rounded-xl px-4 py-3 ${
-              d.userId === currentUserId
-                ? "bg-blue-50 ring-1 ring-blue-200"
-                : "bg-gray-50"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-medium text-gray-800">
-                {d.userName ?? "Unknown"}
-                {d.userId === currentUserId && (
-                  <span className="ml-1.5 text-xs font-normal text-blue-500">
-                    ({t.you})
-                  </span>
-                )}
-              </p>
-              <p className="font-bold text-red-600">
-                ฿{d.pendingDebt.toFixed(2)}
-              </p>
-            </div>
-            <div className="mt-1 flex gap-3 text-xs text-gray-500">
-              <span>{t.accrued}: ฿{d.totalDebt.toFixed(2)}</span>
-              <span className="text-green-600">
-                {t.paid}: ฿{d.totalPaid.toFixed(2)}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="space-y-2">
+        {debts.map((d) => {
+          const isMe = d.userId === currentUserId;
+          const isExpanded = expandedUser === d.userId;
+          const userPayments = paymentsByUser.get(d.userId) || [];
+          const hasPayments = userPayments.length > 0;
 
-      {/* Desktop */}
-      <div className="hidden sm:block">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-              <th className="pb-3 font-semibold">{t.passenger}</th>
-              <th className="pb-3 text-right font-semibold">{t.accrued}</th>
-              <th className="pb-3 text-right font-semibold">{t.paid}</th>
-              <th className="pb-3 text-right font-semibold">{t.pending}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {debts.map((d) => (
-              <tr
-                key={d.userId}
-                className={`${d.userId === currentUserId ? "bg-blue-50/60 font-semibold" : "hover:bg-gray-50/50"}`}
+          return (
+            <div key={d.userId}>
+              <button
+                onClick={() => hasPayments && setExpandedUser(isExpanded ? null : d.userId)}
+                className={`w-full rounded-xl px-4 py-3 text-left transition ${
+                  isMe
+                    ? "bg-blue-50 ring-1 ring-blue-200"
+                    : "bg-gray-50 hover:bg-gray-100"
+                } ${hasPayments ? "cursor-pointer" : "cursor-default"}`}
               >
-                <td className="py-3 text-gray-800">
-                  {d.userName ?? "Unknown"}
-                  {d.userId === currentUserId && (
-                    <span className="ml-1.5 text-xs font-normal text-blue-500">
-                      ({t.you})
-                    </span>
-                  )}
-                </td>
-                <td className="py-3 text-right text-gray-700">
-                  ฿{d.totalDebt.toFixed(2)}
-                </td>
-                <td className="py-3 text-right text-green-600">
-                  ฿{d.totalPaid.toFixed(2)}
-                </td>
-                <td className="py-3 text-right text-red-600">
-                  ฿{d.pendingDebt.toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {hasPayments && (
+                      <span className={`text-xs text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`}>
+                        &#9654;
+                      </span>
+                    )}
+                    <p className="font-medium text-gray-800">
+                      {d.userName ?? "Unknown"}
+                      {isMe && (
+                        <span className="ml-1.5 text-xs font-normal text-blue-500">
+                          ({t.you})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <p className="font-bold text-red-600">
+                    ฿{d.pendingDebt.toFixed(2)}
+                  </p>
+                </div>
+                <div className="mt-1 flex gap-3 text-xs text-gray-500">
+                  <span>{t.accrued}: ฿{d.totalDebt.toFixed(2)}</span>
+                  <span className="text-green-600">
+                    {t.paid}: ฿{d.totalPaid.toFixed(2)}
+                  </span>
+                </div>
+              </button>
+
+              {/* Expanded payment details */}
+              {isExpanded && userPayments.length > 0 && (
+                <div className="ml-6 mt-1 space-y-1 border-l-2 border-green-200 pl-3">
+                  <p className="py-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    {t.paymentHistory}
+                  </p>
+                  {userPayments.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-lg bg-green-50 px-3 py-2 text-sm"
+                    >
+                      <div className="min-w-0">
+                        <span className="text-gray-700">{p.carName}</span>
+                        <span className="ml-2 text-xs text-gray-400">
+                          {p.date}
+                          {p.note && <> &middot; {p.note}</>}
+                        </span>
+                      </div>
+                      <span className="shrink-0 font-semibold text-green-600">
+                        ฿{p.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </>
   );
@@ -201,10 +220,12 @@ function DebtTable({
 
 export default function HistoryContent({
   trips,
-  payments,
   dayDebts,
   monthDebts,
   yearDebts,
+  dayPayments,
+  monthPayments,
+  yearPayments,
   currentUserId,
   todayLabel,
   monthLabel,
@@ -213,12 +234,22 @@ export default function HistoryContent({
 }: HistoryContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("trips");
   const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("month");
-  const tripScroll = useInfiniteScroll(trips);
-  const paymentScroll = useInfiniteScroll(payments);
+  const [dateFilter, setDateFilter] = useState("");
+
+  const filteredTrips = useMemo(() => {
+    if (!dateFilter) return trips;
+    return trips.filter((trip) => trip.dateISO === dateFilter);
+  }, [trips, dateFilter]);
+
+  const tripScroll = useInfiniteScroll(filteredTrips);
+
+  const uniqueDates = useMemo(() => {
+    const dates = [...new Set(trips.map((t) => t.dateISO))].sort().reverse();
+    return dates;
+  }, [trips]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "trips", label: t.trips },
-    { key: "payments", label: t.payments },
     { key: "summary", label: t.summary },
   ];
 
@@ -229,9 +260,9 @@ export default function HistoryContent({
   ];
 
   const summaryData = {
-    day: { debts: dayDebts, empty: t.noCostsToday, label: todayLabel },
-    month: { debts: monthDebts, empty: t.noCostsThisMonth, label: monthLabel },
-    year: { debts: yearDebts, empty: t.noCostsThisYear, label: yearLabel },
+    day: { debts: dayDebts, payments: dayPayments, empty: t.noCostsToday, label: todayLabel },
+    month: { debts: monthDebts, payments: monthPayments, empty: t.noCostsThisMonth, label: monthLabel },
+    year: { debts: yearDebts, payments: yearPayments, empty: t.noCostsThisYear, label: yearLabel },
   };
 
   const current = summaryData[summaryPeriod];
@@ -258,8 +289,22 @@ export default function HistoryContent({
       {/* Trips tab */}
       {activeTab === "trips" && (
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          {/* Date filter */}
+          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-auto"
+            >
+              <option value="">{t.date}: —</option>
+              {uniqueDates.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {trips.length === 0 ? (
+            {filteredTrips.length === 0 ? (
               <p className="text-sm text-gray-400">{t.noTripHistory}</p>
             ) : (
               <>
@@ -334,72 +379,6 @@ export default function HistoryContent({
         </section>
       )}
 
-      {/* Payments tab */}
-      {activeTab === "payments" && (
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {payments.length === 0 ? (
-              <p className="text-sm text-gray-400">{t.noPayments}</p>
-            ) : (
-              <>
-                {/* Mobile */}
-                <div className="space-y-2 sm:hidden">
-                  {paymentScroll.visible.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800">{p.carName}</p>
-                        <p className="text-xs text-gray-500">
-                          {p.date}
-                          {p.note && <> &middot; {p.note}</>}
-                        </p>
-                      </div>
-                      <span className="shrink-0 font-semibold text-green-600">
-                        ฿{p.amount.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop */}
-                <div className="hidden sm:block">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="pb-3 font-semibold">{t.date}</th>
-                        <th className="pb-3 font-semibold">{t.car}</th>
-                        <th className="pb-3 font-semibold">{t.note}</th>
-                        <th className="pb-3 text-right font-semibold">{t.amount}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {paymentScroll.visible.map((p) => (
-                        <tr key={p.id} className="hover:bg-gray-50/50">
-                          <td className="py-3 text-gray-700">{p.date}</td>
-                          <td className="py-3 font-medium text-gray-800">{p.carName}</td>
-                          <td className="py-3 text-gray-400">{p.note ?? "\u2014"}</td>
-                          <td className="py-3 text-right font-semibold text-green-600">
-                            ฿{p.amount.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {paymentScroll.hasMore && (
-                  <div ref={paymentScroll.sentinelRef} className="py-4 text-center text-sm text-gray-400">
-                    Loading...
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
-      )}
-
       {/* Summary tab */}
       {activeTab === "summary" && (
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
@@ -423,6 +402,7 @@ export default function HistoryContent({
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             <DebtTable
               debts={current.debts}
+              payments={current.payments}
               currentUserId={currentUserId}
               emptyMessage={current.empty}
               label={current.label}
