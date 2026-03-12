@@ -21,10 +21,14 @@ export default async function QRPage({
 
   const { carId } = await searchParams;
 
-  const allCars = await prisma.car.findMany({
+  if (!carId) redirect("/admin");
+
+  const car = await prisma.car.findUnique({
+    where: { id: carId },
     select: { id: true, name: true, licensePlate: true },
-    orderBy: { name: "asc" },
   });
+
+  if (!car) redirect("/admin");
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-8 pt-6 sm:p-6 sm:pt-8">
@@ -44,18 +48,7 @@ export default async function QRPage({
       </header>
 
       <div className="animate-fade-in-up">
-        {allCars.length === 0 ? (
-          <p className="text-gray-500">{t.noCarsRegistered}</p>
-        ) : (
-          <AdminQRCode
-            cars={allCars.map((c) => ({
-              id: c.id,
-              name: c.name,
-              licensePlate: c.licensePlate,
-            }))}
-            initialCarId={carId}
-          />
-        )}
+        <AdminQRCode car={car} />
       </div>
     </main>
   );
