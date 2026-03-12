@@ -20,11 +20,12 @@ function getBangkokToday() {
   return d.toISOString().split("T")[0];
 }
 
-export default function CostForm({ cars, existingCosts: initialCosts, missingCostDates = [] }: CostFormProps) {
+export default function CostForm({ cars, existingCosts: initialCosts, missingCostDates: initialMissingDates = [] }: CostFormProps) {
   const { t } = useT();
   const [carId, setCarId] = useState(cars[0]?.id ?? "");
   const [date, setDate] = useState(getBangkokToday);
   const [existingCosts, setExistingCosts] = useState<ExistingCost[]>(initialCosts);
+  const [missingDates, setMissingDates] = useState<string[]>(initialMissingDates);
 
   const existingForCar = existingCosts.find((c) => c.carId === carId);
 
@@ -104,10 +105,16 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
       setStatus("saved");
       setEditing(false);
       // Update local existing costs
-      setExistingCosts((prev) => {
-        const filtered = prev.filter((c) => c.carId !== carId);
-        return [...filtered, { carId, gasCost: parseFloat(gasCost) || 0, parkingCost: parseFloat(parkingCost) || 0 }];
-      });
+      const updatedCosts = [
+        ...existingCosts.filter((c) => c.carId !== carId),
+        { carId, gasCost: parseFloat(gasCost) || 0, parkingCost: parseFloat(parkingCost) || 0 },
+      ];
+      setExistingCosts(updatedCosts);
+      // Remove date from missing if all cars now have costs
+      const allCarsHaveCosts = cars.every((car) => updatedCosts.some((c) => c.carId === car.id));
+      if (allCarsHaveCosts) {
+        setMissingDates((prev) => prev.filter((d) => d !== date));
+      }
     } catch {
       setStatus("error");
     }
@@ -119,13 +126,13 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
   return (
     <div className="space-y-4">
       {/* Missing dates chips */}
-      {missingCostDates.length > 0 && (
+      {missingDates.length > 0 && (
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-amber-600">
             {t.missingDates}
           </label>
           <div className="flex flex-wrap gap-2">
-            {missingCostDates.map((d) => (
+            {missingDates.map((d) => (
               <button
                 key={d}
                 type="button"
