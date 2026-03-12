@@ -427,17 +427,15 @@ function SummaryCard({
         </div>
       </button>
       {isExpanded && (
-        <div className="border-t border-gray-100 px-4 pb-3 pt-2">
+        <div className="border-t border-gray-100 px-4 pb-3">
           {/* Day view: per-car detail */}
           {period === "day" && Array.isArray(subData) && (subData as BreakdownEntry[]).length > 0 && (
-            <div className="mt-2">
-              <DayBreakdownDetail entries={subData as BreakdownEntry[]} t={t} />
-            </div>
+            <DayBreakdownDetail entries={subData as BreakdownEntry[]} t={t} />
           )}
 
           {/* Month view: day rows */}
           {period === "month" && Array.isArray(subData) && (subData as { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]).length > 0 && (
-            <div className="mt-2 rounded-lg bg-white px-3 pt-1">
+            <div className="mt-1 rounded-lg bg-white px-3 pt-1">
               {(subData as { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]).map((day) => (
                 <SubPeriodRow
                   key={day.dateISO}
@@ -454,7 +452,7 @@ function SummaryCard({
 
           {/* Year view: month rows, each with day rows */}
           {period === "year" && Array.isArray(subData) && (subData as { monthKey: string; label: string; days: { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]; total: number }[]).length > 0 && (
-            <div className="mt-2 rounded-lg bg-white px-3 pt-1">
+            <div className="mt-1 rounded-lg bg-white px-3 pt-1">
               {(subData as { monthKey: string; label: string; days: { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]; total: number }[]).map((month) => (
                 <SubPeriodRow
                   key={month.monthKey}
