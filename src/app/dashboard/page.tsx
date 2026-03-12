@@ -109,7 +109,7 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {myCars.length > 0 && (
+      {isAdmin && myCars.length > 0 && (
         <CostReminderBanner initialMissingDates={missingCostDates} />
       )}
 
@@ -252,7 +252,7 @@ export default async function DashboardPage() {
         </section>
 
         {/* Driver: Enter Costs */}
-        {myCars.length > 0 && (
+        {isAdmin && myCars.length > 0 && (
           <section id="enter-daily-costs" className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
             <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
