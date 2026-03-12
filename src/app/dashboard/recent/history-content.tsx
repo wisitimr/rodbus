@@ -19,30 +19,36 @@ interface PaymentRecord {
   userId: string;
   carName: string;
   date: string;
+  dateISO: string;
   amount: number;
   note: string | null;
 }
 
-interface DebtSummary {
+interface BreakdownEntry {
+  date: string; // ISO date
+  share: number;
+}
+
+interface DebtWithBreakdown {
   userId: string;
   userName: string | null;
   totalDebt: number;
   totalPaid: number;
   pendingDebt: number;
+  breakdown: BreakdownEntry[];
+}
+
+interface GroupedPeriod {
+  key: string; // ISO date, YYYY-MM, or YYYY
+  label: string;
+  entries: { userId: string; userName: string | null; totalDebt: number; totalPaid: number; pendingDebt: number }[];
 }
 
 interface HistoryContentProps {
   trips: Trip[];
-  dayDebts: DebtSummary[];
-  monthDebts: DebtSummary[];
-  yearDebts: DebtSummary[];
-  dayPayments: PaymentRecord[];
-  monthPayments: PaymentRecord[];
-  yearPayments: PaymentRecord[];
+  allDebts: DebtWithBreakdown[];
+  allPayments: PaymentRecord[];
   currentUserId: string;
-  todayLabel: string;
-  monthLabel: string;
-  yearLabel: string;
   t: {
     trips: string;
     payments: string;
@@ -52,9 +58,7 @@ interface HistoryContentProps {
     year: string;
     noTripHistory: string;
     noPayments: string;
-    noCostsToday: string;
-    noCostsThisMonth: string;
-    noCostsThisYear: string;
+    noData: string;
     date: string;
     time: string;
     car: string;
@@ -63,12 +67,10 @@ interface HistoryContentProps {
     evening: string;
     note: string;
     amount: string;
-    passenger: string;
     accrued: string;
     paid: string;
     pending: string;
     you: string;
-    paymentHistory: string;
   };
 }
 
@@ -92,7 +94,7 @@ function Calendar({
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
@@ -116,7 +118,6 @@ function Calendar({
 
   return (
     <div className="w-full">
-      {/* Month navigation */}
       <div className="mb-2 flex items-center justify-between">
         <button type="button" onClick={prevMonth} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
@@ -129,14 +130,12 @@ function Calendar({
         </button>
       </div>
 
-      {/* Day headers */}
       <div className="grid grid-cols-7 text-center text-xs font-medium text-gray-400">
         {dayNames.map((d) => (
           <div key={d} className="py-1">{d}</div>
         ))}
       </div>
 
-      {/* Days grid */}
       <div className="grid grid-cols-7 text-center text-sm">
         {weeks.flat().map((day, i) => {
           if (day === null) return <div key={`e${i}`} />;
@@ -203,32 +202,24 @@ function useInfiniteScroll<T>(items: T[]) {
   };
 }
 
-function DebtTable({
-  debts,
+function SummaryTable({
+  entries,
   currentUserId,
-  emptyMessage,
   label,
-  period,
+  isDaily,
   t,
 }: {
-  debts: DebtSummary[];
+  entries: GroupedPeriod["entries"];
   currentUserId: string;
-  emptyMessage: string;
   label: string;
-  period: SummaryPeriod;
+  isDaily: boolean;
   t: HistoryContentProps["t"];
 }) {
-  if (debts.length === 0) {
-    return <p className="text-sm text-gray-400">{emptyMessage}</p>;
-  }
-
-  const isDaily = period === "day";
-
   return (
-    <>
+    <div>
       <p className="mb-3 text-xs font-medium text-gray-500">{label}</p>
       <div className="space-y-2">
-        {debts.map((d) => {
+        {entries.map((d) => {
           const isMe = d.userId === currentUserId;
           return (
             <div
@@ -273,22 +264,103 @@ function DebtTable({
           );
         })}
       </div>
-    </>
+    </div>
   );
+}
+
+/**
+ * Group all-time debt breakdown + payments by period (day/month/year).
+ * Day: shows cost share only. Month/Year: shows accrued, paid, pending.
+ */
+function groupByPeriod(
+  allDebts: DebtWithBreakdown[],
+  allPayments: PaymentRecord[],
+  period: SummaryPeriod
+): GroupedPeriod[] {
+  function getKey(isoDate: string): string {
+    if (period === "day") return isoDate;
+    if (period === "month") return isoDate.slice(0, 7);
+    return isoDate.slice(0, 4);
+  }
+
+  const periodKeys = new Set<string>();
+  const userPeriodDebt = new Map<string, Map<string, number>>();
+
+  for (const debt of allDebts) {
+    for (const b of debt.breakdown) {
+      const key = getKey(b.date);
+      periodKeys.add(key);
+
+      if (!userPeriodDebt.has(debt.userId)) {
+        userPeriodDebt.set(debt.userId, new Map());
+      }
+      const periodMap = userPeriodDebt.get(debt.userId)!;
+      periodMap.set(key, (periodMap.get(key) ?? 0) + b.share);
+    }
+  }
+
+  const userPeriodPaid = new Map<string, Map<string, number>>();
+  for (const p of allPayments) {
+    const key = getKey(p.dateISO);
+    periodKeys.add(key);
+
+    if (!userPeriodPaid.has(p.userId)) {
+      userPeriodPaid.set(p.userId, new Map());
+    }
+    const periodMap = userPeriodPaid.get(p.userId)!;
+    periodMap.set(key, (periodMap.get(key) ?? 0) + p.amount);
+  }
+
+  const userNames = new Map<string, string | null>();
+  for (const d of allDebts) {
+    userNames.set(d.userId, d.userName);
+  }
+
+  const groups: GroupedPeriod[] = [];
+
+  for (const key of periodKeys) {
+    const userIds = new Set<string>();
+    for (const [uid, pm] of userPeriodDebt) {
+      if (pm.has(key)) userIds.add(uid);
+    }
+    for (const [uid, pm] of userPeriodPaid) {
+      if (pm.has(key)) userIds.add(uid);
+    }
+
+    const entries: GroupedPeriod["entries"] = [];
+    for (const uid of userIds) {
+      const totalDebt = Math.round((userPeriodDebt.get(uid)?.get(key) ?? 0) * 100) / 100;
+      const totalPaid = Math.round((userPeriodPaid.get(uid)?.get(key) ?? 0) * 100) / 100;
+      entries.push({
+        userId: uid,
+        userName: userNames.get(uid) ?? null,
+        totalDebt,
+        totalPaid,
+        pendingDebt: Math.round((totalDebt - totalPaid) * 100) / 100,
+      });
+    }
+
+    entries.sort((a, b) => b.pendingDebt - a.pendingDebt);
+
+    let label = key;
+    if (period === "month") {
+      const [y, m] = key.split("-");
+      const d = new Date(parseInt(y), parseInt(m) - 1, 1);
+      label = d.toLocaleString("default", { month: "long", year: "numeric" });
+    }
+
+    groups.push({ key, label, entries });
+  }
+
+  groups.sort((a, b) => b.key.localeCompare(a.key));
+  return groups;
 }
 
 export default function HistoryContent({
   trips,
-  dayDebts,
-  monthDebts,
-  yearDebts,
-  dayPayments,
-  monthPayments,
-  yearPayments,
+  allDebts,
+  allPayments,
   currentUserId,
-  todayLabel,
-  monthLabel,
-  yearLabel,
   t,
 }: HistoryContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("trips");
@@ -335,20 +407,15 @@ export default function HistoryContent({
   }, [trips, dateFrom, dateTo]);
 
   const tripScroll = useInfiniteScroll(filteredTrips);
-
-  const allPayments = useMemo(() => {
-    const seen = new Set<string>();
-    const merged: PaymentRecord[] = [];
-    for (const p of [...yearPayments]) {
-      if (!seen.has(p.id)) {
-        seen.add(p.id);
-        merged.push(p);
-      }
-    }
-    return merged;
-  }, [yearPayments]);
-
   const paymentScroll = useInfiniteScroll(allPayments);
+
+  // Group summary data by period
+  const summaryGroups = useMemo(
+    () => groupByPeriod(allDebts, allPayments, summaryPeriod),
+    [allDebts, allPayments, summaryPeriod]
+  );
+
+  const summaryScroll = useInfiniteScroll(summaryGroups);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "trips", label: t.trips },
@@ -361,14 +428,6 @@ export default function HistoryContent({
     { key: "month", label: t.month },
     { key: "year", label: t.year },
   ];
-
-  const summaryData = {
-    day: { debts: dayDebts, empty: t.noCostsToday, label: todayLabel },
-    month: { debts: monthDebts, empty: t.noCostsThisMonth, label: monthLabel },
-    year: { debts: yearDebts, empty: t.noCostsThisYear, label: yearLabel },
-  };
-
-  const current = summaryData[summaryPeriod];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -425,7 +484,6 @@ export default function HistoryContent({
 
             {showFilter && (
               <div className="mt-3 space-y-3">
-                {/* Start / End date inputs */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500">Start</label>
@@ -455,7 +513,6 @@ export default function HistoryContent({
                   </div>
                 </div>
 
-                {/* Calendar */}
                 <Calendar
                   dateFrom={dateFrom}
                   dateTo={dateTo || dateFrom}
@@ -628,14 +685,27 @@ export default function HistoryContent({
             </div>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
-            <DebtTable
-              debts={current.debts}
-              currentUserId={currentUserId}
-              emptyMessage={current.empty}
-              label={current.label}
-              period={summaryPeriod}
-              t={t}
-            />
+            {summaryGroups.length === 0 ? (
+              <p className="text-sm text-gray-400">{t.noData}</p>
+            ) : (
+              <div className="space-y-6">
+                {summaryScroll.visible.map((group) => (
+                  <SummaryTable
+                    key={group.key}
+                    entries={group.entries}
+                    currentUserId={currentUserId}
+                    label={group.label}
+                    isDaily={summaryPeriod === "day"}
+                    t={t}
+                  />
+                ))}
+                {summaryScroll.hasMore && (
+                  <div ref={summaryScroll.sentinelRef} className="py-4 text-center text-sm text-gray-400">
+                    Loading...
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       )}

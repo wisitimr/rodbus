@@ -36,35 +36,51 @@ export async function calculateDebts(
   const debtMap = new Map<string, UserDebt>();
 
   for (const cost of dailyCosts) {
-    const totalCost = cost.gasCost + cost.parkingCost;
-    if (totalCost === 0) continue;
+    if (cost.gasCost === 0 && cost.parkingCost === 0) continue;
 
-    // Find distinct users who tapped into this car on this date
+    // Fetch ALL trips (not distinct) to count per-user trip count
     const trips = await prisma.trip.findMany({
       where: {
         carId: cost.carId,
         date: cost.date,
       },
       include: { user: true },
-      distinct: ["userId"],
     });
 
     if (trips.length === 0) continue;
 
-    const share = totalCost / trips.length;
-
+    // Count trips per user (1 = one way, 2 = round trip)
+    const userTrips = new Map<string, { name: string | null; count: number }>();
     for (const trip of trips) {
-      let entry = debtMap.get(trip.userId);
+      const existing = userTrips.get(trip.userId);
+      if (existing) {
+        existing.count++;
+      } else {
+        userTrips.set(trip.userId, { name: trip.user.name, count: 1 });
+      }
+    }
+
+    const distinctUsers = userTrips.size;
+    const totalTripUnits = Array.from(userTrips.values()).reduce((sum, u) => sum + u.count, 0);
+
+    for (const [uid, info] of userTrips) {
+      // Gas: proportional to trip count (round trip pays 2x, one way pays 1x)
+      const gasShare = totalTripUnits > 0 ? (cost.gasCost * info.count) / totalTripUnits : 0;
+      // Parking: split equally per person
+      const parkingShare = distinctUsers > 0 ? cost.parkingCost / distinctUsers : 0;
+      const share = gasShare + parkingShare;
+
+      let entry = debtMap.get(uid);
       if (!entry) {
         entry = {
-          userId: trip.userId,
-          userName: trip.user.name,
+          userId: uid,
+          userName: info.name,
           totalDebt: 0,
           totalPaid: 0,
           pendingDebt: 0,
           breakdown: [],
         };
-        debtMap.set(trip.userId, entry);
+        debtMap.set(uid, entry);
       }
 
       entry.totalDebt += share;
@@ -73,8 +89,8 @@ export async function calculateDebts(
         carName: cost.car.name,
         date: cost.date,
         share: Math.round(share * 100) / 100,
-        totalCost,
-        passengerCount: trips.length,
+        totalCost: cost.gasCost + cost.parkingCost,
+        passengerCount: distinctUsers,
       });
     }
   }
@@ -116,20 +132,29 @@ export async function calculateUserPendingDebt(userId: string): Promise<number> 
   let totalDebt = 0;
 
   for (const cost of dailyCosts) {
-    const totalCost = cost.gasCost + cost.parkingCost;
-    if (totalCost === 0) continue;
+    if (cost.gasCost === 0 && cost.parkingCost === 0) continue;
 
     const trips = await prisma.trip.findMany({
       where: { carId: cost.carId, date: cost.date },
-      distinct: ["userId"],
     });
 
     if (trips.length === 0) continue;
 
-    const isPassenger = trips.some((t) => t.userId === userId);
-    if (isPassenger) {
-      totalDebt += totalCost / trips.length;
+    // Count trips per user
+    const userTrips = new Map<string, number>();
+    for (const t of trips) {
+      userTrips.set(t.userId, (userTrips.get(t.userId) ?? 0) + 1);
     }
+
+    const myTrips = userTrips.get(userId);
+    if (!myTrips) continue;
+
+    const totalTripUnits = Array.from(userTrips.values()).reduce((sum, c) => sum + c, 0);
+    const distinctUsers = userTrips.size;
+
+    const gasShare = totalTripUnits > 0 ? (cost.gasCost * myTrips) / totalTripUnits : 0;
+    const parkingShare = distinctUsers > 0 ? cost.parkingCost / distinctUsers : 0;
+    totalDebt += gasShare + parkingShare;
   }
 
   // Subtract all payments
