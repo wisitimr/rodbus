@@ -91,9 +91,14 @@ export default async function DashboardPage() {
       {/* Header */}
       <header className="animate-fade-in relative z-50 mb-6 sm:mb-8">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-            {t.dashboard}
-          </h1>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+              {t.dashboard}
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {t.welcome}, {user.name ?? user.email}
+            </p>
+          </div>
           <ProfileMenu
             image={user.image}
             name={user.name}
