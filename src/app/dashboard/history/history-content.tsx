@@ -316,7 +316,7 @@ function DateFilterBar({
         </button>
         {hasFilter && (
           <span className="text-xs text-gray-500">
-            {dateFrom}{dateTo && dateTo !== dateFrom ? ` — ${dateTo}` : ""}
+            {fmtDate(dateFrom, locale)}{dateTo && dateTo !== dateFrom ? ` — ${fmtDate(dateTo, locale)}` : ""}
           </span>
         )}
         {hasFilter && (
