@@ -40,7 +40,7 @@ export default async function Home() {
       <h1 className="animate-fade-in-up mt-8 text-center text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
         RodBus{" "}
         <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          NFC Tracking
+          NFC Tracker
         </span>
       </h1>
       <p
