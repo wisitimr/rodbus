@@ -54,6 +54,9 @@ const translations = {
     failedToSave: "Failed to save. Please try again.",
     confirmSaveCostsTitle: "Save these costs?",
     costReminderBanner: "You haven't entered today's costs yet — scroll down to enter.",
+    defaultGasCost: "Default Gas Cost (฿)",
+    editCosts: "Edit",
+    costsSaved: "Costs saved",
 
     // Admin
     adminDashboard: "Admin Dashboard",
@@ -177,6 +180,9 @@ const translations = {
     failedToSave: "บันทึกไม่สำเร็จ กรุณาลองใหม่",
     confirmSaveCostsTitle: "บันทึกค่าใช้จ่ายนี้?",
     costReminderBanner: "คุณยังไม่ได้บันทึกค่าใช้จ่ายวันนี้ — เลื่อนลงเพื่อบันทึก",
+    defaultGasCost: "ค่าน้ำมันเริ่มต้น (฿)",
+    editCosts: "แก้ไข",
+    costsSaved: "บันทึกค่าใช้จ่ายแล้ว",
 
     // Admin
     adminDashboard: "แดชบอร์ดแอดมิน",

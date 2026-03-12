@@ -42,7 +42,7 @@ export default async function AdminPage() {
       }),
       prisma.car.findMany({
         where: { ownerId: userId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, defaultGasCost: true },
       }),
       prisma.car.findMany({
         include: { owner: { select: { name: true } } },
@@ -153,7 +153,7 @@ export default async function AdminPage() {
             </div>
             <div className="px-5 py-4 sm:px-6 sm:py-5">
               <CostManagement
-                cars={myCars.map((c) => ({ id: c.id, name: c.name }))}
+                cars={myCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
               />
             </div>
           </section>

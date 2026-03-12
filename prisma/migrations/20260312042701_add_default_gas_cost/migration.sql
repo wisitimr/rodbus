@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Car" ADD COLUMN     "defaultGasCost" DOUBLE PRECISION NOT NULL DEFAULT 0;

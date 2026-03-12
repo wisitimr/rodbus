@@ -29,7 +29,10 @@ export default async function DashboardPage() {
 
   const [myCars, todaysTrips, recentTrips, debts, myPayments] =
     await Promise.all([
-      prisma.car.findMany({ where: { ownerId: userId } }),
+      prisma.car.findMany({
+        where: { ownerId: userId },
+        select: { id: true, name: true, defaultGasCost: true },
+      }),
       prisma.trip.findMany({
         where: { userId, date: today },
         include: { car: true },
@@ -465,7 +468,10 @@ export default async function DashboardPage() {
               </h2>
             </div>
             <div className="px-5 py-4 sm:px-6 sm:py-5">
-              <CostForm cars={myCars.map((c) => ({ id: c.id, name: c.name }))} />
+              <CostForm
+                cars={myCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
+                existingCosts={todayCosts.map((tc) => ({ carId: tc.carId, gasCost: tc.gasCost, parkingCost: tc.parkingCost }))}
+              />
             </div>
           </section>
         )}

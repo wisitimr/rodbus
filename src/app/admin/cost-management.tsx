@@ -1,36 +1,35 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateDailyCost } from "@/lib/admin-actions";
+import { updateDefaultGasCost } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 
 interface CostManagementProps {
-  cars: { id: string; name: string }[];
+  cars: { id: string; name: string; defaultGasCost: number }[];
 }
 
 export default function CostManagement({ cars }: CostManagementProps) {
   const { t } = useT();
   const [isPending, startTransition] = useTransition();
   const [carId, setCarId] = useState(cars[0]?.id ?? "");
-  const [date, setDate] = useState(() => {
-    const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
-    return d.toISOString().split("T")[0];
-  });
-  const [gasCost, setGasCost] = useState("");
+  const [gasCost, setGasCost] = useState(
+    () => cars[0]?.defaultGasCost?.toString() ?? ""
+  );
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
+
+  function handleCarChange(newCarId: string) {
+    setCarId(newCarId);
+    const car = cars.find((c) => c.id === newCarId);
+    setGasCost(car?.defaultGasCost?.toString() ?? "");
+    setStatus("idle");
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
       try {
-        await updateDailyCost(
-          carId,
-          date,
-          parseFloat(gasCost) || 0,
-          0
-        );
+        await updateDefaultGasCost(carId, parseFloat(gasCost) || 0);
         setStatus("saved");
-        setGasCost("");
         setTimeout(() => setStatus("idle"), 2000);
       } catch {
         setStatus("error");
@@ -50,7 +49,7 @@ export default function CostManagement({ cars }: CostManagementProps) {
           </label>
           <select
             value={carId}
-            onChange={(e) => setCarId(e.target.value)}
+            onChange={(e) => handleCarChange(e.target.value)}
             className={inputClass}
           >
             {cars.map((car) => (
@@ -62,30 +61,18 @@ export default function CostManagement({ cars }: CostManagementProps) {
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            {t.date}
+            {t.defaultGasCost}
           </label>
           <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            type="number"
+            step="0.01"
+            min="0"
+            value={gasCost}
+            onChange={(e) => setGasCost(e.target.value)}
+            placeholder="0.00"
             className={inputClass}
           />
         </div>
-      </div>
-
-      <div>
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-          {t.gasCost}
-        </label>
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          value={gasCost}
-          onChange={(e) => setGasCost(e.target.value)}
-          placeholder="0.00"
-          className={inputClass}
-        />
       </div>
 
       <button

@@ -29,11 +29,12 @@ model User {
 }
 
 model Car {
-  id           String      @id @default(cuid())
-  name         String
-  licensePlate String?
-  ownerId      String
-  owner        User        @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
+  id             String      @id @default(cuid())
+  name           String
+  licensePlate   String?
+  defaultGasCost Float       @default(0)
+  ownerId        String
+  owner          User        @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
   trips        Trip[]
   dailyCosts   DailyCost[]
   payments     Payment[]

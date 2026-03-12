@@ -103,6 +103,27 @@ export async function updateDailyCost(
 }
 
 // ---------------------------------------------------------------------------
+// Default Gas Cost — Admin sets default gas cost per car
+// ---------------------------------------------------------------------------
+
+export async function updateDefaultGasCost(carId: string, gasCost: number) {
+  const admin = await requireAdmin();
+
+  const car = await prisma.car.findUnique({ where: { id: carId } });
+  if (!car || car.ownerId !== admin.id) {
+    throw new Error("Forbidden: you do not own this car");
+  }
+
+  await prisma.car.update({
+    where: { id: carId },
+    data: { defaultGasCost: gasCost },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+}
+
+// ---------------------------------------------------------------------------
 // System Configuration — Disabled Dates (holidays / maintenance)
 // ---------------------------------------------------------------------------
 
