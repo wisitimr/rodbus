@@ -133,7 +133,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
             {t.missingDates}
           </label>
           <div className="flex flex-wrap gap-2">
-            {missingDates.map((d) => (
+            {missingDates.slice(0, 5).map((d) => (
               <button
                 key={d}
                 type="button"
@@ -147,6 +147,11 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
                 {d}
               </button>
             ))}
+            {missingDates.length > 5 && (
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600 ring-1 ring-amber-200">
+                ...+{missingDates.length - 5}
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -169,25 +174,17 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
           {t.car}
         </label>
-        <div className="flex items-center gap-2">
-          <select
-            value={carId}
-            onChange={(e) => handleCarChange(e.target.value)}
-            className={`${inputClass} flex-1`}
-          >
-            {cars.map((car) => (
-              <option key={car.id} value={car.id}>
-                {car.name}
-              </option>
-            ))}
-          </select>
-          {existingForCar && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-50 px-2.5 py-2 text-xs font-medium text-green-700 ring-1 ring-green-200 ring-inset sm:py-1.5">
-              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-              {t.costsSaved}
-            </span>
-          )}
-        </div>
+        <select
+          value={carId}
+          onChange={(e) => handleCarChange(e.target.value)}
+          className={inputClass}
+        >
+          {cars.map((car) => (
+            <option key={car.id} value={car.id}>
+              {car.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -222,19 +219,35 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={status === "saving"}
-          className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2.5"
-        >
-          {status === "saving" ? t.saving : status === "saved" ? t.saved : t.saveCosts}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={status === "saving"}
+            className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2.5"
+          >
+            {status === "saving" ? t.saving : t.saveCosts}
+          </button>
 
-        {status === "error" && (
-          <p className="text-sm font-medium text-red-600">
-            {t.failedToSave}
-          </p>
-        )}
+          {existingForCar && status === "idle" && (
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-green-600">
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+              {t.costsSaved}
+            </span>
+          )}
+
+          {status === "saved" && (
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-green-600">
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+              {t.saved}
+            </span>
+          )}
+
+          {status === "error" && (
+            <p className="text-sm font-medium text-red-600">
+              {t.failedToSave}
+            </p>
+          )}
+        </div>
       </form>
     </div>
   );

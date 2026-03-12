@@ -25,7 +25,9 @@ export default function CostReminderBanner({ initialMissingDates }: { initialMis
     >
       <p className="font-medium">{t.costReminderBanner}</p>
       <p className="mt-1 text-xs text-amber-600">
-        {t.missingDates}: {missingDates.join(", ")}
+        {t.missingDates}: {missingDates.length <= 3
+          ? missingDates.join(", ")
+          : `${missingDates.slice(0, 3).join(", ")} ...+${missingDates.length - 3}`}
       </p>
     </a>
   );
