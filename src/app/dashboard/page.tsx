@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations } from "@/lib/i18n";
+import { detectLocale, getTranslations, formatDateShort } from "@/lib/i18n";
 import CostForm from "./cost-form";
 import ProfileMenu from "./profile-menu";
 import CostReminderBanner from "./cost-reminder-banner";
@@ -92,7 +92,7 @@ export default async function DashboardPage() {
   const myDebt = debts.find((d) => d.userId === userId);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
+    <main className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
       {/* Header */}
       <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 bg-gray-50 px-4 py-3 sm:-mx-6 sm:mb-8 sm:px-6">
         <div className="flex items-center justify-between gap-3">
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                             <div className="flex items-center justify-between gap-3">
                               <span className="min-w-0 truncate text-gray-600">
                                 {b.carName} &mdash;{" "}
-                                {b.date.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale)} ({b.passengerCount} {t.riders})
+                                {formatDateShort(b.date, locale)} ({b.passengerCount} {t.riders})
                               </span>
                               <span className="shrink-0 font-medium text-gray-900">
                                 ฿{b.share.toFixed(2)}
@@ -224,7 +224,7 @@ export default async function DashboardPage() {
                         {trip.car.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {trip.date.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale)} &middot;{" "}
+                        {formatDateShort(trip.date, locale)} &middot;{" "}
                         {trip.tappedAt.toLocaleTimeString(locale, {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -296,7 +296,7 @@ export default async function DashboardPage() {
                       totalPaid: d.totalPaid,
                       breakdown: myCarBreakdown.map((b) => ({
                         carName: b.carName,
-                        date: b.date.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale),
+                        date: formatDateShort(b.date, locale),
                         share: b.share,
                         gasShare: b.gasShare,
                         parkingShare: b.parkingShare,

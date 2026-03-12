@@ -1,6 +1,6 @@
 export default function DashboardLoading() {
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
+    <main className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
       <header className="mb-6 sm:mb-8">
         <div className="flex items-start justify-between gap-3">
           <div>

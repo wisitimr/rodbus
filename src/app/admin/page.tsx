@@ -44,7 +44,7 @@ export default async function AdminPage() {
     ]);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
+    <main className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
       {/* Header */}
       <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 bg-gray-50 px-4 py-3 sm:-mx-6 sm:mb-8 sm:px-6">
         <div className="flex items-center">

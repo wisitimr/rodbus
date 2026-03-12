@@ -286,7 +286,23 @@ export function detectLocale(acceptLanguage?: string | null): Locale {
 
 /** Get the BCP 47 locale string with Buddhist calendar for Thai */
 export function dateLocale(locale: Locale): string {
-  return locale === "th" ? "th-TH-u-ca-buddhist" : locale;
+  return locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
+}
+
+const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+/**
+ * Server-safe date formatting that guarantees Buddhist Era for Thai.
+ * Node.js may lack full ICU data, so we manually add 543 years for Thai.
+ */
+export function formatDateShort(date: Date, locale: Locale): string {
+  if (locale === "th") {
+    const d = date.getDate();
+    const m = thMonths[date.getMonth()];
+    const y = date.getFullYear() + 543;
+    return `${d} ${m} ${y}`;
+  }
+  return date.toLocaleDateString("en-US");
 }
 
 /** Format a date with full weekday, day, month, year (Buddhist Era for Thai) */

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations } from "@/lib/i18n";
+import { detectLocale, getTranslations, formatDateShort } from "@/lib/i18n";
 import HistoryContent from "./history-content";
 
 export default async function HistoryPage() {
@@ -39,7 +39,7 @@ export default async function HistoryPage() {
   const trips = recentTrips.map((trip) => ({
     id: trip.id,
     carName: trip.car.name,
-    date: trip.date.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale),
+    date: formatDateShort(trip.date, locale),
     dateISO: trip.date.toISOString().split("T")[0],
     time: trip.tappedAt.toLocaleTimeString(locale, {
       hour: "2-digit",
@@ -70,14 +70,14 @@ export default async function HistoryPage() {
     userId: p.userId,
     userName: p.user.name,
     carName: p.car.name,
-    date: p.date.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale),
+    date: formatDateShort(p.date, locale),
     dateISO: p.date.toISOString().split("T")[0],
     amount: p.amount,
     note: p.note,
   }));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
+    <main className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
       <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 flex items-center bg-gray-50 px-4 py-3 sm:-mx-6 sm:mb-8 sm:px-6">
         <a
           href="/dashboard"

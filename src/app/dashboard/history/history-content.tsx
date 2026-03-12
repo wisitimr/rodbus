@@ -87,6 +87,11 @@ function toISO(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function fmtDate(iso: string, locale: string) {
+  const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
+  return new Date(iso + "T00:00:00").toLocaleDateString(loc);
+}
+
 function Calendar({
   dateFrom,
   dateTo,
@@ -134,7 +139,7 @@ function Calendar({
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
         </button>
         <span className="text-sm font-semibold text-gray-700">
-          {viewDate.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale, { month: "long", year: "numeric" })}
+          {viewDate.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : "en-US", { month: "long", year: "numeric" })}
         </span>
         <button type="button" onClick={nextMonth} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
@@ -450,7 +455,7 @@ function groupByPeriod(
     entries.sort((a, b) => b.pendingDebt - a.pendingDebt);
 
     let label = key;
-    const loc = locale === "th" ? "th-TH-u-ca-buddhist" : locale;
+    const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
     if (period === "day") {
       const d = new Date(key + "T00:00:00");
       label = d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -673,7 +678,7 @@ export default function HistoryContent({
                       <div className="min-w-0">
                         <p className="font-medium text-gray-800">{trip.carName}</p>
                         <p className="text-xs text-gray-500">
-                          {trip.date} &middot; {trip.time}
+                          {fmtDate(trip.dateISO, locale)} &middot; {trip.time}
                         </p>
                       </div>
                       <span
@@ -703,7 +708,7 @@ export default function HistoryContent({
                     <tbody className="divide-y divide-gray-50">
                       {tripScroll.visible.map((trip) => (
                         <tr key={trip.id} className="hover:bg-gray-50/50">
-                          <td className="py-3 text-gray-700">{trip.date}</td>
+                          <td className="py-3 text-gray-700">{fmtDate(trip.dateISO, locale)}</td>
                           <td className="py-3 text-gray-500">{trip.time}</td>
                           <td className="py-3 font-medium text-gray-800">{trip.carName}</td>
                           <td className="py-3 text-right">
@@ -771,7 +776,7 @@ export default function HistoryContent({
                         >
                           <div className="min-w-0">
                             <p className="font-medium text-gray-800">{p.carName}</p>
-                            <p className="text-xs text-gray-500">{p.date}</p>
+                            <p className="text-xs text-gray-500">{fmtDate(p.dateISO, locale)}</p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
                             <span className="font-semibold text-green-600">
@@ -871,7 +876,7 @@ export default function HistoryContent({
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                 </svg>
                               </td>
-                              <td className="py-3 text-gray-700">{p.date}</td>
+                              <td className="py-3 text-gray-700">{fmtDate(p.dateISO, locale)}</td>
                               <td className="py-3 font-medium text-gray-800">{p.carName}</td>
                               <td className="py-3 text-right font-semibold text-green-600">
                                 ฿{p.amount.toFixed(2)}
