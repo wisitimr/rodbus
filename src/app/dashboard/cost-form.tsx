@@ -197,6 +197,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
               type="number"
               step="0.01"
               min="0"
+              required
               value={gasCost}
               onChange={(e) => setGasCost(e.target.value)}
               placeholder="0.00"
@@ -211,6 +212,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
               type="number"
               step="0.01"
               min="0"
+              required
               value={parkingCost}
               onChange={(e) => setParkingCost(e.target.value)}
               placeholder="0.00"

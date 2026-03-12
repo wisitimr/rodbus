@@ -32,6 +32,10 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
   function handleClearFull(userId: string) {
     const carId = selectedCars[userId];
     if (!carId) return;
+    const user = debts.find((d) => d.userId === userId);
+    const carName = cars.find((c) => c.id === carId)?.name ?? "";
+    const summary = `${t.clearFullBalance}?\n\n${user?.userName ?? "Unknown"}\n${t.pending}: ฿${user?.pendingDebt.toFixed(2)}\n${t.car}: ${carName}`;
+    if (!confirm(summary)) return;
     startTransition(async () => {
       await clearFullBalance(userId, carId);
     });
@@ -41,6 +45,10 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
     const carId = selectedCars[userId];
     const amount = parseFloat(customAmounts[userId] || "0");
     if (!carId || amount <= 0) return;
+    const user = debts.find((d) => d.userId === userId);
+    const carName = cars.find((c) => c.id === carId)?.name ?? "";
+    const summary = `${t.recordPayment}?\n\n${user?.userName ?? "Unknown"}\n${t.amount}: ฿${amount.toFixed(2)}\n${t.car}: ${carName}`;
+    if (!confirm(summary)) return;
     startTransition(async () => {
       await recordPayment(userId, carId, amount);
       setCustomAmounts((prev) => ({ ...prev, [userId]: "" }));
