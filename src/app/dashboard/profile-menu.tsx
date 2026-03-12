@@ -19,7 +19,7 @@ const roleLabel: Record<string, string> = {
 
 const roleBadge: Record<string, string> = {
   ADMIN: "bg-red-50 text-red-600 ring-red-500/20",
-  USER: "bg-green-50 text-green-700 ring-green-500/20",
+  USER: "bg-gray-100 text-gray-500 ring-gray-300/50",
 };
 
 export default function ProfileMenu({ image, name, email, role, isAdmin }: ProfileMenuProps) {
@@ -74,6 +74,7 @@ export default function ProfileMenu({ image, name, email, role, isAdmin }: Profi
               {t.settings}
             </a>
           )}
+          {isAdmin && <div className="border-t border-gray-100" />}
           <SignOutButton>
             <button className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 transition hover:bg-gray-50">
               <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
