@@ -71,6 +71,102 @@ interface HistoryContentProps {
   };
 }
 
+function toISO(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function Calendar({
+  dateFrom,
+  dateTo,
+  onSelect,
+}: {
+  dateFrom: string;
+  dateTo: string;
+  onSelect: (iso: string) => void;
+}) {
+  const [viewDate, setViewDate] = useState(() => {
+    if (dateFrom) return new Date(dateFrom + "T00:00:00");
+    return new Date();
+  });
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+
+  const weeks: (number | null)[][] = [];
+  let week: (number | null)[] = Array(firstDay).fill(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    week.push(d);
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
+    }
+  }
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+
+  const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+  return (
+    <div className="w-full">
+      {/* Month navigation */}
+      <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={prevMonth} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+        </button>
+        <span className="text-sm font-semibold text-gray-700">
+          {viewDate.toLocaleString("default", { month: "long", year: "numeric" })}
+        </span>
+        <button type="button" onClick={nextMonth} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+        </button>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-gray-400">
+        {dayNames.map((d) => (
+          <div key={d} className="py-1">{d}</div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div className="grid grid-cols-7 text-center text-sm">
+        {weeks.flat().map((day, i) => {
+          if (day === null) return <div key={`e${i}`} />;
+          const iso = toISO(new Date(year, month, day));
+          const isFrom = iso === dateFrom;
+          const isTo = iso === dateTo;
+          const inRange = dateFrom && dateTo && iso >= dateFrom && iso <= dateTo;
+          const isEndpoint = isFrom || isTo;
+
+          return (
+            <button
+              key={iso}
+              type="button"
+              onClick={() => onSelect(iso)}
+              className={`py-1.5 text-sm transition ${
+                isEndpoint
+                  ? "rounded-lg bg-blue-600 font-semibold text-white"
+                  : inRange
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-700 hover:bg-gray-100 rounded-lg"
+              }`}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const PAGE_SIZE = 10;
 
 function useInfiniteScroll<T>(items: T[]) {
@@ -237,14 +333,40 @@ export default function HistoryContent({
   const [showFilter, setShowFilter] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [rangeStep, setRangeStep] = useState<"from" | "to">("from");
 
   const hasFilter = dateFrom !== "" || dateTo !== "";
 
+  function handleCalendarSelect(iso: string) {
+    if (rangeStep === "from") {
+      setDateFrom(iso);
+      setDateTo("");
+      setRangeStep("to");
+    } else {
+      if (iso < dateFrom) {
+        setDateFrom(iso);
+        setDateTo("");
+        setRangeStep("to");
+      } else {
+        setDateTo(iso);
+        setRangeStep("from");
+      }
+    }
+  }
+
+  function clearFilter() {
+    setDateFrom("");
+    setDateTo("");
+    setRangeStep("from");
+  }
+
   const filteredTrips = useMemo(() => {
     if (!dateFrom && !dateTo) return trips;
+    const from = dateFrom;
+    const to = dateTo || dateFrom;
     return trips.filter((trip) => {
-      if (dateFrom && trip.dateISO < dateFrom) return false;
-      if (dateTo && trip.dateISO > dateTo) return false;
+      if (from && trip.dateISO < from) return false;
+      if (to && trip.dateISO > to) return false;
       return true;
     });
   }, [trips, dateFrom, dateTo]);
@@ -309,8 +431,13 @@ export default function HistoryContent({
                 {t.date}
               </button>
               {hasFilter && (
+                <span className="text-xs text-gray-500">
+                  {dateFrom}{dateTo && dateTo !== dateFrom ? ` — ${dateTo}` : ""}
+                </span>
+              )}
+              {hasFilter && (
                 <button
-                  onClick={() => { setDateFrom(""); setDateTo(""); }}
+                  onClick={clearFilter}
                   className="rounded-lg px-2 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-600"
                 >
                   &times;
@@ -319,26 +446,43 @@ export default function HistoryContent({
             </div>
 
             {showFilter && (
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => {
-                      setDateFrom(e.target.value);
-                      if (!dateTo || e.target.value > dateTo) setDateTo(e.target.value);
-                    }}
-                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <span className="text-xs text-gray-400">—</span>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    min={dateFrom}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+              <div className="mt-3 space-y-3">
+                {/* Start / End date inputs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">Start</label>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => {
+                        setDateFrom(e.target.value);
+                        if (dateTo && e.target.value > dateTo) setDateTo("");
+                        setRangeStep("to");
+                      }}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">End</label>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      min={dateFrom}
+                      onChange={(e) => {
+                        setDateTo(e.target.value);
+                        setRangeStep("from");
+                      }}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
+
+                {/* Calendar */}
+                <Calendar
+                  dateFrom={dateFrom}
+                  dateTo={dateTo || dateFrom}
+                  onSelect={handleCalendarSelect}
+                />
               </div>
             )}
           </div>
