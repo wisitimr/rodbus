@@ -115,9 +115,6 @@ export default function CostForm({ cars, existingCosts: initialCosts }: CostForm
   const inputClass =
     "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none sm:py-2.5";
 
-  const savedGas = parseFloat(gasCost) || 0;
-  const savedParking = parseFloat(parkingCost) || 0;
-
   return (
     <div className="space-y-4">
       {/* Date and Car selectors */}
@@ -151,59 +148,43 @@ export default function CostForm({ cars, existingCosts: initialCosts }: CostForm
         </div>
       </div>
 
-      {!editing ? (
-        /* Saved summary */
-        <div className="flex items-center justify-between rounded-xl bg-green-50 px-4 py-3 ring-1 ring-green-200">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm font-medium text-green-800">
-              {t.costsSaved}
-            </p>
-            <p className="mt-0.5 text-xs text-green-600">
-              {t.gasCost}: ฿{savedGas.toFixed(2)} &middot; {t.parkingCost}: ฿{savedParking.toFixed(2)}
-            </p>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+              {t.gasCost}
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              readOnly={!editing}
+              value={gasCost}
+              onChange={(e) => setGasCost(e.target.value)}
+              onFocus={() => { if (!editing) setEditing(true); }}
+              placeholder="0.00"
+              className={`${inputClass} ${!editing ? "cursor-pointer bg-gray-100 text-gray-500" : ""}`}
+            />
           </div>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="rounded-xl border border-green-300 bg-white px-3 py-1.5 text-sm font-medium text-green-700 shadow-sm transition hover:bg-green-50"
-          >
-            {t.editCosts}
-          </button>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+              {t.parkingCost}
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              readOnly={!editing}
+              value={parkingCost}
+              onChange={(e) => setParkingCost(e.target.value)}
+              onFocus={() => { if (!editing) setEditing(true); }}
+              placeholder="0.00"
+              className={`${inputClass} ${!editing ? "cursor-pointer bg-gray-100 text-gray-500" : ""}`}
+            />
+          </div>
         </div>
-      ) : (
-        /* Edit form */
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {t.gasCost}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={gasCost}
-                onChange={(e) => setGasCost(e.target.value)}
-                placeholder="0.00"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {t.parkingCost}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={parkingCost}
-                onChange={(e) => setParkingCost(e.target.value)}
-                placeholder="0.00"
-                className={inputClass}
-              />
-            </div>
-          </div>
 
+        {editing ? (
           <button
             type="submit"
             disabled={status === "saving"}
@@ -211,14 +192,16 @@ export default function CostForm({ cars, existingCosts: initialCosts }: CostForm
           >
             {status === "saving" ? t.saving : t.saveCosts}
           </button>
+        ) : (
+          <p className="text-sm font-medium text-green-600">{t.costsSaved}</p>
+        )}
 
-          {status === "error" && (
-            <p className="text-sm font-medium text-red-600">
-              {t.failedToSave}
-            </p>
-          )}
-        </form>
-      )}
+        {status === "error" && (
+          <p className="text-sm font-medium text-red-600">
+            {t.failedToSave}
+          </p>
+        )}
+      </form>
     </div>
   );
 }
