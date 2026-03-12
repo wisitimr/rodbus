@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Tab = "trips" | "payments" | "summary";
 type SummaryPeriod = "day" | "month" | "year";
@@ -467,6 +467,17 @@ export default function HistoryContent({
   const [payDateTo, setPayDateTo] = useState("");
   const [, setPayRangeStep] = useState<"from" | "to">("from");
 
+  // Expanded payment details
+  const [expandedPayments, setExpandedPayments] = useState<Set<string>>(new Set());
+  const togglePayment = (id: string) => {
+    setExpandedPayments((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const hasTripFilter = tripDateFrom !== "" || tripDateTo !== "";
   const hasPaymentFilter = payDateFrom !== "" || payDateTo !== "";
 
@@ -688,23 +699,58 @@ export default function HistoryContent({
               <>
                 {/* Mobile */}
                 <div className="space-y-2 sm:hidden">
-                  {paymentScroll.visible.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800">{p.carName}</p>
-                        <p className="text-xs text-gray-500">
-                          {p.date}
-                          {p.note && <> &middot; {p.note}</>}
-                        </p>
+                  {paymentScroll.visible.map((p) => {
+                    const isExpanded = expandedPayments.has(p.id);
+                    return (
+                      <div
+                        key={p.id}
+                        className="rounded-xl bg-gray-50"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => togglePayment(p.id)}
+                          className="flex w-full items-center justify-between px-4 py-3 text-left"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-800">{p.carName}</p>
+                            <p className="text-xs text-gray-500">{p.date}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="font-semibold text-green-600">
+                              ฿{p.amount.toFixed(2)}
+                            </span>
+                            <svg
+                              className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </div>
+                        </button>
+                        {isExpanded && (
+                          <div className="border-t border-gray-100 px-4 pb-3 pt-2 text-xs text-gray-500">
+                            <div className="flex justify-between">
+                              <span>{t.car}</span>
+                              <span className="text-gray-700">{p.carName}</span>
+                            </div>
+                            <div className="mt-1 flex justify-between">
+                              <span>{t.amount}</span>
+                              <span className="font-medium text-green-600">฿{p.amount.toFixed(2)}</span>
+                            </div>
+                            {p.note && (
+                              <div className="mt-1 flex justify-between">
+                                <span>{t.note}</span>
+                                <span className="text-gray-700">{p.note}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <span className="shrink-0 font-semibold text-green-600">
-                        ฿{p.amount.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Desktop */}
@@ -712,23 +758,51 @@ export default function HistoryContent({
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
+                        <th className="w-6 pb-3"></th>
                         <th className="pb-3 font-semibold">{t.date}</th>
                         <th className="pb-3 font-semibold">{t.car}</th>
-                        <th className="pb-3 font-semibold">{t.note}</th>
                         <th className="pb-3 text-right font-semibold">{t.amount}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {paymentScroll.visible.map((p) => (
-                        <tr key={p.id} className="hover:bg-gray-50/50">
-                          <td className="py-3 text-gray-700">{p.date}</td>
-                          <td className="py-3 font-medium text-gray-800">{p.carName}</td>
-                          <td className="py-3 text-gray-400">{p.note ?? "\u2014"}</td>
-                          <td className="py-3 text-right font-semibold text-green-600">
-                            ฿{p.amount.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
+                      {paymentScroll.visible.map((p) => {
+                        const isExpanded = expandedPayments.has(p.id);
+                        return (
+                          <Fragment key={p.id}>
+                            <tr
+                              className="cursor-pointer hover:bg-gray-50/50"
+                              onClick={() => togglePayment(p.id)}
+                            >
+                              <td className="py-3 text-gray-400">
+                                <svg
+                                  className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={2}
+                                  stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                </svg>
+                              </td>
+                              <td className="py-3 text-gray-700">{p.date}</td>
+                              <td className="py-3 font-medium text-gray-800">{p.carName}</td>
+                              <td className="py-3 text-right font-semibold text-green-600">
+                                ฿{p.amount.toFixed(2)}
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={4} className="pb-3 pt-0">
+                                  <div className="rounded-lg bg-gray-50 px-4 py-2.5 text-sm text-gray-500">
+                                    <span className="font-medium text-gray-600">{t.note}:</span>{" "}
+                                    {p.note ?? <span className="italic text-gray-400">&mdash;</span>}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
