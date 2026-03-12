@@ -48,7 +48,7 @@ export default async function AdminPage() {
     <main className="mx-auto max-w-4xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
       {/* Header */}
       <header className="animate-fade-in mb-6 sm:mb-8">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <a
             href="/dashboard"
             className="shrink-0 rounded-xl bg-gray-900 p-2 text-white shadow-sm transition hover:bg-gray-800"
@@ -57,17 +57,9 @@ export default async function AdminPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
             </svg>
           </a>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-              {t.settings}
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              {user.name ?? user.email}
-              <span className="ml-2 inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 ring-1 ring-red-500/20 ring-inset">
-                {t.admin}
-              </span>
-            </p>
-          </div>
+          <h1 className="flex-1 text-center text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+            {t.settings}
+          </h1>
           <div className="shrink-0">
             <SignOutButton>
               <button className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 sm:px-4">

@@ -108,7 +108,7 @@ export default async function DashboardPage() {
             {isAdmin && (
               <a
                 href="/admin"
-                className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:shadow-md sm:px-4"
+                className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 sm:px-4"
               >
                 {t.configure}
               </a>

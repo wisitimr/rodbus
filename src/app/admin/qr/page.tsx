@@ -28,7 +28,7 @@ export default async function QRPage({
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-8 pt-6 sm:p-6 sm:pt-8">
-      <header className="animate-fade-in mb-6 flex items-center gap-3 sm:mb-8">
+      <header className="animate-fade-in mb-6 flex items-center sm:mb-8">
         <a
           href="/admin"
           className="shrink-0 rounded-xl bg-gray-900 p-2 text-white shadow-sm transition hover:bg-gray-800"
@@ -37,14 +37,10 @@ export default async function QRPage({
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
           </svg>
         </a>
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-            {t.qrCodeCheckin}
-          </h1>
-          <p className="mt-0.5 text-sm text-gray-500">
-            {t.qrDescription}
-          </p>
-        </div>
+        <h1 className="flex-1 text-center text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+          {t.qrCodeCheckin}
+        </h1>
+        <div className="w-9" />
       </header>
 
       <div className="animate-fade-in-up">
