@@ -9,7 +9,6 @@ import { detectLocale, getTranslations } from "@/lib/i18n";
 import UserManagement from "./user-management";
 import DateManagement from "./date-management";
 import CostManagement from "./cost-management";
-import SystemPauseToggle from "./system-pause-toggle";
 import DebtSettlement from "./debt-settlement";
 import CarManagement from "./car-management";
 import { todayBangkok, startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
@@ -30,7 +29,7 @@ export default async function AdminPage() {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
-  const [allUsers, disabledDates, myCars, allCars, systemPausedConfig, debts] =
+  const [allUsers, disabledDates, myCars, allCars, debts] =
     await Promise.all([
       prisma.user.findMany({
         select: { id: true, name: true, email: true, role: true },
@@ -48,13 +47,8 @@ export default async function AdminPage() {
         include: { owner: { select: { name: true } } },
         orderBy: { name: "asc" },
       }),
-      prisma.systemConfig.findUnique({
-        where: { key: "system_paused" },
-      }),
       calculateDebts(startOfMonth, endOfMonth),
     ]);
-
-  const isSystemPaused = systemPausedConfig?.value === "true";
 
   return (
     <main className="mx-auto max-w-4xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
@@ -89,18 +83,6 @@ export default async function AdminPage() {
       </header>
 
       <div className="stagger-children space-y-4 sm:space-y-6">
-        {/* System Pause Toggle */}
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-orange-200">
-          <div className="border-b border-orange-100 bg-orange-50/50 px-5 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-orange-600 sm:text-sm">
-              {t.systemStatus}
-            </h2>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            <SystemPauseToggle isPaused={isSystemPaused} />
-          </div>
-        </section>
-
         {/* User Management */}
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-red-200">
           <div className="border-b border-red-100 bg-red-50/50 px-5 py-3 sm:px-6 sm:py-4">

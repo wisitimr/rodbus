@@ -35,17 +35,6 @@ export async function GET(request: NextRequest) {
   const now = nowBangkok();
   const today = todayBangkok();
 
-  // --- Check: system-wide pause ---
-  const systemPaused = await prisma.systemConfig.findUnique({
-    where: { key: "system_paused" },
-  });
-  if (systemPaused?.value === "true") {
-    const successUrl = new URL("/tap-success", request.url);
-    successUrl.searchParams.set("status", "disabled");
-    successUrl.searchParams.set("reason", "System is currently paused by admin");
-    return NextResponse.redirect(successUrl);
-  }
-
   // --- Check: date must not be disabled ---
   const disabledDate = await prisma.disabledDate.findUnique({
     where: { date: today },

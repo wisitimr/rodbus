@@ -156,30 +156,6 @@ export async function enableDate(date: string) {
 }
 
 // ---------------------------------------------------------------------------
-// System-wide pause toggle (via SystemConfig)
-// ---------------------------------------------------------------------------
-
-/** Toggle the global system pause */
-export async function setSystemPaused(paused: boolean) {
-  await requireAdmin();
-
-  await prisma.systemConfig.upsert({
-    where: { key: "system_paused" },
-    update: { value: paused ? "true" : "false" },
-    create: { key: "system_paused", value: paused ? "true" : "false" },
-  });
-  revalidatePath("/admin");
-}
-
-/** Check if the system is globally paused */
-export async function isSystemPaused(): Promise<boolean> {
-  const config = await prisma.systemConfig.findUnique({
-    where: { key: "system_paused" },
-  });
-  return config?.value === "true";
-}
-
-// ---------------------------------------------------------------------------
 // Car Management
 // ---------------------------------------------------------------------------
 
