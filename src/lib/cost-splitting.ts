@@ -74,12 +74,14 @@ export async function calculateDebts(
     }
 
     const distinctUsers = userTrips.size;
+    // Include driver (car owner) in parking split even if they didn't tap
+    const parkingHeadcount = userTrips.has(cost.car.ownerId) ? distinctUsers : distinctUsers + 1;
 
     for (const [uid, info] of userTrips) {
       // Gas: per-trip cost (outbound+return = gasCost*2, one way = gasCost*1)
       const gasShare = cost.gasCost * info.count;
-      // Parking: split equally among all riders that day
-      const parkingShare = distinctUsers > 0 ? cost.parkingCost / distinctUsers : 0;
+      // Parking: split equally among all riders + driver that day
+      const parkingShare = parkingHeadcount > 0 ? cost.parkingCost / parkingHeadcount : 0;
       const share = gasShare + parkingShare;
       const tripTypes = userTripTypes.get(uid) ?? { outbound: 0, return: 0 };
 
@@ -107,7 +109,7 @@ export async function calculateDebts(
         outboundCount: tripTypes.outbound,
         returnCount: tripTypes.return,
         totalCost: cost.gasCost + cost.parkingCost,
-        passengerCount: distinctUsers,
+        passengerCount: parkingHeadcount,
       });
     }
   }
@@ -170,11 +172,13 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
     if (!myTrips) continue;
 
     const distinctUsers = userTrips.size;
+    // Include driver (car owner) in parking split even if they didn't tap
+    const parkingHeadcount = userTrips.has(cost.car.ownerId) ? distinctUsers : distinctUsers + 1;
 
     // Gas: per-trip cost (outbound+return = gasCost*2, one way = gasCost*1)
     const gasShare = cost.gasCost * myTrips;
-    // Parking: split equally among all riders that day
-    const parkingShare = distinctUsers > 0 ? cost.parkingCost / distinctUsers : 0;
+    // Parking: split equally among all riders + driver that day
+    const parkingShare = parkingHeadcount > 0 ? cost.parkingCost / parkingHeadcount : 0;
     const share = Math.round((gasShare + parkingShare) * 100) / 100;
 
     if (share > 0) {
