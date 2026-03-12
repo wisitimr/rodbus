@@ -13,7 +13,7 @@ export default async function SignUpPage() {
       <div className="animate-fade-in-up mb-8 text-center">
         <Link href="/" className="group inline-block">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-            Rodbus{" "}
+            RodBus{" "}
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               NFC
             </span>

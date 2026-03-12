@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Rodbus NFC Tracker",
+  title: "RodBus NFC Tracker",
   description: "Track rides via NFC and split costs fairly",
 };
 

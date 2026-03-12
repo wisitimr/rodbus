@@ -131,7 +131,7 @@ const translations = {
     tooSoon: "Too Soon for Evening",
     tooSoonDesc: "Not enough time has passed since your morning tap. Try again later.",
     systemDisabled: "System Disabled",
-    systemDisabledDesc: "The Rodbus system is disabled for today.",
+    systemDisabledDesc: "The RodBus system is disabled for today.",
     tapReceived: "Tap Received",
     tapProcessed: "Your tap has been processed.",
 
@@ -141,7 +141,7 @@ const translations = {
 
     // Pending Approval
     pendingApprovalTitle: "Pending Approval",
-    pendingApprovalDesc: "Your account is awaiting approval from an administrator. You will be able to use the Rodbus system once approved.",
+    pendingApprovalDesc: "Your account is awaiting approval from an administrator. You will be able to use the RodBus system once approved.",
     signedInAs: "Signed in as",
   },
   th: {
@@ -274,7 +274,7 @@ const translations = {
     tooSoon: "เร็วเกินไปสำหรับเย็น",
     tooSoonDesc: "ยังไม่ถึงเวลาจากการแตะเช้า ลองใหม่ทีหลัง",
     systemDisabled: "ระบบปิดอยู่",
-    systemDisabledDesc: "ระบบ Rodbus ปิดสำหรับวันนี้",
+    systemDisabledDesc: "ระบบ RodBus ปิดสำหรับวันนี้",
     tapReceived: "รับการแตะแล้ว",
     tapProcessed: "การแตะของคุณถูกประมวลผลแล้ว",
 
@@ -284,7 +284,7 @@ const translations = {
 
     // Pending Approval
     pendingApprovalTitle: "รอการอนุมัติ",
-    pendingApprovalDesc: "บัญชีของคุณกำลังรอการอนุมัติจากแอดมิน คุณจะสามารถใช้ระบบ Rodbus ได้หลังจากได้รับการอนุมัติ",
+    pendingApprovalDesc: "บัญชีของคุณกำลังรอการอนุมัติจากแอดมิน คุณจะสามารถใช้ระบบ RodBus ได้หลังจากได้รับการอนุมัติ",
     signedInAs: "เข้าสู่ระบบในชื่อ",
   },
 } as const;
