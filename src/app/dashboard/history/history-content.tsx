@@ -213,28 +213,46 @@ function useInfiniteScroll<T>(items: T[]) {
   };
 }
 
-function SummaryTable({
+function SummaryCard({
   entry,
   label,
+  isExpanded,
+  onToggle,
   t,
 }: {
   entry: GroupedPeriod["entries"][0];
   label: string;
+  isExpanded: boolean;
+  onToggle: () => void;
   t: HistoryContentProps["t"];
 }) {
   return (
-    <div className="rounded-xl bg-blue-50 px-4 py-3 ring-1 ring-blue-200">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-        <p className="font-bold text-gray-800">
-          ฿{entry.totalDebt.toFixed(2)}
-        </p>
-      </div>
-      <details className="mt-2">
-        <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
-          {t.viewCostBreakdown}
-        </summary>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+    <div className="rounded-xl bg-blue-50 ring-1 ring-blue-200">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-gray-500">{label}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <p className="font-bold text-gray-800">
+            ฿{entry.totalDebt.toFixed(2)}
+          </p>
+          <svg
+            className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </div>
+      </button>
+      {isExpanded && (
+        <div className="border-t border-blue-100 px-4 pb-3 pt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
           {(entry.outboundCount > 0 || entry.returnCount > 0) && (
             <span>
               {entry.outboundCount > 0 && <span className="text-amber-700">{t.outbound} ({entry.outboundCount})</span>}
@@ -245,7 +263,7 @@ function SummaryTable({
           {entry.gasTotal > 0 && <span>{t.gas}: ฿{entry.gasTotal.toFixed(2)}</span>}
           {entry.parkingTotal > 0 && <span>{t.parking}: ฿{entry.parkingTotal.toFixed(2)}</span>}
         </div>
-      </details>
+      )}
     </div>
   );
 }
@@ -477,6 +495,17 @@ export default function HistoryContent({
 
   // Expanded payment details
   const [expandedPayments, setExpandedPayments] = useState<Set<string>>(new Set());
+
+  // Expanded summary cards
+  const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
+  const toggleSummary = (key: string) => {
+    setExpandedSummaries((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
   const togglePayment = (id: string) => {
     setExpandedPayments((prev) => {
       const next = new Set(prev);
@@ -929,10 +958,12 @@ export default function HistoryContent({
             ) : (
               <div className="space-y-6">
                 {summaryScroll.visible.map((group) => (
-                  <SummaryTable
+                  <SummaryCard
                     key={group.key}
                     entry={group.entries[0]}
                     label={group.label}
+                    isExpanded={expandedSummaries.has(group.key)}
+                    onToggle={() => toggleSummary(group.key)}
                     t={t}
                   />
                 ))}
