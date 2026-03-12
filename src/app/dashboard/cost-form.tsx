@@ -225,7 +225,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
           <button
             type="submit"
             disabled={status === "saving"}
-            className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2.5"
+            className="w-full rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2.5"
           >
             {t.saveCosts}{status === "saving" && "..."}
           </button>

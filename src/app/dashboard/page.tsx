@@ -3,10 +3,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
-import { SignOutButton } from "@clerk/nextjs";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import CostForm from "./cost-form";
+import ProfileMenu from "./profile-menu";
 import CostReminderBanner from "./cost-reminder-banner";
 import DebtSettlement from "./debt-settlement";
 import { todayBangkok, startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
@@ -104,16 +104,7 @@ export default async function DashboardPage() {
               )}
             </p>
           </div>
-          <div className="flex shrink-0 gap-2">
-            {isAdmin && (
-              <a
-                href="/admin"
-                className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 sm:px-4"
-              >
-                {t.configure}
-              </a>
-            )}
-          </div>
+          <ProfileMenu image={user.image} name={user.name} isAdmin={isAdmin} />
         </div>
       </header>
 
@@ -315,13 +306,6 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="mt-8 flex justify-center">
-        <SignOutButton>
-          <button className="rounded-xl border border-gray-200 bg-white px-6 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50">
-            {t.signOut}
-          </button>
-        </SignOutButton>
-      </div>
     </main>
   );
 }

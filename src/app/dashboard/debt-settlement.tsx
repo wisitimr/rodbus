@@ -178,7 +178,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
                   <button
                     onClick={() => handleClearFull(d.userId)}
                     disabled={isAnyLoading}
-                    className="w-full rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto"
+                    className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 sm:w-auto"
                   >
                     {t.clearFullBalance}{isClearLoading && "..."}
                   </button>
@@ -250,7 +250,7 @@ export default function DebtSettlement({ debts, cars }: DebtSettlementProps) {
                         !customAmounts[d.userId] ||
                         parseFloat(customAmounts[d.userId] || "0") <= 0
                       }
-                      className="w-full shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-1.5"
+                      className="w-full shrink-0 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-1.5"
                     >
                       {t.recordPayment}{isRecordLoading && "..."}
                     </button>
