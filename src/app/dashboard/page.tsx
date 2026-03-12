@@ -292,21 +292,27 @@ export default async function DashboardPage() {
             </div>
             <div className="px-5 py-4 sm:px-6 sm:py-5">
               <DebtSettlement
-                debts={debts.map((d) => ({
-                  userId: d.userId,
-                  userName: d.userName,
-                  pendingDebt: d.pendingDebt,
-                  totalDebt: d.totalDebt,
-                  totalPaid: d.totalPaid,
-                  breakdown: d.breakdown.map((b) => ({
-                    carName: b.carName,
-                    date: b.date.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale),
-                    share: b.share,
-                    gasShare: b.gasShare,
-                    parkingShare: b.parkingShare,
-                    passengerCount: b.passengerCount,
-                  })),
-                }))}
+                debts={debts
+                  .map((d) => {
+                    const myCarBreakdown = d.breakdown.filter((b) => carIds.includes(b.carId));
+                    const myCarDebt = Math.round(myCarBreakdown.reduce((s, b) => s + b.share, 0) * 100) / 100;
+                    return {
+                      userId: d.userId,
+                      userName: d.userName,
+                      pendingDebt: Math.round((myCarDebt - d.totalPaid) * 100) / 100,
+                      totalDebt: myCarDebt,
+                      totalPaid: d.totalPaid,
+                      breakdown: myCarBreakdown.map((b) => ({
+                        carName: b.carName,
+                        date: b.date.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : locale),
+                        share: b.share,
+                        gasShare: b.gasShare,
+                        parkingShare: b.parkingShare,
+                        passengerCount: b.passengerCount,
+                      })),
+                    };
+                  })
+                  .filter((d) => d.breakdown.length > 0)}
                 cars={myCars.map((c) => ({ id: c.id, name: c.name }))}
               />
             </div>
