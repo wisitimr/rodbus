@@ -114,6 +114,7 @@ export default async function HistoryPage() {
           note: t.note,
           gas: t.gas,
           parking: t.parking,
+          viewCostBreakdown: t.viewCostBreakdown,
           amount: t.amount,
           accrued: t.accrued,
           paid: t.paid,

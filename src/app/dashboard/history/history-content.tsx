@@ -74,6 +74,7 @@ interface HistoryContentProps {
     amount: string;
     gas: string;
     parking: string;
+    viewCostBreakdown: string;
     accrued: string;
     paid: string;
     pending: string;
@@ -212,50 +213,36 @@ function useInfiniteScroll<T>(items: T[]) {
 function SummaryTable({
   entry,
   label,
-  isDaily,
   t,
 }: {
   entry: GroupedPeriod["entries"][0];
   label: string;
-  isDaily: boolean;
   t: HistoryContentProps["t"];
 }) {
   return (
     <div className="rounded-xl bg-blue-50 px-4 py-3 ring-1 ring-blue-200">
-      <p className="mb-2 text-xs font-medium text-gray-500">{label}</p>
       <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-gray-500">{label}</p>
         <p className="font-bold text-gray-800">
           ฿{entry.totalDebt.toFixed(2)}
         </p>
-        {!isDaily && (
-          <p className={`font-bold ${entry.pendingDebt > 0 ? "text-red-600" : "text-green-600"}`}>
-            {entry.pendingDebt > 0 ? (
-              <>{t.pending}: ฿{entry.pendingDebt.toFixed(2)}</>
-            ) : (
-              <>
-                ฿0.00
-                <svg className="ml-1 inline h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-              </>
-            )}
-          </p>
-        )}
       </div>
-      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
-        {(entry.outboundCount > 0 || entry.returnCount > 0) && (
-          <span>
-            {entry.outboundCount > 0 && <span className="text-amber-700">{t.outbound} ({entry.outboundCount})</span>}
-            {entry.outboundCount > 0 && entry.returnCount > 0 && " · "}
-            {entry.returnCount > 0 && <span className="text-indigo-700">{t.return} ({entry.returnCount})</span>}
-          </span>
-        )}
-        {entry.gasTotal > 0 && <span>{t.gas}: ฿{entry.gasTotal.toFixed(2)}</span>}
-        {entry.parkingTotal > 0 && <span>{t.parking}: ฿{entry.parkingTotal.toFixed(2)}</span>}
-      </div>
-      {!isDaily && entry.totalPaid > 0 && (
-        <div className="mt-1 text-xs text-green-600">
-          {t.paid}: ฿{entry.totalPaid.toFixed(2)}
+      <details className="mt-2">
+        <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
+          {t.viewCostBreakdown}
+        </summary>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+          {(entry.outboundCount > 0 || entry.returnCount > 0) && (
+            <span>
+              {entry.outboundCount > 0 && <span className="text-amber-700">{t.outbound} ({entry.outboundCount})</span>}
+              {entry.outboundCount > 0 && entry.returnCount > 0 && " · "}
+              {entry.returnCount > 0 && <span className="text-indigo-700">{t.return} ({entry.returnCount})</span>}
+            </span>
+          )}
+          {entry.gasTotal > 0 && <span>{t.gas}: ฿{entry.gasTotal.toFixed(2)}</span>}
+          {entry.parkingTotal > 0 && <span>{t.parking}: ฿{entry.parkingTotal.toFixed(2)}</span>}
         </div>
-      )}
+      </details>
     </div>
   );
 }
@@ -929,7 +916,6 @@ export default function HistoryContent({
                     key={group.key}
                     entry={group.entries[0]}
                     label={group.label}
-                    isDaily={summaryPeriod === "day"}
                     t={t}
                   />
                 ))}
