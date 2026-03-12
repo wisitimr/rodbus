@@ -5,7 +5,7 @@ import { TripType, Role } from "@prisma/client";
 import { nowBangkok, todayBangkok } from "@/lib/timezone";
 
 const DEBOUNCE_HOURS = 2;
-const EVENING_GAP_HOURS = 4;
+const RETURN_GAP_HOURS = 4;
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(successUrl);
   }
 
-  // --- Determine Morning vs Evening ---
+  // --- Determine Outbound vs Return ---
   const todaysTrips = await prisma.trip.findMany({
     where: { userId, date: today },
     orderBy: { tappedAt: "asc" },
@@ -73,34 +73,34 @@ export async function GET(request: NextRequest) {
   let tripType: TripType;
 
   if (todaysTrips.length === 0) {
-    // First tap of the day -> Morning
-    tripType = TripType.MORNING;
+    // First tap of the day -> Outbound
+    tripType = TripType.OUTBOUND;
   } else {
-    const morningTap = todaysTrips.find((t) => t.type === TripType.MORNING);
-    if (morningTap) {
-      const hoursSinceMorning =
-        (now.getTime() - morningTap.tappedAt.getTime()) / (1000 * 60 * 60);
+    const outboundTap = todaysTrips.find((t) => t.type === TripType.OUTBOUND);
+    if (outboundTap) {
+      const hoursSinceOutbound =
+        (now.getTime() - outboundTap.tappedAt.getTime()) / (1000 * 60 * 60);
 
-      if (hoursSinceMorning >= EVENING_GAP_HOURS) {
-        // Check if user already has an evening tap today (from any car)
-        const hasEvening = todaysTrips.some((t) => t.type === TripType.EVENING);
-        if (hasEvening) {
+      if (hoursSinceOutbound >= RETURN_GAP_HOURS) {
+        // Check if user already has a return tap today (from any car)
+        const hasReturn = todaysTrips.some((t) => t.type === TripType.RETURN);
+        if (hasReturn) {
           const successUrl = new URL("/tap-success", request.url);
           successUrl.searchParams.set("status", "already_recorded");
           successUrl.searchParams.set("car", car.name);
           return NextResponse.redirect(successUrl);
         }
-        tripType = TripType.EVENING;
+        tripType = TripType.RETURN;
       } else {
-        // Too soon for evening tap — treat as debounce
+        // Too soon for return tap — treat as debounce
         const successUrl = new URL("/tap-success", request.url);
         successUrl.searchParams.set("status", "too_soon");
         successUrl.searchParams.set("car", car.name);
         return NextResponse.redirect(successUrl);
       }
     } else {
-      // No morning tap found (shouldn't happen), default to morning
-      tripType = TripType.MORNING;
+      // No outbound tap found (shouldn't happen), default to outbound
+      tripType = TripType.OUTBOUND;
     }
   }
 

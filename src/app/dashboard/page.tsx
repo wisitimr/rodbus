@@ -214,12 +214,12 @@ export default async function DashboardPage() {
                     </span>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        trip.type === "MORNING"
+                        trip.type === "OUTBOUND"
                           ? "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 ring-inset"
                           : "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20 ring-inset"
                       }`}
                     >
-                      {trip.type === "MORNING" ? t.morningIn : t.eveningOut}
+                      {trip.type === "OUTBOUND" ? t.outbound : t.return}
                     </span>
                   </li>
                 ))}
@@ -232,7 +232,7 @@ export default async function DashboardPage() {
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              {t.recent}
+              {t.history}
             </h2>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
@@ -259,12 +259,12 @@ export default async function DashboardPage() {
                     </div>
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        trip.type === "MORNING"
+                        trip.type === "OUTBOUND"
                           ? "bg-amber-50 text-amber-700"
                           : "bg-indigo-50 text-indigo-700"
                       }`}
                     >
-                      {trip.type === "MORNING" ? t.morningIn : t.eveningOut}
+                      {trip.type === "OUTBOUND" ? t.outbound : t.return}
                     </span>
                   </div>
                 ))}
@@ -273,7 +273,7 @@ export default async function DashboardPage() {
 
             <div className="mt-4">
               <a
-                href="/dashboard/recent"
+                href="/dashboard/history"
                 className="inline-flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
               >
                 {t.viewAll}

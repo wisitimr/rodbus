@@ -11,7 +11,7 @@ interface Trip {
   date: string;
   dateISO: string;
   time: string;
-  type: "MORNING" | "EVENING";
+  type: "OUTBOUND" | "RETURN";
 }
 
 interface PaymentRecord {
@@ -63,8 +63,8 @@ interface HistoryContentProps {
     time: string;
     car: string;
     type: string;
-    morning: string;
-    evening: string;
+    outbound: string;
+    return: string;
     note: string;
     amount: string;
     accrued: string;
@@ -268,6 +268,95 @@ function SummaryTable({
   );
 }
 
+function DateFilterBar({
+  show,
+  onToggle,
+  dateFrom,
+  dateTo,
+  hasFilter,
+  onFromChange,
+  onToChange,
+  onClear,
+  onCalendarSelect,
+  dateLabel,
+}: {
+  show: boolean;
+  onToggle: () => void;
+  dateFrom: string;
+  dateTo: string;
+  hasFilter: boolean;
+  onFromChange: (v: string) => void;
+  onToChange: (v: string) => void;
+  onClear: () => void;
+  onCalendarSelect: (iso: string) => void;
+  dateLabel: string;
+}) {
+  return (
+    <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onToggle}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+            hasFilter
+              ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+          </svg>
+          {dateLabel}
+        </button>
+        {hasFilter && (
+          <span className="text-xs text-gray-500">
+            {dateFrom}{dateTo && dateTo !== dateFrom ? ` — ${dateTo}` : ""}
+          </span>
+        )}
+        {hasFilter && (
+          <button
+            onClick={onClear}
+            className="rounded-lg px-2 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-600"
+          >
+            &times;
+          </button>
+        )}
+      </div>
+
+      {show && (
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500">Start</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => onFromChange(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500">End</label>
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom}
+                onChange={(e) => onToChange(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <Calendar
+            dateFrom={dateFrom}
+            dateTo={dateTo || dateFrom}
+            onSelect={onCalendarSelect}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Group all-time debt breakdown + payments by period (day/month/year).
  * Day: shows cost share only. Month/Year: shows accrued, paid, pending.
@@ -365,49 +454,86 @@ export default function HistoryContent({
 }: HistoryContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("trips");
   const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("month");
-  const [showFilter, setShowFilter] = useState(false);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [rangeStep, setRangeStep] = useState<"from" | "to">("from");
 
-  const hasFilter = dateFrom !== "" || dateTo !== "";
+  // Trip filter state
+  const [showTripFilter, setShowTripFilter] = useState(false);
+  const [tripDateFrom, setTripDateFrom] = useState("");
+  const [tripDateTo, setTripDateTo] = useState("");
+  const [, setTripRangeStep] = useState<"from" | "to">("from");
 
-  function handleCalendarSelect(iso: string) {
-    if (rangeStep === "from") {
-      setDateFrom(iso);
-      setDateTo("");
-      setRangeStep("to");
-    } else {
-      if (iso < dateFrom) {
-        setDateFrom(iso);
-        setDateTo("");
-        setRangeStep("to");
-      } else {
-        setDateTo(iso);
-        setRangeStep("from");
+  // Payment filter state
+  const [showPaymentFilter, setShowPaymentFilter] = useState(false);
+  const [payDateFrom, setPayDateFrom] = useState("");
+  const [payDateTo, setPayDateTo] = useState("");
+  const [, setPayRangeStep] = useState<"from" | "to">("from");
+
+  const hasTripFilter = tripDateFrom !== "" || tripDateTo !== "";
+  const hasPaymentFilter = payDateFrom !== "" || payDateTo !== "";
+
+  function makeCalendarSelect(
+    setFrom: (v: string) => void,
+    setTo: (v: string) => void,
+    setStep: (v: "from" | "to") => void,
+    from: string
+  ) {
+    return (iso: string) => {
+      if (from === "" || iso < from) {
+        setFrom(iso);
+        setTo("");
+        setStep("to");
+      } else if (from && iso >= from) {
+        setTo(iso);
+        setStep("from");
       }
-    }
+    };
   }
 
-  function clearFilter() {
-    setDateFrom("");
-    setDateTo("");
-    setRangeStep("from");
+  const handleTripCalendarSelect = useMemo(
+    () => makeCalendarSelect(setTripDateFrom, setTripDateTo, setTripRangeStep, tripDateFrom),
+    [tripDateFrom]
+  );
+
+  const handlePayCalendarSelect = useMemo(
+    () => makeCalendarSelect(setPayDateFrom, setPayDateTo, setPayRangeStep, payDateFrom),
+    [payDateFrom]
+  );
+
+  function clearTripFilter() {
+    setTripDateFrom("");
+    setTripDateTo("");
+    setTripRangeStep("from");
+  }
+
+  function clearPaymentFilter() {
+    setPayDateFrom("");
+    setPayDateTo("");
+    setPayRangeStep("from");
   }
 
   const filteredTrips = useMemo(() => {
-    if (!dateFrom && !dateTo) return trips;
-    const from = dateFrom;
-    const to = dateTo || dateFrom;
+    if (!tripDateFrom && !tripDateTo) return trips;
+    const from = tripDateFrom;
+    const to = tripDateTo || tripDateFrom;
     return trips.filter((trip) => {
       if (from && trip.dateISO < from) return false;
       if (to && trip.dateISO > to) return false;
       return true;
     });
-  }, [trips, dateFrom, dateTo]);
+  }, [trips, tripDateFrom, tripDateTo]);
+
+  const filteredPayments = useMemo(() => {
+    if (!payDateFrom && !payDateTo) return allPayments;
+    const from = payDateFrom;
+    const to = payDateTo || payDateFrom;
+    return allPayments.filter((p) => {
+      if (from && p.dateISO < from) return false;
+      if (to && p.dateISO > to) return false;
+      return true;
+    });
+  }, [allPayments, payDateFrom, payDateTo]);
 
   const tripScroll = useInfiniteScroll(filteredTrips);
-  const paymentScroll = useInfiniteScroll(allPayments);
+  const paymentScroll = useInfiniteScroll(filteredPayments);
 
   // Group summary data by period
   const summaryGroups = useMemo(
@@ -451,76 +577,18 @@ export default function HistoryContent({
       {/* Trips tab */}
       {activeTab === "trips" && (
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          {/* Date filter toggle */}
-          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowFilter(!showFilter)}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                  hasFilter
-                    ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-                </svg>
-                {t.date}
-              </button>
-              {hasFilter && (
-                <span className="text-xs text-gray-500">
-                  {dateFrom}{dateTo && dateTo !== dateFrom ? ` — ${dateTo}` : ""}
-                </span>
-              )}
-              {hasFilter && (
-                <button
-                  onClick={clearFilter}
-                  className="rounded-lg px-2 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-600"
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-
-            {showFilter && (
-              <div className="mt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">Start</label>
-                    <input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => {
-                        setDateFrom(e.target.value);
-                        if (dateTo && e.target.value > dateTo) setDateTo("");
-                        setRangeStep("to");
-                      }}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">End</label>
-                    <input
-                      type="date"
-                      value={dateTo}
-                      min={dateFrom}
-                      onChange={(e) => {
-                        setDateTo(e.target.value);
-                        setRangeStep("from");
-                      }}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <Calendar
-                  dateFrom={dateFrom}
-                  dateTo={dateTo || dateFrom}
-                  onSelect={handleCalendarSelect}
-                />
-              </div>
-            )}
-          </div>
+          <DateFilterBar
+            show={showTripFilter}
+            onToggle={() => setShowTripFilter(!showTripFilter)}
+            dateFrom={tripDateFrom}
+            dateTo={tripDateTo}
+            hasFilter={hasTripFilter}
+            onFromChange={(v) => { setTripDateFrom(v); if (tripDateTo && v > tripDateTo) setTripDateTo(""); setTripRangeStep("to"); }}
+            onToChange={(v) => { setTripDateTo(v); setTripRangeStep("from"); }}
+            onClear={clearTripFilter}
+            onCalendarSelect={handleTripCalendarSelect}
+            dateLabel={t.date}
+          />
 
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {filteredTrips.length === 0 ? (
@@ -542,12 +610,12 @@ export default function HistoryContent({
                       </div>
                       <span
                         className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          trip.type === "MORNING"
+                          trip.type === "OUTBOUND"
                             ? "bg-amber-50 text-amber-700"
                             : "bg-indigo-50 text-indigo-700"
                         }`}
                       >
-                        {trip.type === "MORNING" ? "AM" : "PM"}
+                        {trip.type === "OUTBOUND" ? t.outbound : t.return}
                       </span>
                     </div>
                   ))}
@@ -573,12 +641,12 @@ export default function HistoryContent({
                           <td className="py-3 text-right">
                             <span
                               className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                trip.type === "MORNING"
+                                trip.type === "OUTBOUND"
                                   ? "bg-amber-50 text-amber-700"
                                   : "bg-indigo-50 text-indigo-700"
                               }`}
                             >
-                              {trip.type === "MORNING" ? t.morning : t.evening}
+                              {trip.type === "OUTBOUND" ? t.outbound : t.return}
                             </span>
                           </td>
                         </tr>
@@ -601,8 +669,20 @@ export default function HistoryContent({
       {/* Payments tab */}
       {activeTab === "payments" && (
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          <DateFilterBar
+            show={showPaymentFilter}
+            onToggle={() => setShowPaymentFilter(!showPaymentFilter)}
+            dateFrom={payDateFrom}
+            dateTo={payDateTo}
+            hasFilter={hasPaymentFilter}
+            onFromChange={(v) => { setPayDateFrom(v); if (payDateTo && v > payDateTo) setPayDateTo(""); setPayRangeStep("to"); }}
+            onToChange={(v) => { setPayDateTo(v); setPayRangeStep("from"); }}
+            onClear={clearPaymentFilter}
+            onCalendarSelect={handlePayCalendarSelect}
+            dateLabel={t.date}
+          />
           <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {allPayments.length === 0 ? (
+            {filteredPayments.length === 0 ? (
               <p className="text-sm text-gray-400">{t.noPayments}</p>
             ) : (
               <>

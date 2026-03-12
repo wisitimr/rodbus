@@ -45,7 +45,7 @@ export default async function HistoryPage() {
       hour: "2-digit",
       minute: "2-digit",
     }),
-    type: trip.type as "MORNING" | "EVENING",
+    type: trip.type as "OUTBOUND" | "RETURN",
   }));
 
   // Serialize debts with breakdown dates as ISO strings
@@ -81,7 +81,7 @@ export default async function HistoryPage() {
           {t.back}
         </a>
         <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-          {t.recent}
+          {t.history}
         </h1>
       </header>
 
@@ -104,8 +104,8 @@ export default async function HistoryPage() {
           time: t.time,
           car: t.car,
           type: t.type,
-          morning: t.morning,
-          evening: t.evening,
+          outbound: t.outbound,
+          return: t.return,
           note: t.note,
           amount: t.amount,
           accrued: t.accrued,
