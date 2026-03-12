@@ -90,21 +90,16 @@ export default async function DashboardPage() {
     <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
       {/* Header */}
       <header className="animate-fade-in mb-6 sm:mb-8">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-              {t.dashboard}
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              {t.welcome}, {user.name ?? user.email}
-              {isAdmin && (
-                <span className="ml-2 inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 ring-1 ring-red-500/20 ring-inset">
-                  {t.admin}
-                </span>
-              )}
-            </p>
-          </div>
-          <ProfileMenu image={user.image} name={user.name} isAdmin={isAdmin} />
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+            {t.dashboard}
+          </h1>
+          <ProfileMenu
+            image={user.image}
+            name={user.name}
+            email={user.email}
+            isAdmin={isAdmin}
+          />
         </div>
       </header>
 
