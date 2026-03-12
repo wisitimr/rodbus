@@ -81,7 +81,7 @@ export default async function HistoryPage() {
       <header className="animate-fade-in relative mb-6 flex items-center justify-center sm:mb-8">
         <a
           href="/dashboard"
-          className="absolute left-0 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 sm:px-4"
+          className="absolute left-0 rounded-xl bg-gray-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 sm:px-4"
         >
           {t.back}
         </a>
