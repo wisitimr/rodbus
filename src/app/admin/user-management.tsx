@@ -16,6 +16,12 @@ const roleBadge: Record<Role, string> = {
   ADMIN: "bg-red-100 text-red-800",
 };
 
+const roleLabel: Record<Role, string> = {
+  PENDING: "Pending",
+  USER: "Passenger",
+  ADMIN: "Admin",
+};
+
 export default function UserManagement({ users, currentUserId }: UserManagementProps) {
   const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -121,7 +127,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                     <span
                       className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${roleBadge[user.role]}`}
                     >
-                      {user.role}
+                      {roleLabel[user.role]}
                     </span>
                   </div>
                   {!isMe && (
@@ -151,8 +157,8 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                       disabled={isAnyLoading}
                       className="flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-sm disabled:opacity-50"
                     >
-                      <option value="USER">USER</option>
-                      <option value="ADMIN">ADMIN</option>
+                      <option value="USER">Passenger</option>
+                      <option value="ADMIN">Admin</option>
                     </select>
                     {user.role === "USER" && (
                       <button
