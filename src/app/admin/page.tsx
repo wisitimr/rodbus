@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
-import { SignOutButton } from "@clerk/nextjs";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import UserManagement from "./user-management";
@@ -60,13 +59,7 @@ export default async function AdminPage() {
           <h1 className="flex-1 text-center text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
             {t.settings}
           </h1>
-          <div className="shrink-0">
-            <SignOutButton>
-              <button className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 sm:px-4">
-                {t.signOut}
-              </button>
-            </SignOutButton>
-          </div>
+          <div className="w-9" />
         </div>
       </header>
 
@@ -147,6 +140,7 @@ export default async function AdminPage() {
           </div>
         </section>
       </div>
+
     </main>
   );
 }

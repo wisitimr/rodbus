@@ -113,11 +113,6 @@ export default async function DashboardPage() {
                 {t.configure}
               </a>
             )}
-            <SignOutButton>
-              <button className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 hover:shadow-md sm:px-4">
-                {t.signOut}
-              </button>
-            </SignOutButton>
           </div>
         </div>
       </header>
@@ -318,6 +313,14 @@ export default async function DashboardPage() {
             </div>
           </section>
         )}
+      </div>
+
+      <div className="mt-8 flex justify-center">
+        <SignOutButton>
+          <button className="rounded-xl border border-gray-200 bg-white px-6 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50">
+            {t.signOut}
+          </button>
+        </SignOutButton>
       </div>
     </main>
   );
