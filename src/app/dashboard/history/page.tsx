@@ -123,6 +123,7 @@ export default async function HistoryPage() {
         yearLabel={yearLabel}
         t={{
           trips: t.trips,
+          payments: t.payments,
           summary: t.summary,
           day: t.day,
           month: t.month,
