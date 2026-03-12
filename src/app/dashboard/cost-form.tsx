@@ -12,6 +12,7 @@ interface ExistingCost {
 interface CostFormProps {
   cars: { id: string; name: string; defaultGasCost: number }[];
   existingCosts: ExistingCost[];
+  missingCostDates?: string[];
 }
 
 function getBangkokToday() {
@@ -19,7 +20,7 @@ function getBangkokToday() {
   return d.toISOString().split("T")[0];
 }
 
-export default function CostForm({ cars, existingCosts: initialCosts }: CostFormProps) {
+export default function CostForm({ cars, existingCosts: initialCosts, missingCostDates = [] }: CostFormProps) {
   const { t } = useT();
   const [carId, setCarId] = useState(cars[0]?.id ?? "");
   const [date, setDate] = useState(getBangkokToday);
@@ -117,6 +118,31 @@ export default function CostForm({ cars, existingCosts: initialCosts }: CostForm
 
   return (
     <div className="space-y-4">
+      {/* Missing dates chips */}
+      {missingCostDates.length > 0 && (
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-amber-600">
+            {t.missingDates}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {missingCostDates.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => handleDateChange(d)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  date === d
+                    ? "bg-amber-500 text-white"
+                    : "bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Date selector */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -149,20 +175,30 @@ export default function CostForm({ cars, existingCosts: initialCosts }: CostForm
       </div>
 
       {!editing ? (
-        /* Saved view — plain text with edit button */
-        <div className="flex items-center justify-between rounded-xl bg-green-50 px-4 py-3 ring-1 ring-green-200">
-          <div>
-            <p className="text-sm font-medium text-green-800">
-              {t.costsSaved}
-            </p>
-            <p className="mt-0.5 text-xs text-green-600">
-              {t.gasCost}: ฿{(parseFloat(gasCost) || 0).toFixed(2)} &middot; {t.parkingCost}: ฿{(parseFloat(parkingCost) || 0).toFixed(2)}
-            </p>
+        /* Saved view — same layout as edit, but static values */
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {t.gasCost}
+              </label>
+              <div className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-3 text-sm text-gray-700 sm:py-2.5">
+                ฿{(parseFloat(gasCost) || 0).toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {t.parkingCost}
+              </label>
+              <div className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-3 text-sm text-gray-700 sm:py-2.5">
+                ฿{(parseFloat(parkingCost) || 0).toFixed(2)}
+              </div>
+            </div>
           </div>
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-xl border border-green-300 bg-white px-3 py-1.5 text-sm font-medium text-green-700 shadow-sm transition hover:bg-green-50"
+            className="w-full rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow-md active:scale-[0.98] sm:w-auto sm:py-2.5"
           >
             {t.editCosts}
           </button>

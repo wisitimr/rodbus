@@ -7,7 +7,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import CostForm from "./cost-form";
-import { nowBangkok, todayBangkok, startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
+import { todayBangkok, startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -21,13 +21,12 @@ export default async function DashboardPage() {
   const userId = user.id;
   const isAdmin = user.role === Role.ADMIN;
 
-  const now = nowBangkok();
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
   const today = todayBangkok();
 
-  const [myCars, todaysTrips, recentTrips, debts, myPayments] =
+  const [myCars, todaysTrips, recentTrips, debts] =
     await Promise.all([
       prisma.car.findMany({
         where: { ownerId: userId },
@@ -41,26 +40,53 @@ export default async function DashboardPage() {
         where: { userId },
         include: { car: true },
         orderBy: { tappedAt: "desc" },
-        take: 20,
+        take: 5,
       }),
       calculateDebts(startOfMonth, endOfMonth),
-      prisma.payment.findMany({
-        where: { userId },
-        include: { car: true },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      }),
     ]);
 
-  const todayCosts = myCars.length > 0
-    ? await prisma.dailyCost.findMany({
-        where: {
-          carId: { in: myCars.map((c) => c.id) },
-          date: today,
-        },
-      })
-    : [];
-  const hasMissingCosts = myCars.length > 0 && todayCosts.length < myCars.length;
+  const carIds = myCars.map((c) => c.id);
+
+  // Find dates with trips for my cars but missing cost entries
+  const [tripsForMyCars, costsThisMonth, todayCosts] = myCars.length > 0
+    ? await Promise.all([
+        prisma.trip.findMany({
+          where: {
+            carId: { in: carIds },
+            date: { gte: startOfMonth, lte: today },
+          },
+          select: { carId: true, date: true },
+        }),
+        prisma.dailyCost.findMany({
+          where: {
+            carId: { in: carIds },
+            date: { gte: startOfMonth, lte: today },
+          },
+          select: { carId: true, date: true },
+        }),
+        prisma.dailyCost.findMany({
+          where: {
+            carId: { in: carIds },
+            date: today,
+          },
+        }),
+      ])
+    : [[], [], []];
+
+  // Build set of carId+date that have costs
+  const costSet = new Set(
+    costsThisMonth.map((c) => `${c.carId}_${c.date.toISOString().split("T")[0]}`)
+  );
+  // Find unique carId+date combos from trips that are missing costs
+  const missingCostDates = [
+    ...new Set(
+      tripsForMyCars
+        .filter((tr) => !costSet.has(`${tr.carId}_${tr.date.toISOString().split("T")[0]}`))
+        .map((tr) => tr.date.toISOString().split("T")[0])
+    ),
+  ].sort();
+
+  const hasMissingCosts = missingCostDates.length > 0;
 
   const myDebt = debts.find((d) => d.userId === userId);
 
@@ -101,9 +127,15 @@ export default async function DashboardPage() {
       </header>
 
       {hasMissingCosts && (
-        <div className="animate-fade-in mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-800 shadow-sm sm:mb-6">
-          {t.costReminderBanner}
-        </div>
+        <a
+          href="#enter-daily-costs"
+          className="animate-fade-in mb-4 block rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800 shadow-sm transition hover:bg-amber-100 sm:mb-6"
+        >
+          <p className="font-medium">{t.costReminderBanner}</p>
+          <p className="mt-1 text-xs text-amber-600">
+            {t.missingDates}: {missingCostDates.join(", ")}
+          </p>
+        </a>
       )}
 
       <div className="stagger-children space-y-4 sm:space-y-6">
@@ -204,264 +236,63 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Recent Trips */}
+        {/* History Preview */}
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              {t.recentTrips}
+              {t.history}
             </h2>
           </div>
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {recentTrips.length === 0 ? (
               <p className="text-sm text-gray-400">{t.noTripHistory}</p>
             ) : (
-              <>
-                {/* Mobile: card layout */}
-                <div className="space-y-2 sm:hidden">
-                  {recentTrips.map((trip) => (
-                    <div
-                      key={trip.id}
-                      className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800">
-                          {trip.car.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {trip.date.toLocaleDateString(locale)} &middot;{" "}
-                          {trip.tappedAt.toLocaleTimeString(locale, {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          trip.type === "MORNING"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-indigo-50 text-indigo-700"
-                        }`}
-                      >
-                        {trip.type === "MORNING" ? "AM" : "PM"}
-                      </span>
+              <div className="space-y-2">
+                {recentTrips.slice(0, 5).map((trip) => (
+                  <div
+                    key={trip.id}
+                    className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-800">
+                        {trip.car.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {trip.date.toLocaleDateString(locale)} &middot;{" "}
+                        {trip.tappedAt.toLocaleTimeString(locale, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
                     </div>
-                  ))}
-                </div>
-
-                {/* Desktop: table layout */}
-                <div className="hidden sm:block">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="pb-3 font-semibold">{t.date}</th>
-                        <th className="pb-3 font-semibold">{t.time}</th>
-                        <th className="pb-3 font-semibold">{t.car}</th>
-                        <th className="pb-3 text-right font-semibold">{t.type}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {recentTrips.map((trip) => (
-                        <tr key={trip.id} className="hover:bg-gray-50/50">
-                          <td className="py-3 text-gray-700">
-                            {trip.date.toLocaleDateString(locale)}
-                          </td>
-                          <td className="py-3 text-gray-500">
-                            {trip.tappedAt.toLocaleTimeString(locale, {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </td>
-                          <td className="py-3 font-medium text-gray-800">
-                            {trip.car.name}
-                          </td>
-                          <td className="py-3 text-right">
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                trip.type === "MORNING"
-                                  ? "bg-amber-50 text-amber-700"
-                                  : "bg-indigo-50 text-indigo-700"
-                              }`}
-                            >
-                              {trip.type === "MORNING" ? t.morning : t.evening}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Payment History */}
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              {t.paymentHistory}
-            </h2>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {myPayments.length === 0 ? (
-              <p className="text-sm text-gray-400">{t.noPayments}</p>
-            ) : (
-              <>
-                {/* Mobile: card layout */}
-                <div className="space-y-2 sm:hidden">
-                  {myPayments.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800">
-                          {p.car.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {p.date.toLocaleDateString(locale)}
-                          {p.note && <> &middot; {p.note}</>}
-                        </p>
-                      </div>
-                      <span className="shrink-0 font-semibold text-green-600">
-                        ฿{p.amount.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop: table layout */}
-                <div className="hidden sm:block">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="pb-3 font-semibold">{t.date}</th>
-                        <th className="pb-3 font-semibold">{t.car}</th>
-                        <th className="pb-3 font-semibold">{t.note}</th>
-                        <th className="pb-3 text-right font-semibold">{t.amount}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {myPayments.map((p) => (
-                        <tr key={p.id} className="hover:bg-gray-50/50">
-                          <td className="py-3 text-gray-700">
-                            {p.date.toLocaleDateString(locale)}
-                          </td>
-                          <td className="py-3 font-medium text-gray-800">
-                            {p.car.name}
-                          </td>
-                          <td className="py-3 text-gray-400">
-                            {p.note ?? "\u2014"}
-                          </td>
-                          <td className="py-3 text-right font-semibold text-green-600">
-                            ฿{p.amount.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Monthly Summary */}
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              {t.monthlySummary} &mdash;{" "}
-              {now.toLocaleString(locale, { month: "long" })}
-            </h2>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {debts.length === 0 ? (
-              <p className="text-sm text-gray-400">
-                {t.noCostsThisMonth}
-              </p>
-            ) : (
-              <>
-                {/* Mobile: card layout */}
-                <div className="space-y-2 sm:hidden">
-                  {debts.map((d) => (
-                    <div
-                      key={d.userId}
-                      className={`rounded-xl px-4 py-3 ${
-                        d.userId === userId
-                          ? "bg-blue-50 ring-1 ring-blue-200"
-                          : "bg-gray-50"
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        trip.type === "MORNING"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-indigo-50 text-indigo-700"
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-gray-800">
-                          {d.userName ?? "Unknown"}
-                          {d.userId === userId && (
-                            <span className="ml-1.5 text-xs font-normal text-blue-500">
-                              ({t.you})
-                            </span>
-                          )}
-                        </p>
-                        <p className="font-bold text-red-600">
-                          ฿{d.pendingDebt.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="mt-1 flex gap-3 text-xs text-gray-500">
-                        <span>{t.accrued}: ฿{d.totalDebt.toFixed(2)}</span>
-                        <span className="text-green-600">
-                          {t.paid}: ฿{d.totalPaid.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop: table layout */}
-                <div className="hidden sm:block">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="pb-3 font-semibold">{t.passenger}</th>
-                        <th className="pb-3 text-right font-semibold">{t.accrued}</th>
-                        <th className="pb-3 text-right font-semibold">{t.paid}</th>
-                        <th className="pb-3 text-right font-semibold">{t.pending}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {debts.map((d) => (
-                        <tr
-                          key={d.userId}
-                          className={`${d.userId === userId ? "bg-blue-50/60 font-semibold" : "hover:bg-gray-50/50"}`}
-                        >
-                          <td className="py-3 text-gray-800">
-                            {d.userName ?? "Unknown"}
-                            {d.userId === userId && (
-                              <span className="ml-1.5 text-xs font-normal text-blue-500">
-                                ({t.you})
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 text-right text-gray-700">
-                            ฿{d.totalDebt.toFixed(2)}
-                          </td>
-                          <td className="py-3 text-right text-green-600">
-                            ฿{d.totalPaid.toFixed(2)}
-                          </td>
-                          <td className="py-3 text-right text-red-600">
-                            ฿{d.pendingDebt.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+                      {trip.type === "MORNING" ? t.morningIn : t.eveningOut}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
+
+            <div className="mt-4">
+              <a
+                href="/dashboard/history"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+              >
+                {t.viewAll}
+              </a>
+            </div>
           </div>
         </section>
 
         {/* Driver: Enter Costs */}
         {myCars.length > 0 && (
-          <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+          <section id="enter-daily-costs" className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
             <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
                 {t.enterDailyCosts}
@@ -471,6 +302,7 @@ export default async function DashboardPage() {
               <CostForm
                 cars={myCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
                 existingCosts={todayCosts.map((tc) => ({ carId: tc.carId, gasCost: tc.gasCost, parkingCost: tc.parkingCost }))}
+                missingCostDates={missingCostDates}
               />
             </div>
           </section>
