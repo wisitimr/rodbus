@@ -183,7 +183,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
             type="date"
             value={date}
             onChange={(e) => handleDateChange(e.target.value)}
-            className={`${inputClass} opacity-0 absolute inset-0 z-10 cursor-pointer`}
+            className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
           />
           <div className={inputClass}>
             {fmtDate(date, locale)}
