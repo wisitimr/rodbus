@@ -26,7 +26,7 @@ export default function ProfileMenu({ image, name, isAdmin }: ProfileMenuProps) 
   }, [open]);
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef} className="relative z-50">
       <button
         onClick={() => setOpen(!open)}
         className="h-9 w-9 overflow-hidden rounded-full ring-2 ring-gray-200 transition hover:ring-gray-400"
