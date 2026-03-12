@@ -78,7 +78,7 @@ export default async function HistoryPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
-      <header className="animate-fade-in mb-6 flex items-center sm:mb-8">
+      <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 flex items-center bg-gray-50/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:mb-8 sm:px-6">
         <a
           href="/dashboard"
           className="shrink-0 rounded-xl bg-gray-900 p-2 text-white shadow-sm transition hover:bg-gray-800"

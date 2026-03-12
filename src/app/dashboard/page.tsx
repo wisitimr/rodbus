@@ -90,7 +90,7 @@ export default async function DashboardPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
       {/* Header */}
-      <header className="animate-fade-in relative z-50 mb-6 sm:mb-8">
+      <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 bg-gray-50/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:mb-8 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
