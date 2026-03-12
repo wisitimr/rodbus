@@ -4,12 +4,18 @@ import { useState } from "react";
 import { disableDate, enableDate } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 
+function fmtDate(iso: string, locale: string) {
+  if (!iso) return "";
+  const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
+  return new Date(iso + "T00:00:00").toLocaleDateString(loc, { day: "numeric", month: "short", year: "numeric" });
+}
+
 interface DateManagementProps {
   disabledDates: { id: string; date: string; reason: string | null }[];
 }
 
 export default function DateManagement({ disabledDates }: DateManagementProps) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [reason, setReason] = useState("");
@@ -50,13 +56,18 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
               {t.date}
             </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={inputClass}
-              required
-            />
+            <div className="relative">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className={`${inputClass} absolute inset-0 z-10 cursor-pointer opacity-0`}
+                required
+              />
+              <div className={inputClass}>
+                {date ? fmtDate(date, locale) : <span className="text-gray-400">{t.selectDate}</span>}
+              </div>
+            </div>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -92,7 +103,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
                 className="flex items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <span className="font-medium">{d.date}</span>
+                  <span className="font-medium">{fmtDate(d.date, locale)}</span>
                   {d.reason && (
                     <span className="ml-2 text-sm text-gray-500">
                       — {d.reason}

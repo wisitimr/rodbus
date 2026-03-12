@@ -30,7 +30,9 @@ interface DebtSettlementProps {
 export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
   const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(
+    () => new Set(debts.filter((d) => d.pendingDebt > 0).map((d) => d.userId))
+  );
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
   const [showCustom, setShowCustom] = useState<Set<string>>(new Set());
 

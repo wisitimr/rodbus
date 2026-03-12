@@ -511,10 +511,19 @@ export default function HistoryContent({
   // Expanded payment details
   const [expandedPayments, setExpandedPayments] = useState<Set<string>>(new Set());
 
-  // Expanded summary cards
-  const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
+  // Expanded summary cards — auto-expand all
+  const [expandedSummaries, setExpandedSummaries] = useState<Set<string> | "all">("all");
+  const isSummaryExpanded = (key: string) =>
+    expandedSummaries === "all" || expandedSummaries.has(key);
+
   const toggleSummary = (key: string) => {
     setExpandedSummaries((prev) => {
+      if (prev === "all") {
+        // Collapse this one: expand all others
+        const next = new Set(summaryGroups.map((g) => g.key));
+        next.delete(key);
+        return next;
+      }
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -977,7 +986,7 @@ export default function HistoryContent({
                     key={group.key}
                     entry={group.entries[0]}
                     label={group.label}
-                    isExpanded={expandedSummaries.has(group.key)}
+                    isExpanded={isSummaryExpanded(group.key)}
                     onToggle={() => toggleSummary(group.key)}
                     t={t}
                   />
