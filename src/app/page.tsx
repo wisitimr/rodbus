@@ -62,7 +62,7 @@ export default async function Home() {
         ].map((f) => (
           <span
             key={f.label}
-            className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50/80 px-3.5 py-1.5 text-xs font-medium text-blue-700"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/80 px-3.5 py-1.5 text-xs font-medium text-blue-700"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d={f.icon} />

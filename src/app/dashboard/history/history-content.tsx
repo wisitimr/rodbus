@@ -677,7 +677,7 @@ export default function HistoryContent({
                         </p>
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        className={`shrink-0 rounded-lg px-2.5 py-0.5 text-xs font-semibold ${
                           trip.type === "OUTBOUND"
                             ? "bg-amber-50 text-amber-700"
                             : "bg-indigo-50 text-indigo-700"
@@ -708,7 +708,7 @@ export default function HistoryContent({
                           <td className="py-3 font-medium text-gray-800">{trip.carName}</td>
                           <td className="py-3 text-right">
                             <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              className={`rounded-lg px-2.5 py-0.5 text-xs font-semibold ${
                                 trip.type === "OUTBOUND"
                                   ? "bg-amber-50 text-amber-700"
                                   : "bg-indigo-50 text-indigo-700"

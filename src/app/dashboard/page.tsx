@@ -227,7 +227,7 @@ export default async function DashboardPage() {
                       </p>
                     </div>
                     <span
-                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      className={`shrink-0 rounded-lg px-2.5 py-0.5 text-xs font-semibold ${
                         trip.type === "OUTBOUND"
                           ? "bg-amber-50 text-amber-700"
                           : "bg-indigo-50 text-indigo-700"

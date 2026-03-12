@@ -119,7 +119,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                       <p className="truncate text-sm text-gray-500">{user.email}</p>
                     </div>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge[user.role]}`}
+                      className={`shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium ${roleBadge[user.role]}`}
                     >
                       {user.role}
                     </span>

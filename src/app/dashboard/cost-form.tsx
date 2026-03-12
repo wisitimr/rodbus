@@ -138,7 +138,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
                 key={d}
                 type="button"
                 onClick={() => handleDateChange(d)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
                   date === d
                     ? "bg-amber-500 text-white"
                     : "bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
@@ -148,7 +148,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
               </button>
             ))}
             {missingDates.length > 5 && (
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600 ring-1 ring-amber-200">
+              <span className="rounded-lg bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600 ring-1 ring-amber-200">
                 ...+{missingDates.length - 5}
               </span>
             )}
