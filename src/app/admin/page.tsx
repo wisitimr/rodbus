@@ -5,10 +5,8 @@ import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import UserManagement from "./user-management";
-import DateManagement from "./date-management";
 import CostManagement from "./cost-management";
 import CarManagement from "./car-management";
-import { todayBangkok } from "@/lib/timezone";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
@@ -21,17 +19,11 @@ export default async function AdminPage() {
 
   const userId = user.id;
 
-  const today = todayBangkok();
-
-  const [allUsers, disabledDates, myCars, allCars] =
+  const [allUsers, myCars, allCars] =
     await Promise.all([
       prisma.user.findMany({
         select: { id: true, name: true, email: true, role: true },
         orderBy: [{ role: "asc" }, { name: "asc" }],
-      }),
-      prisma.disabledDate.findMany({
-        where: { date: { gte: today } },
-        orderBy: { date: "asc" },
       }),
       prisma.car.findMany({
         where: { ownerId: userId },
@@ -99,9 +91,6 @@ export default async function AdminPage() {
                 licensePlate: c.licensePlate,
                 ownerName: c.owner.name,
               }))}
-              users={allUsers
-                .filter((u) => u.role !== "PENDING")
-                .map((u) => ({ id: u.id, name: u.name, email: u.email }))}
             />
           </div>
         </section>
@@ -122,23 +111,6 @@ export default async function AdminPage() {
           </section>
         )}
 
-        {/* Operating Days */}
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
-          <div className="border-b border-gray-100 bg-gray-50/50 px-5 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-600 sm:text-sm">
-              {t.operatingDays}
-            </h2>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            <DateManagement
-              disabledDates={disabledDates.map((d) => ({
-                id: d.id,
-                date: d.date.toISOString().split("T")[0],
-                reason: d.reason,
-              }))}
-            />
-          </div>
-        </section>
       </div>
 
     </main>

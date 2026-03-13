@@ -6,26 +6,24 @@ import { useT } from "@/lib/i18n-context";
 
 interface CarManagementProps {
   cars: { id: string; name: string; licensePlate: string | null; ownerName: string | null }[];
-  users: { id: string; name: string | null; email: string }[];
 }
 
-export default function CarManagement({ cars, users }: CarManagementProps) {
+export default function CarManagement({ cars }: CarManagementProps) {
   const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
-  const [ownerId, setOwnerId] = useState(users[0]?.id ?? "");
   const [status, setStatus] = useState<"idle" | "error">("idle");
 
   const isAnyLoading = loadingAction !== null;
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !ownerId) return;
+    if (!name.trim()) return;
 
     setLoadingAction("add");
     try {
-      await addCar(name, licensePlate || null, ownerId);
+      await addCar(name, licensePlate || null);
       setName("");
       setLicensePlate("");
       setStatus("idle");
@@ -53,7 +51,7 @@ export default function CarManagement({ cars, users }: CarManagementProps) {
     <div className="space-y-6">
       {/* Add car form */}
       <form onSubmit={handleAdd} className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
               {t.carName}
@@ -78,22 +76,6 @@ export default function CarManagement({ cars, users }: CarManagementProps) {
               placeholder="e.g., กข 1234"
               className={inputClass}
             />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-              {t.owner}
-            </label>
-            <select
-              value={ownerId}
-              onChange={(e) => setOwnerId(e.target.value)}
-              className={inputClass}
-            >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name ?? u.email}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
         <button

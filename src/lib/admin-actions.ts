@@ -160,28 +160,24 @@ export async function enableDate(date: string) {
 // Car Management
 // ---------------------------------------------------------------------------
 
-/** Add a new car */
-export async function addCar(name: string, licensePlate: string | null, ownerId: string) {
-  await requireAdmin();
+/** Add a new car owned by the logged-in user */
+export async function addCar(name: string, licensePlate: string | null) {
+  const user = await requireAdmin();
 
   if (!name.trim()) {
     throw new Error("Car name is required");
-  }
-
-  const owner = await prisma.user.findUnique({ where: { id: ownerId } });
-  if (!owner) {
-    throw new Error("Owner not found");
   }
 
   await prisma.car.create({
     data: {
       name: name.trim(),
       licensePlate: licensePlate?.trim() || null,
-      ownerId,
+      ownerId: user.id,
     },
   });
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
 }
 
 /** Delete a car and all associated data */
