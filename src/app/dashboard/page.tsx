@@ -169,55 +169,65 @@ export default async function DashboardPage() {
                       <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
                         {t.viewCostBreakdown}
                       </summary>
-                      <ul className="mt-3 divide-y divide-gray-100 text-sm">
+                      <div className="mt-3 space-y-2 text-sm">
                         {pending.map((b, i) => {
                           const tripCount = b.outboundCount + b.returnCount;
                           const parkingTotal = b.parkingShare * b.passengerCount;
                           return (
-                            <li key={i} className="py-2.5">
-                              <details>
-                                <summary className="flex cursor-pointer items-center justify-between gap-3">
-                                  <span className="min-w-0 truncate text-gray-600">
-                                    {b.carName} &mdash;{" "}
-                                    {formatDateShort(b.date, locale)}
-                                  </span>
-                                  <span className="shrink-0 font-medium text-gray-900">
-                                    ฿{b.share.toFixed(2)}
-                                  </span>
-                                </summary>
-                                <div className="mt-1 space-y-0.5 text-xs text-gray-400">
-                                  {tripCount > 0 && (
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-500">{t.trips}:</span>
-                                      {b.outboundCount > 0 && (
-                                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
-                                      )}
-                                      {b.returnCount > 0 && (
-                                        <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
-                                      )}
-                                    </div>
-                                  )}
-                                  {b.gasOutbound > 0 && (
-                                    <p>
-                                      {t.gas} ({t.outbound}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}
-                                    </p>
-                                  )}
-                                  {b.gasReturn > 0 && (
-                                    <p>
-                                      {t.gas} ({t.return}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}
-                                    </p>
-                                  )}
-                                  {b.parkingShare > 0 && (
-                                    <p>
-                                      {t.parking}: ฿{parkingTotal.toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}
-                                    </p>
-                                  )}
+                            <details key={i} className="group rounded-xl bg-gray-50">
+                              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
+                                <div className="min-w-0">
+                                  <p className="font-medium text-gray-800">{b.carName}</p>
+                                  <p className="text-xs text-gray-500">{formatDateShort(b.date, locale)}</p>
                                 </div>
-                              </details>
-                            </li>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  <span className="font-semibold text-gray-900">฿{b.share.toFixed(2)}</span>
+                                  <svg
+                                    className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={2}
+                                    stroke="currentColor"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                  </svg>
+                                </div>
+                              </summary>
+                              <div className="space-y-1 border-t border-gray-100 px-4 pb-3 pt-2 text-xs text-gray-500">
+                                {tripCount > 0 && (
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{t.trips}:</span>
+                                    {b.outboundCount > 0 && (
+                                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
+                                    )}
+                                    {b.returnCount > 0 && (
+                                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
+                                    )}
+                                  </div>
+                                )}
+                                {b.gasOutbound > 0 && (
+                                  <div className="flex justify-between">
+                                    <span>{t.gas} ({t.outbound})</span>
+                                    <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {b.gasReturn > 0 && (
+                                  <div className="flex justify-between">
+                                    <span>{t.gas} ({t.return})</span>
+                                    <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {b.parkingShare > 0 && (
+                                  <div className="flex justify-between">
+                                    <span>{t.parking}</span>
+                                    <span className="text-gray-700">฿{parkingTotal.toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </details>
                           );
                         })}
-                      </ul>
+                      </div>
                     </details>
                   );
                 })()}
