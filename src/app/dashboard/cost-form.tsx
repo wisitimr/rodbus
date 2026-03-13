@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
 
@@ -56,6 +56,8 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
     () => existingForCar?.parkingCost?.toString() ?? ""
   );
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [confirmData, setConfirmData] = useState<{ carName: string; date: string; gas: string; parking: string } | null>(null);
+  const confirmResolve = useRef<((ok: boolean) => void) | null>(null);
 
   const applyExistingCosts = useCallback((costs: ExistingCost[], selectedCarId: string) => {
     const existing = costs.find((c) => c.carId === selectedCarId);
@@ -99,8 +101,16 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
     e.preventDefault();
 
     const carName = cars.find((c) => c.id === carId)?.name ?? "";
-    const summary = `${t.confirmSaveCostsTitle}\n\n${t.car}: ${carName}\n${t.date}: ${date}\n${t.gasCost}: ${(parseFloat(gasCost) || 0).toFixed(2)}\n${t.parkingCost}: ${(parseFloat(parkingCost) || 0).toFixed(2)}`;
-    if (!confirm(summary)) return;
+    const ok = await new Promise<boolean>((resolve) => {
+      confirmResolve.current = resolve;
+      setConfirmData({
+        carName,
+        date: fmtDate(date, locale),
+        gas: (parseFloat(gasCost) || 0).toFixed(2),
+        parking: (parseFloat(parkingCost) || 0).toFixed(2),
+      });
+    });
+    if (!ok) return;
 
     setStatus("saving");
 
@@ -134,11 +144,59 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
     }
   }
 
+  function resolveConfirm(ok: boolean) {
+    confirmResolve.current?.(ok);
+    confirmResolve.current = null;
+    setConfirmData(null);
+  }
+
   const inputClass =
     "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none sm:py-2.5";
 
   return (
     <div className="space-y-4">
+      {/* Confirm modal */}
+      {confirmData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => resolveConfirm(false)}>
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900">{t.confirmSaveCostsTitle}</h3>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-gray-500">{t.car}</dt>
+                <dd className="font-medium text-gray-900">{confirmData.carName}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">{t.date}</dt>
+                <dd className="font-medium text-gray-900">{confirmData.date}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">{t.gasCost}</dt>
+                <dd className="font-medium text-gray-900">{confirmData.gas}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">{t.parkingCost}</dt>
+                <dd className="font-medium text-gray-900">{confirmData.parking}</dd>
+              </div>
+            </dl>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => resolveConfirm(false)}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => resolveConfirm(true)}
+                className="rounded-xl bg-gray-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98]"
+              >
+                {t.saveCosts}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Missing dates chips */}
       {missingDates.length > 0 && (
         <div>
