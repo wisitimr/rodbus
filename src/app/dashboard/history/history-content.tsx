@@ -257,14 +257,16 @@ function DayBreakdownDetail({
             </div>
             <div className="mt-1 space-y-0.5 text-xs text-gray-400">
               {tripCount > 0 && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between">
                   <span className="text-gray-500">{t.trips}:</span>
-                  {b.outboundCount > 0 && (
-                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
-                  )}
-                  {b.returnCount > 0 && (
-                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
-                  )}
+                  <span className="flex items-center gap-1.5">
+                    {b.outboundCount > 0 && (
+                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
+                    )}
+                    {b.returnCount > 0 && (
+                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
+                    )}
+                  </span>
                 </div>
               )}
               {b.gasOutbound > 0 && (

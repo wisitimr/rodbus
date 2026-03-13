@@ -64,14 +64,16 @@ export default function PendingBreakdown({ entries }: PendingBreakdownProps) {
               </summary>
               <div className="space-y-1 border-t border-gray-100 px-4 pb-3 pt-2 text-xs text-gray-500">
                 {tripCount > 0 && (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between">
                     <span>{t.trips}:</span>
-                    {b.outboundCount > 0 && (
-                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
-                    )}
-                    {b.returnCount > 0 && (
-                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
-                    )}
+                    <span className="flex items-center gap-1.5">
+                      {b.outboundCount > 0 && (
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
+                      )}
+                      {b.returnCount > 0 && (
+                        <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
+                      )}
+                    </span>
                   </div>
                 )}
                 {b.gasOutbound > 0 && (
