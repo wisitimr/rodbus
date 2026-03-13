@@ -49,8 +49,9 @@ export default function TripBreakdownCard({
   if (entry.driverName && !allNames.includes(entry.driverName)) {
     allNames.push(entry.driverName);
   }
+  const driverLabel = (t.driver ?? "Driver").toUpperCase();
   const nameList = allNames
-    .map((n) => (n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n))
+    .map((n) => (n === entry.driverName ? `${n} (${driverLabel})` : n))
     .join(", ");
 
   return (
