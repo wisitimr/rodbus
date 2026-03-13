@@ -175,43 +175,45 @@ export default async function DashboardPage() {
                           const parkingTotal = b.parkingShare * b.passengerCount;
                           return (
                             <li key={i} className="py-2.5">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="min-w-0 truncate text-gray-600">
-                                  {b.carName} &mdash;{" "}
-                                  {formatDateShort(b.date, locale)}
-                                </span>
-                                <span className="shrink-0 font-medium text-gray-900">
-                                  ฿{b.share.toFixed(2)}
-                                </span>
-                              </div>
-                              <div className="mt-1 space-y-0.5 text-xs text-gray-400">
-                                {tripCount > 0 && (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-gray-500">{t.trips}:</span>
-                                    {b.outboundCount > 0 && (
-                                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
-                                    )}
-                                    {b.returnCount > 0 && (
-                                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
-                                    )}
-                                  </div>
-                                )}
-                                {b.gasOutbound > 0 && (
-                                  <p>
-                                    {t.gas} ({t.outbound}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}
-                                  </p>
-                                )}
-                                {b.gasReturn > 0 && (
-                                  <p>
-                                    {t.gas} ({t.return}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}
-                                  </p>
-                                )}
-                                {b.parkingShare > 0 && (
-                                  <p>
-                                    {t.parking}: ฿{parkingTotal.toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}
-                                  </p>
-                                )}
-                              </div>
+                              <details>
+                                <summary className="flex cursor-pointer items-center justify-between gap-3">
+                                  <span className="min-w-0 truncate text-gray-600">
+                                    {b.carName} &mdash;{" "}
+                                    {formatDateShort(b.date, locale)}
+                                  </span>
+                                  <span className="shrink-0 font-medium text-gray-900">
+                                    ฿{b.share.toFixed(2)}
+                                  </span>
+                                </summary>
+                                <div className="mt-1 space-y-0.5 text-xs text-gray-400">
+                                  {tripCount > 0 && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-500">{t.trips}:</span>
+                                      {b.outboundCount > 0 && (
+                                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
+                                      )}
+                                      {b.returnCount > 0 && (
+                                        <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {b.gasOutbound > 0 && (
+                                    <p>
+                                      {t.gas} ({t.outbound}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}
+                                    </p>
+                                  )}
+                                  {b.gasReturn > 0 && (
+                                    <p>
+                                      {t.gas} ({t.return}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}
+                                    </p>
+                                  )}
+                                  {b.parkingShare > 0 && (
+                                    <p>
+                                      {t.parking}: ฿{parkingTotal.toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}
+                                    </p>
+                                  )}
+                                </div>
+                              </details>
                             </li>
                           );
                         })}
