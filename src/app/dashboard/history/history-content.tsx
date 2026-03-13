@@ -33,6 +33,7 @@ interface BreakdownEntry {
   date: string; // ISO date
   carId: string;
   carName: string;
+  licensePlate: string | null;
   share: number;
   gasShare: number;
   gasCost: number;
@@ -40,6 +41,9 @@ interface BreakdownEntry {
   parkingCost: number;
   totalCost: number;
   headcount: number;
+  tripNumber: number;
+  passengerNames: string[];
+  driverName: string | null;
 }
 
 interface DebtWithBreakdown {
@@ -236,97 +240,116 @@ function useInfiniteScroll<T>(items: T[]) {
   };
 }
 
-/** Render per-car calculation detail for a single day's breakdown entries */
-function DayBreakdownDetail({
-  entries,
+/** Render the expanded detail for a single breakdown entry (people, gas, parking, total) */
+function BreakdownExpandedDetail({
+  entry,
   t,
 }: {
-  entries: BreakdownEntry[];
+  entry: BreakdownEntry;
   t: HistoryContentProps["t"];
 }) {
+  const allNames = [...entry.passengerNames];
+  if (entry.driverName && !allNames.includes(entry.driverName)) {
+    allNames.push(entry.driverName);
+  }
+  const nameList = allNames.map((n) =>
+    n === entry.driverName ? `${n} (Driver)` : n
+  ).join(", ");
+  const totalCost = entry.gasCost + entry.parkingCost;
+
   return (
-    <ul className="divide-y divide-gray-100 text-sm">
-      {entries.map((b, i) => {
-        return (
-          <li key={`${b.carId}-${i}`} className="py-2.5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-gray-600">
-                <span className="font-medium">{t.tripNumber} #{i + 1}</span> <span className="text-gray-400">&middot;</span> {b.carName}
-              </span>
-              <span className="shrink-0 font-medium text-gray-900">฿{b.share.toFixed(2)}</span>
-            </div>
-            <div className="mt-1 space-y-0.5 text-xs text-gray-400">
-              {b.gasShare > 0 && (
-                <div className="flex justify-between">
-                  <span>{t.gas}:</span>
-                  <span className="text-gray-700">฿{b.gasCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.gasShare.toFixed(2)}</span>
-                </div>
-              )}
-              {b.parkingShare > 0 && (
-                <div className="flex justify-between">
-                  <span>{t.parking}:</span>
-                  <span className="text-gray-700">฿{b.parkingCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="space-y-2 border-t border-gray-100 px-4 pb-3 pt-3 text-sm">
+      {/* People */}
+      <div>
+        <div className="flex items-center gap-1.5 text-gray-600">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+          <span className="font-medium">{entry.headcount} {t.people}</span>
+        </div>
+        <p className="mt-0.5 pl-5.5 text-xs text-gray-400">{nameList}</p>
+      </div>
+
+      {/* Gas */}
+      {entry.gasShare > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-gray-600">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+            </svg>
+            <span>{t.gas}</span>
+          </div>
+          <span className="text-gray-700">฿{entry.gasCost.toFixed(2)} / {entry.headcount} = <span className="font-medium">฿{entry.gasShare.toFixed(2)}</span></span>
+        </div>
+      )}
+
+      {/* Parking */}
+      {entry.parkingShare > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-gray-600">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 20 20" strokeWidth={0} >
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.5 7.5A.5.5 0 018 7h2.5a2.5 2.5 0 010 5H8.5v1a.5.5 0 01-1 0v-5a.5.5 0 010-.5zm1 1v2H10.5a1.5 1.5 0 000-3H8.5z" clipRule="evenodd" fill="currentColor" />
+            </svg>
+            <span>{t.parking}</span>
+          </div>
+          <span className="text-gray-700">฿{entry.parkingCost.toFixed(2)} / {entry.headcount} = <span className="font-medium">฿{entry.parkingShare.toFixed(2)}</span></span>
+        </div>
+      )}
+
+      {/* Total */}
+      <div className="flex items-center justify-between border-t border-gray-100 pt-2 font-medium text-gray-800">
+        <span>Total</span>
+        <span><span className="line-through text-gray-400 font-normal">฿{totalCost.toFixed(2)}</span> / {entry.headcount} = ฿{entry.share.toFixed(2)}</span>
+      </div>
+    </div>
   );
 }
 
-/** Small checkmark icon for settled periods */
-function SettledIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
 
-/** Small clock icon for pending (not yet paid) periods */
-function PendingIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
-/** Collapsible sub-period row — flat style, no nested card borders */
-function SubPeriodRow({
-  label,
-  total,
+/** Individual breakdown entry card in the summary expanded view */
+function SummaryEntryCard({
+  entry,
+  settled,
   isExpanded,
   onToggle,
-  children,
-  depth = 0,
-  settled = false,
+  locale,
+  t,
 }: {
-  label: string;
-  total: number;
+  entry: BreakdownEntry;
+  settled: boolean;
   isExpanded: boolean;
   onToggle: () => void;
-  children: React.ReactNode;
-  depth?: number;
-  settled?: boolean;
+  locale: string;
+  t: HistoryContentProps["t"];
 }) {
+  const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
+  const dateLabel = new Date(entry.date + "T00:00:00").toLocaleDateString(loc, { month: "short", day: "numeric", year: "numeric" });
+  const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
+
   return (
-    <div className={depth === 0 ? "border-b border-gray-100 last:border-b-0" : ""}>
+    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white">
       <button
         type="button"
         onClick={onToggle}
-        className={`flex w-full items-center justify-between py-2 text-left ${depth > 0 ? "pl-3" : ""}`}
+        className="flex w-full items-start gap-3 px-4 py-3 text-left"
       >
-        <div className="flex items-center gap-1.5">
-          {settled ? <SettledIcon /> : <PendingIcon />}
-          <p className={`text-xs font-medium ${depth === 0 ? "text-gray-600" : "text-gray-500"}`}>{label}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">{dateLabel}</span>
+            <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${settled ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
+              {settled ? t.paid : t.pending}
+            </span>
+          </div>
+          <p className="mt-1 text-sm font-semibold text-gray-800">
+            {entry.carName}{plateLabel} <span className="font-normal text-gray-400">{t.tripNumber} #{entry.tripNumber}</span>
+          </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <p className={`text-xs font-semibold ${settled ? "text-green-600" : "text-amber-600"}`}>฿{total.toFixed(2)}</p>
+        <div className="flex shrink-0 items-center gap-1.5 pt-2">
+          <span className={`text-sm font-bold ${settled ? "text-green-600" : "text-red-500"}`}>
+            ฿{entry.share.toFixed(2)}
+          </span>
           <svg
-            className={`h-3 w-3 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -337,9 +360,7 @@ function SubPeriodRow({
         </div>
       </button>
       {isExpanded && (
-        <div className={`pb-2 ${depth > 0 ? "pl-3" : ""}`}>
-          {children}
-        </div>
+        <BreakdownExpandedDetail entry={entry} t={t} />
       )}
     </div>
   );
@@ -373,98 +394,55 @@ function SummaryCard({
   t: HistoryContentProps["t"];
 }) {
   const entry = group.entries[0];
-  const totalDebt = isAdmin ? group.entries.reduce((s, e) => s + e.totalDebt, 0) : entry.totalDebt;
-  const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
+  const totalDebt = isAdmin ? group.entries.reduce((s, e) => s + e.totalDebt, 0) : entry?.totalDebt ?? 0;
+  const totalPaid = isAdmin ? group.entries.reduce((s, e) => s + e.totalPaid, 0) : entry?.totalPaid ?? 0;
+  const pendingDebt = isAdmin ? group.entries.reduce((s, e) => s + e.pendingDebt, 0) : entry?.pendingDebt ?? 0;
 
-  // Check if this period is fully settled
-  const isSettled = useMemo(() => {
-    if (period === "day") return settledDays.has(group.key);
-    // For month/year: settled if all days with breakdown data within the period are settled
-    const prefix = group.key; // "YYYY-MM" or "YYYY"
-    for (const dateISO of dayBreakdownMap.keys()) {
-      if (dateISO.startsWith(prefix) && !settledDays.has(dateISO)) return false;
-    }
-    return true;
-  }, [period, group.key, settledDays, dayBreakdownMap]);
-
-  // Build sub-period data when expanded
-  const subData = useMemo(() => {
-    if (!isExpanded) return null;
-
-    if (period === "day") {
-      // Day view: show raw breakdown entries for this date
-      return dayBreakdownMap.get(group.key) ?? [];
-    }
-
-    if (period === "month") {
-      // Month view: group day entries within this month
-      const days: { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[] = [];
-      for (const [dateISO, entries] of dayBreakdownMap) {
-        if (dateISO.slice(0, 7) === group.key) {
-          const d = new Date(dateISO + "T00:00:00");
-          days.push({
-            dateISO,
-            label: d.toLocaleDateString(loc, { weekday: "short", day: "numeric", month: "short" }),
-            entries,
-            total: entries.reduce((s, e) => s + e.share, 0),
-          });
+  // Compute grand total (total trip costs before splitting) for this period
+  const grandTotal = useMemo(() => {
+    const seen = new Set<string>();
+    let total = 0;
+    const prefix = group.key;
+    for (const [dateISO, entries] of dayBreakdownMap) {
+      if (!dateISO.startsWith(prefix)) continue;
+      for (const e of entries) {
+        const key = `${e.carId}-${e.date}-${e.tripNumber}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          total += e.totalCost;
         }
       }
-      days.sort((a, b) => b.dateISO.localeCompare(a.dateISO));
-      return days;
     }
+    return Math.round(total * 100) / 100;
+  }, [group.key, dayBreakdownMap]);
 
-    if (period === "year") {
-      // Year view: group into months, each with their day entries
-      const monthMap = new Map<string, { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]>();
-      for (const [dateISO, entries] of dayBreakdownMap) {
-        if (dateISO.slice(0, 4) === group.key) {
-          const monthKey = dateISO.slice(0, 7);
-          if (!monthMap.has(monthKey)) monthMap.set(monthKey, []);
-          const d = new Date(dateISO + "T00:00:00");
-          monthMap.get(monthKey)!.push({
-            dateISO,
-            label: d.toLocaleDateString(loc, { weekday: "short", day: "numeric", month: "short" }),
-            entries,
-            total: entries.reduce((s, e) => s + e.share, 0),
-          });
-        }
+  // Collect all breakdown entries for expanded view
+  const allEntries = useMemo(() => {
+    if (!isExpanded) return [];
+    const entries: BreakdownEntry[] = [];
+    const prefix = group.key;
+    for (const [dateISO, dayEntries] of dayBreakdownMap) {
+      if (dateISO.startsWith(prefix)) {
+        entries.push(...dayEntries);
       }
-      const months: { monthKey: string; label: string; days: typeof monthMap extends Map<string, infer V> ? V : never; total: number }[] = [];
-      for (const [monthKey, days] of monthMap) {
-        days.sort((a, b) => b.dateISO.localeCompare(a.dateISO));
-        const d = new Date(parseInt(monthKey.slice(0, 4)), parseInt(monthKey.slice(5, 7)) - 1, 1);
-        months.push({
-          monthKey,
-          label: d.toLocaleDateString(loc, { month: "long", year: "numeric" }),
-          days,
-          total: days.reduce((s, day) => s + day.total, 0),
-        });
-      }
-      months.sort((a, b) => b.monthKey.localeCompare(a.monthKey));
-      return months;
     }
-
-    return null;
-  }, [isExpanded, period, group.key, dayBreakdownMap, loc]);
+    // Sort by date descending
+    entries.sort((a, b) => b.date.localeCompare(a.date));
+    return entries;
+  }, [isExpanded, group.key, dayBreakdownMap]);
 
   return (
-    <div className="rounded-xl bg-gray-50">
+    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white">
+      {/* Card header */}
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        className="w-full px-4 py-4 text-left"
       >
-        <div className="flex min-w-0 items-center gap-1.5">
-          {isSettled ? <SettledIcon /> : <PendingIcon />}
-          <p className="text-xs font-medium text-gray-500">{group.label}</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <p className={`font-bold ${isSettled ? "text-green-600" : "text-amber-600"}`}>
-            ฿{totalDebt.toFixed(2)}
-          </p>
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-gray-900">{group.label}</h3>
           <svg
-            className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -473,77 +451,34 @@ function SummaryCard({
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
           </svg>
         </div>
+        <p className="mt-1 text-sm text-gray-500">
+          Grand Total: <span className="font-bold text-gray-900">฿{grandTotal.toFixed(2)}</span>
+        </p>
+        <div className="mt-1 flex items-center gap-3 text-sm">
+          <span className="text-red-500">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
+          <span className="text-green-600">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
+          <span className="text-gray-700">Total: <span className="font-bold">฿{totalDebt.toFixed(2)}</span></span>
+        </div>
       </button>
-      {isExpanded && (
-        <div className="border-t border-gray-100 px-4 pb-3">
-          {/* Admin: per-user list */}
-          {isAdmin && group.entries.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
-              {group.entries.map((e) => (
-                <span key={e.userId}>
-                  {e.userName ?? e.userId}
-                  {e.userId === currentUserId && (
-                    <span className="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">{t.you}</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          )}
-          {/* Day view: per-car detail */}
-          {period === "day" && Array.isArray(subData) && (subData as BreakdownEntry[]).length > 0 && (
-            <DayBreakdownDetail entries={subData as BreakdownEntry[]} t={t} />
-          )}
 
-          {/* Month view: day rows */}
-          {period === "month" && Array.isArray(subData) && (subData as { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]).length > 0 && (
-            <div className="mt-1 rounded-lg bg-white px-3 pt-1">
-              {(subData as { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]).map((day) => (
-                <SubPeriodRow
-                  key={day.dateISO}
-                  label={day.label}
-                  total={day.total}
-                  settled={settledDays.has(day.dateISO)}
-                  isExpanded={expandedSubPeriods.has(`${group.key}_${day.dateISO}`)}
-                  onToggle={() => toggleSubPeriod(`${group.key}_${day.dateISO}`)}
-                >
-                  <DayBreakdownDetail entries={day.entries} t={t} />
-                </SubPeriodRow>
-              ))}
-            </div>
-          )}
-
-          {/* Year view: month rows, each with day rows */}
-          {period === "year" && Array.isArray(subData) && (subData as { monthKey: string; label: string; days: { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]; total: number }[]).length > 0 && (
-            <div className="mt-1 rounded-lg bg-white px-3 pt-1">
-              {(subData as { monthKey: string; label: string; days: { dateISO: string; label: string; entries: BreakdownEntry[]; total: number }[]; total: number }[]).map((month) => {
-                const monthSettled = month.days.every((day) => settledDays.has(day.dateISO));
-                return (
-                  <SubPeriodRow
-                    key={month.monthKey}
-                    label={month.label}
-                    total={month.total}
-                    settled={monthSettled}
-                    isExpanded={!expandedSubPeriods.has(`${group.key}_${month.monthKey}`)}
-                    onToggle={() => toggleSubPeriod(`${group.key}_${month.monthKey}`)}
-                  >
-                    {month.days.map((day) => (
-                      <SubPeriodRow
-                        key={day.dateISO}
-                        label={day.label}
-                        total={day.total}
-                        settled={settledDays.has(day.dateISO)}
-                        depth={1}
-                        isExpanded={expandedSubPeriods.has(`${group.key}_${month.monthKey}_${day.dateISO}`)}
-                        onToggle={() => toggleSubPeriod(`${group.key}_${month.monthKey}_${day.dateISO}`)}
-                      >
-                        <DayBreakdownDetail entries={day.entries} t={t} />
-                      </SubPeriodRow>
-                    ))}
-                  </SubPeriodRow>
-                );
-              })}
-            </div>
-          )}
+      {/* Expanded: individual entry cards */}
+      {isExpanded && allEntries.length > 0 && (
+        <div className="space-y-2 border-t border-gray-100 px-4 py-3">
+          {allEntries.map((entry, i) => {
+            const entryKey = `${group.key}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
+            const entrySettled = settledDays.has(entry.date);
+            return (
+              <SummaryEntryCard
+                key={entryKey}
+                entry={entry}
+                settled={entrySettled}
+                isExpanded={expandedSubPeriods.has(entryKey)}
+                onToggle={() => toggleSubPeriod(entryKey)}
+                locale={locale}
+                t={t}
+              />
+            );
+          })}
         </div>
       )}
     </div>
@@ -766,7 +701,7 @@ export default function HistoryContent({
   t,
 }: HistoryContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("trips");
-  const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("day");
+  const summaryPeriod: SummaryPeriod = "month";
 
   // Trip filter state
   const [showTripFilter, setShowTripFilter] = useState(false);
@@ -1019,11 +954,6 @@ export default function HistoryContent({
     },
   ];
 
-  const summaryPeriods: { key: SummaryPeriod; label: string }[] = [
-    { key: "day", label: t.day },
-    { key: "month", label: t.month },
-    { key: "year", label: t.year },
-  ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -1285,54 +1215,35 @@ export default function HistoryContent({
 
       {/* Summary tab */}
       {activeTab === "summary" && (
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-            <div className="flex gap-1.5">
-              {summaryPeriods.map((p) => (
-                <button
-                  key={p.key}
-                  onClick={() => setSummaryPeriod(p.key)}
-                  className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
-                    summaryPeriod === p.key
-                      ? "bg-gray-900 text-white"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                  }`}
-                >
-                  {p.label}
-                </button>
+        <section>
+          {summaryGroups.length === 0 ? (
+            <p className="text-sm text-gray-400">{t.noData}</p>
+          ) : (
+            <div className="space-y-4">
+              {summaryScroll.visible.map((group) => (
+                <SummaryCard
+                  key={group.key}
+                  group={group}
+                  period={summaryPeriod}
+                  isExpanded={isSummaryExpanded(group.key)}
+                  onToggle={() => toggleSummary(group.key)}
+                  dayBreakdownMap={dayBreakdownMap}
+                  expandedSubPeriods={expandedSubPeriods}
+                  toggleSubPeriod={toggleSubPeriod}
+                  settledDays={settledDays}
+                  isAdmin={isAdmin}
+                  currentUserId={currentUserId}
+                  locale={locale}
+                  t={t}
+                />
               ))}
+              {summaryScroll.hasMore && (
+                <div ref={summaryScroll.sentinelRef} className="py-4 text-center text-sm text-gray-400">
+                  Loading...
+                </div>
+              )}
             </div>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {summaryGroups.length === 0 ? (
-              <p className="text-sm text-gray-400">{t.noData}</p>
-            ) : (
-              <div className="space-y-6">
-                {summaryScroll.visible.map((group) => (
-                  <SummaryCard
-                    key={group.key}
-                    group={group}
-                    period={summaryPeriod}
-                    isExpanded={isSummaryExpanded(group.key)}
-                    onToggle={() => toggleSummary(group.key)}
-                    dayBreakdownMap={dayBreakdownMap}
-                    expandedSubPeriods={expandedSubPeriods}
-                    toggleSubPeriod={toggleSubPeriod}
-                    settledDays={settledDays}
-                    isAdmin={isAdmin}
-                    currentUserId={currentUserId}
-                    locale={locale}
-                    t={t}
-                  />
-                ))}
-                {summaryScroll.hasMore && (
-                  <div ref={summaryScroll.sentinelRef} className="py-4 text-center text-sm text-gray-400">
-                    Loading...
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          )}
         </section>
       )}
     </div>

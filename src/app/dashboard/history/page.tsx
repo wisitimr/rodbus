@@ -62,6 +62,7 @@ export default async function HistoryPage() {
       date: b.date.toISOString().split("T")[0],
       carId: b.carId,
       carName: b.carName,
+      licensePlate: b.licensePlate ?? null,
       share: b.share,
       gasShare: b.gasShare,
       gasCost: b.gasCost,
@@ -69,6 +70,9 @@ export default async function HistoryPage() {
       parkingCost: b.parkingCost,
       totalCost: b.totalCost,
       headcount: b.headcount,
+      tripNumber: b.tripNumber,
+      passengerNames: b.passengerNames,
+      driverName: b.driverName,
     })),
   }));
 
