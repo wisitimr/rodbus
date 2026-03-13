@@ -99,6 +99,7 @@ const translations = {
     allUsersLabel: "All Users",
     user: "User",
     deleteUserAction: "Delete",
+    add: "Add",
     addNewCar: "Add New Car",
 
     // Admin
@@ -278,6 +279,7 @@ const translations = {
     allUsersLabel: "ผู้ใช้ทั้งหมด",
     user: "ผู้ใช้",
     deleteUserAction: "ลบ",
+    add: "เพิ่ม",
     addNewCar: "เพิ่มรถใหม่",
 
     // Admin

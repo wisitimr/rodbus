@@ -156,12 +156,12 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
   return (
     <div className="space-y-4">
       {/* Tab bar */}
-      <div className="flex items-center border-b border-gray-200">
+      <div className="flex border-b border-gray-200">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === tab.key
                 ? "border-b-2 border-blue-600 text-blue-600"
                 : "text-gray-400 hover:text-gray-600"
@@ -182,32 +182,6 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
             </h3>
 
             <form onSubmit={handleCreateTrip} className="space-y-4">
-              {/* Car selector */}
-              <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
-                  </svg>
-                  {t.selectCar}
-                </label>
-                <select
-                  value={selectedCarId}
-                  onChange={(e) => {
-                    setSelectedCarId(e.target.value);
-                    const c = cars.find((c) => c.id === e.target.value);
-                    setGasCost(c?.defaultGasCost ? c.defaultGasCost.toString() : "");
-                    setParkingCost("0");
-                  }}
-                  className={inputClass}
-                >
-                  {cars.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}{c.licensePlate ? ` (${c.licensePlate})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {/* Gas & Parking */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
