@@ -24,7 +24,6 @@ export default function CostForm({ cars, todayTrips: initialTrips }: CostFormPro
 
   const [carId, setCarId] = useState(cars[0]?.id ?? "");
   const [todayTrips, setTodayTrips] = useState<TripCostEntry[]>(initialTrips);
-  const [showForm, setShowForm] = useState(false);
 
   const car = cars.find((c) => c.id === carId);
   const [gasCost, setGasCost] = useState(() => car?.defaultGasCost ? car.defaultGasCost.toString() : "");
@@ -48,10 +47,10 @@ export default function CostForm({ cars, todayTrips: initialTrips }: CostFormPro
   }, [carId]);
 
   function resetForm() {
-    const c = cars.find((c) => c.id === carId);
-    setGasCost(c?.defaultGasCost ? c.defaultGasCost.toString() : "");
+    const firstCar = cars[0];
+    setCarId(firstCar?.id ?? "");
+    setGasCost(firstCar?.defaultGasCost ? firstCar.defaultGasCost.toString() : "");
     setParkingCost("0");
-    setShowForm(false);
     setStatus("idle");
   }
 
@@ -140,72 +139,53 @@ export default function CostForm({ cars, todayTrips: initialTrips }: CostFormPro
         </div>
       )}
 
-      {/* New Trip button / form */}
-      {!showForm ? (
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className="w-full rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98] sm:w-auto sm:py-2.5"
-        >
-          + {t.newTrip}
-        </button>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-200 p-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {t.gasCost} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                value={gasCost}
-                onChange={(e) => setGasCost(e.target.value)}
-                placeholder="0.00"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {t.parkingCost} <span className="normal-case tracking-normal font-normal text-gray-400">({t.optional})</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={parkingCost}
-                onChange={(e) => setParkingCost(e.target.value)}
-                placeholder="0"
-                className={inputClass}
-              />
-            </div>
+      {/* Always-visible cost form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+              {t.gasCost} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              value={gasCost}
+              onChange={(e) => setGasCost(e.target.value)}
+              placeholder="0.00"
+              className={inputClass}
+            />
           </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+              {t.parkingCost} <span className="normal-case tracking-normal font-normal text-gray-400">({t.optional})</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={parkingCost}
+              onChange={(e) => setParkingCost(e.target.value)}
+              placeholder="0"
+              className={inputClass}
+            />
+          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="submit"
-              disabled={status === "saving"}
-              className="rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 sm:py-2.5"
-            >
-              {t.saveCosts}{status === "saving" && "..."}
-            </button>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.98] sm:py-2.5"
-            >
-              {t.cancel}
-            </button>
-            {status === "error" && (
-              <p className="text-sm font-medium text-red-600">
-                {t.failedToSave}
-              </p>
-            )}
-          </div>
-        </form>
-      )}
+        <button
+          type="submit"
+          disabled={status === "saving"}
+          className="w-full rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 sm:py-2.5"
+        >
+          {t.saveCosts}{status === "saving" && "..."}
+        </button>
+        {status === "error" && (
+          <p className="text-sm font-medium text-red-600">
+            {t.failedToSave}
+          </p>
+        )}
+      </form>
     </div>
   );
 }

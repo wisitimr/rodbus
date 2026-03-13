@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { updateTripDate, deleteTrip } from "@/lib/trip-actions";
 
 type Tab = "trips" | "payments" | "summary";
 type SummaryPeriod = "day" | "month" | "year";
@@ -90,6 +91,11 @@ interface HistoryContentProps {
     splitAmong: string;
     passenger: string;
     paidDate: string;
+    editTrip: string;
+    deleteTrip: string;
+    confirmDeleteTrip: string;
+    save: string;
+    cancel: string;
   };
 }
 
@@ -773,6 +779,39 @@ export default function HistoryContent({
   // Admin: filter to own data only
   const [onlyMe, setOnlyMe] = useState(false);
 
+  // Trip edit/delete state
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function handleEditStart(trip: Trip) {
+    setEditingTripId(trip.id);
+    setEditDate(trip.dateISO);
+  }
+
+  function handleEditCancel() {
+    setEditingTripId(null);
+    setEditDate("");
+  }
+
+  function handleEditSave(tripId: string) {
+    startTransition(async () => {
+      try {
+        await updateTripDate(tripId, editDate);
+        setEditingTripId(null);
+        setEditDate("");
+      } catch { /* ignore */ }
+    });
+  }
+
+  function handleDelete(tripId: string) {
+    if (!confirm(t.confirmDeleteTrip)) return;
+    startTransition(async () => {
+      try {
+        await deleteTrip(tripId);
+      } catch { /* ignore */ }
+    });
+  }
 
   // Expanded payment details
   const [expandedPayments, setExpandedPayments] = useState<Set<string>>(new Set());
@@ -995,22 +1034,77 @@ export default function HistoryContent({
               <>
                 {/* Mobile */}
                 <div className="space-y-2 sm:hidden">
-                  {tripScroll.visible.map((trip) => (
-                    <div
-                      key={trip.id}
-                      className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800">{trip.carName}</p>
-                        <p className="text-xs text-gray-500">
-                          {isAdmin && trip.userName && (
-                            <span className="font-medium text-gray-600">{trip.userName} &middot; </span>
+                  {tripScroll.visible.map((trip) => {
+                    const canEdit = trip.userId === currentUserId || isAdmin;
+                    const isEditing = editingTripId === trip.id;
+                    return (
+                      <div
+                        key={trip.id}
+                        className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-800">{trip.carName}</p>
+                          {isEditing ? (
+                            <div className="mt-1 flex items-center gap-2">
+                              <input
+                                type="date"
+                                value={editDate}
+                                onChange={(e) => setEditDate(e.target.value)}
+                                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleEditSave(trip.id)}
+                                disabled={isPending}
+                                className="rounded-lg bg-gray-900 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                              >
+                                {t.save}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleEditCancel}
+                                className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600"
+                              >
+                                {t.cancel}
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">
+                              {isAdmin && trip.userName && (
+                                <span className="font-medium text-gray-600">{trip.userName} &middot; </span>
+                              )}
+                              {fmtDate(trip.dateISO, locale)} &middot; {trip.time}
+                            </p>
                           )}
-                          {fmtDate(trip.dateISO, locale)} &middot; {trip.time}
-                        </p>
+                        </div>
+                        {canEdit && !isEditing && (
+                          <div className="ml-2 flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleEditStart(trip)}
+                              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                              title={t.editTrip}
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(trip.id)}
+                              disabled={isPending}
+                              className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                              title={t.deleteTrip}
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Desktop */}
@@ -1022,17 +1116,77 @@ export default function HistoryContent({
                         <th className="pb-3 font-semibold">{t.time}</th>
                         {isAdmin && <th className="pb-3 font-semibold">{t.passenger}</th>}
                         <th className="pb-3 font-semibold">{t.car}</th>
+                        <th className="pb-3 font-semibold" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {tripScroll.visible.map((trip) => (
-                        <tr key={trip.id} className="hover:bg-gray-50/50">
-                          <td className="py-3 text-gray-700">{fmtDate(trip.dateISO, locale)}</td>
-                          <td className="py-3 text-gray-500">{trip.time}</td>
-                          {isAdmin && <td className="py-3 text-gray-600">{trip.userName ?? "—"}</td>}
-                          <td className="py-3 font-medium text-gray-800">{trip.carName}</td>
-                        </tr>
-                      ))}
+                      {tripScroll.visible.map((trip) => {
+                        const canEdit = trip.userId === currentUserId || isAdmin;
+                        const isEditing = editingTripId === trip.id;
+                        return (
+                          <tr key={trip.id} className="hover:bg-gray-50/50">
+                            <td className="py-3 text-gray-700">
+                              {isEditing ? (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="date"
+                                    value={editDate}
+                                    onChange={(e) => setEditDate(e.target.value)}
+                                    className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditSave(trip.id)}
+                                    disabled={isPending}
+                                    className="rounded-lg bg-gray-900 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                                  >
+                                    {t.save}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleEditCancel}
+                                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600"
+                                  >
+                                    {t.cancel}
+                                  </button>
+                                </div>
+                              ) : (
+                                fmtDate(trip.dateISO, locale)
+                              )}
+                            </td>
+                            <td className="py-3 text-gray-500">{trip.time}</td>
+                            {isAdmin && <td className="py-3 text-gray-600">{trip.userName ?? "—"}</td>}
+                            <td className="py-3 font-medium text-gray-800">{trip.carName}</td>
+                            <td className="py-3 text-right">
+                              {canEdit && !isEditing && (
+                                <div className="flex justify-end gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditStart(trip)}
+                                    className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    title={t.editTrip}
+                                  >
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(trip.id)}
+                                    disabled={isPending}
+                                    className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                                    title={t.deleteTrip}
+                                  >
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

@@ -83,6 +83,10 @@ const translations = {
     viewAll: "View All",
     allUsersActivity: "All Users Activity",
     allUsers: "All Users",
+    editTrip: "Edit",
+    deleteTrip: "Delete",
+    confirmDeleteTrip: "Delete this trip? This action cannot be undone.",
+    save: "Save",
 
     // Admin
     settings: "Settings",
@@ -240,6 +244,10 @@ const translations = {
     viewAll: "ดูทั้งหมด",
     allUsersActivity: "กิจกรรมผู้ใช้ทั้งหมด",
     allUsers: "ทุกคน",
+    editTrip: "แก้ไข",
+    deleteTrip: "ลบ",
+    confirmDeleteTrip: "ลบการเดินทางนี้? ไม่สามารถยกเลิกได้",
+    save: "บันทึก",
 
     // Admin
     settings: "ตั้งค่า",
