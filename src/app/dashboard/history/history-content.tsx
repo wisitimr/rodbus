@@ -249,7 +249,9 @@ function DayBreakdownDetail({
         return (
           <li key={`${b.carId}-${i}`} className="py-2.5">
             <div className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-gray-600">{b.carName}</span>
+              <span className="min-w-0 truncate text-gray-600">
+                <span className="font-medium">{t.tripNumber} #{i + 1}</span> <span className="text-gray-400">&middot;</span> {b.carName}
+              </span>
               <span className="shrink-0 font-medium text-gray-900">฿{b.share.toFixed(2)}</span>
             </div>
             <div className="mt-1 space-y-0.5 text-xs text-gray-400">
