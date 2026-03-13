@@ -1,6 +1,6 @@
-# Carpool NFC
+# RodBus NFC Tracker
 
-A carpool cost-splitting app where passengers tap NFC stickers (or scan QR codes) to log rides, and costs are automatically split fairly among participants.
+A bus/ride cost-splitting app where passengers tap NFC stickers (or scan QR codes) to log rides, and costs are automatically split fairly among participants.
 
 ## Tech Stack
 
@@ -79,7 +79,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | **Trip** | Single NFC tap — OUTBOUND or RETURN |
 | **DailyCost** | Per-car daily gas + parking cost |
 | **Payment** | Debt settlement record with amount and note |
-| **DisabledDate** | Dates when carpool is not operating |
+| **DisabledDate** | Dates when service is not operating |
 
 ## Cost Splitting Logic
 
