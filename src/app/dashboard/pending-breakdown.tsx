@@ -23,8 +23,6 @@ export default function PendingBreakdown({ entries }: PendingBreakdownProps) {
   const { t } = useT();
   const [visibleCount, setVisibleCount] = useState(5);
   const [expandedSet, setExpandedSet] = useState<Set<number>>(new Set());
-  const [showBreakdown, setShowBreakdown] = useState(false);
-
   // Group by date and assign trip numbers
   const grouped = useMemo(() => {
     const groups: { date: string; items: (BreakdownEntry & { tripNum: number; idx: number })[] }[] = [];
@@ -76,16 +74,20 @@ export default function PendingBreakdown({ entries }: PendingBreakdownProps) {
   }
 
   return (
-    <div className="mt-4">
-      <button
-        type="button"
-        onClick={() => setShowBreakdown(!showBreakdown)}
-        className="text-sm font-medium text-blue-600 transition hover:text-blue-700"
-      >
+    <details className="mt-4 group/bd">
+      <summary className="flex cursor-pointer list-none items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700 [&::-webkit-details-marker]:hidden">
         {t.viewCostBreakdown}
-      </button>
-
-      {showBreakdown && (
+        <svg
+          className="h-4 w-4 transition-transform group-open/bd:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </summary>
+      <div className="mt-0">{/* wrapper for open content */}
         <div className="mt-3 space-y-5">
           {visibleGrouped.map((group) => (
             <div key={group.date}>
@@ -163,7 +165,7 @@ export default function PendingBreakdown({ entries }: PendingBreakdownProps) {
             </button>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </details>
   );
 }
