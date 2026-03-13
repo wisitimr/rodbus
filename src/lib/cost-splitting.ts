@@ -12,6 +12,11 @@ export interface UserDebt {
     date: Date;
     share: number;
     gasShare: number;
+    gasOutbound: number;
+    gasReturn: number;
+    gasCost: number;
+    outboundHeadcount: number;
+    returnHeadcount: number;
     parkingShare: number;
     outboundCount: number;
     returnCount: number;
@@ -109,6 +114,11 @@ export async function calculateDebts(
         date: cost.date,
         share: Math.round(share * 100) / 100,
         gasShare: Math.round(gasShare * 100) / 100,
+        gasOutbound: Math.round(gasOutbound * 100) / 100,
+        gasReturn: Math.round(gasReturn * 100) / 100,
+        gasCost: cost.gasCost,
+        outboundHeadcount,
+        returnHeadcount,
         parkingShare: Math.round(parkingShare * 100) / 100,
         outboundCount: hasOutbound ? 1 : 0,
         returnCount: hasReturn ? 1 : 0,

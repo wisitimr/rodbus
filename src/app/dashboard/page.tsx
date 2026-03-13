@@ -152,6 +152,8 @@ export default async function DashboardPage() {
                         ...entry,
                         share: Math.round((entry.share - remaining) * 100) / 100,
                         gasShare: Math.round(entry.gasShare * ratio * 100) / 100,
+                        gasOutbound: Math.round(entry.gasOutbound * ratio * 100) / 100,
+                        gasReturn: Math.round(entry.gasReturn * ratio * 100) / 100,
                         parkingShare: Math.round(entry.parkingShare * ratio * 100) / 100,
                       });
                       remaining = 0;
@@ -170,7 +172,6 @@ export default async function DashboardPage() {
                       <ul className="mt-3 divide-y divide-gray-100 text-sm">
                         {pending.map((b, i) => {
                           const tripCount = b.outboundCount + b.returnCount;
-                          const gasCostPerTrip = tripCount > 0 ? b.gasShare / tripCount : 0;
                           const parkingTotal = b.parkingShare * b.passengerCount;
                           return (
                             <li key={i} className="py-2.5">
@@ -195,9 +196,14 @@ export default async function DashboardPage() {
                                     )}
                                   </div>
                                 )}
-                                {b.gasShare > 0 && (
+                                {b.gasOutbound > 0 && (
                                   <p>
-                                    {t.gas}: ฿{gasCostPerTrip.toFixed(2)} × {tripCount} {t.trip} = ฿{b.gasShare.toFixed(2)}
+                                    {t.gas} ({t.outbound}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}
+                                  </p>
+                                )}
+                                {b.gasReturn > 0 && (
+                                  <p>
+                                    {t.gas} ({t.return}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}
                                   </p>
                                 )}
                                 {b.parkingShare > 0 && (
