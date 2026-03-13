@@ -17,14 +17,14 @@ interface DashboardContentProps {
   pendingDebt: number;
   pendingCount: number;
   debtEntries: BreakdownCardEntry[];
-  recentCheckIns: RecentTrip[];
+  recentTrips: RecentTrip[];
 }
 
 export default function DashboardContent({
   pendingDebt,
   pendingCount,
   debtEntries,
-  recentCheckIns,
+  recentTrips,
 }: DashboardContentProps) {
   const { t } = useT();
   const [debtOpen, setDebtOpen] = useState(true);
@@ -159,7 +159,7 @@ export default function DashboardContent({
           className="flex w-full items-center justify-between py-2"
         >
           <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500">
-            {t.recentCheckIns}
+            {t.recentTrips}
           </h2>
           <div className="flex items-center gap-2">
             <svg
@@ -176,11 +176,11 @@ export default function DashboardContent({
 
         {recentOpen && (
           <>
-            {recentCheckIns.length === 0 ? (
+            {recentTrips.length === 0 ? (
               <p className="py-4 text-center text-sm text-gray-400">{t.noCheckInHistory}</p>
             ) : (
               <div className="mt-1 space-y-2">
-                {recentCheckIns.map((trip) => (
+                {recentTrips.map((trip) => (
                   <div
                     key={trip.id}
                     className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm"

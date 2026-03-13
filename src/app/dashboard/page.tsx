@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
-  const [debts, recentCheckIns] = await Promise.all([
+  const [debts, recentTrips] = await Promise.all([
     calculateDebts(startOfMonth, endOfMonth),
     prisma.checkIn.findMany({
       where: { userId },
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
 
   // Compute trip numbers for recent check-ins by querying Trip ordering
   const tripNumberMap = new Map<string, number>();
-  const tripIds = [...new Set(recentCheckIns.map((c) => c.tripId).filter(Boolean))] as string[];
+  const tripIds = [...new Set(recentTrips.map((c) => c.tripId).filter(Boolean))] as string[];
   if (tripIds.length > 0) {
     const trips = await prisma.trip.findMany({
       where: { id: { in: tripIds } },
@@ -108,7 +108,7 @@ export default async function DashboardPage() {
       }
     }
     const tripLookup = new Map(trips.map((t) => [t.id, t]));
-    for (const checkIn of recentCheckIns) {
+    for (const checkIn of recentTrips) {
       if (!checkIn.tripId) continue;
       const trip = tripLookup.get(checkIn.tripId);
       if (!trip) continue;
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
   }
 
   // Format recent check-ins for client component
-  const formattedRecentTrips = recentCheckIns.map((checkIn) => ({
+  const formattedRecentTrips = recentTrips.map((checkIn) => ({
     id: checkIn.id,
     date: formatDateMedium(checkIn.date, locale),
     time: checkIn.tappedAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
           pendingDebt={myDebt?.pendingDebt ?? 0}
           pendingCount={pendingEntries.length}
           debtEntries={debtEntries}
-          recentCheckIns={formattedRecentTrips}
+          recentTrips={formattedRecentTrips}
         />
       </div>
 
