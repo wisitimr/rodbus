@@ -124,10 +124,6 @@ export default function CostForm({ cars, todayTrips: initialTrips }: CostFormPro
               className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
             >
               <div>
-                <p className="text-sm font-medium text-gray-800">
-                  {t.tripNumber} #{i + 1}
-                  {tc.label && <span className="ml-2 text-gray-500">{tc.label}</span>}
-                </p>
                 <p className="text-xs text-gray-500">
                   {t.gas}: ฿{tc.gasCost}
                   {tc.parkingCost > 0 && <> &middot; {t.parking}: ฿{tc.parkingCost}</>}
