@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { SignInButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -72,21 +71,15 @@ export default async function Home() {
         ))}
       </div>
 
-      {/* CTA buttons */}
+      {/* CTA button */}
       <div
-        className="animate-fade-in-up mt-10 flex w-full max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
+        className="animate-fade-in-up mt-10 flex w-full max-w-xs flex-col sm:max-w-none sm:items-center"
         style={{ animationDelay: "300ms" }}
       >
-        <Link
-          href="/dashboard"
-          className="group relative flex items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] sm:py-3.5"
-        >
-          <span className="relative z-10">{t.goToDashboard}</span>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 transition-opacity group-hover:opacity-100" />
-        </Link>
         <SignInButton>
-          <button className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white/80 px-8 py-4 font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition-all hover:border-gray-300 hover:shadow-md active:scale-[0.98] sm:py-3.5">
-            {t.signIn}
+          <button className="group relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] sm:w-auto sm:py-3.5">
+            <span className="relative z-10">{t.signIn}</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
         </SignInButton>
       </div>
