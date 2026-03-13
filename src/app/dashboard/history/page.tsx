@@ -132,6 +132,7 @@ export default async function HistoryPage() {
           paid: t.paid,
           pending: t.pending,
           you: t.you,
+          onlyMe: t.onlyMe,
           trip: t.trip,
           people: t.people,
           splitAmong: t.splitAmong,

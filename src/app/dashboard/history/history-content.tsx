@@ -87,6 +87,7 @@ interface HistoryContentProps {
     paid: string;
     pending: string;
     you: string;
+    onlyMe: string;
     trip: string;
     people: string;
     splitAmong: string;
@@ -973,7 +974,7 @@ export default function HistoryContent({
               onChange={(e) => setOnlyMe(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
             />
-            {t.you}
+            {t.onlyMe}
           </label>
         )}
       </div>
