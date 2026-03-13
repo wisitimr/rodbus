@@ -464,11 +464,11 @@ function SummaryCard({
         className="flex w-full items-center justify-between px-4 py-3 text-left"
       >
         <div className="flex min-w-0 items-center gap-1.5">
-          {isSettled && <SettledIcon />}
+          {isSettled ? <SettledIcon /> : <PendingIcon />}
           <p className="text-xs font-medium text-gray-500">{group.label}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <p className={`font-bold ${isSettled ? "text-green-600" : "text-gray-800"}`}>
+          <p className={`font-bold ${isSettled ? "text-green-600" : "text-amber-600"}`}>
             ฿{totalDebt.toFixed(2)}
           </p>
           <svg
