@@ -83,9 +83,10 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Cost Splitting Logic
 
-- **Gas:** `gasCost × tripCount` per passenger per day
-- **Parking:** `parkingCost ÷ (passengers + driver)` per person per day
-- Payments are applied to the oldest debts first
+- **Gas:** Daily gas cost is split in half per leg (outbound / return). Each half is divided equally among that leg's headcount (passengers + driver). A passenger only pays for legs they rode.
+- **Parking:** Split equally among outbound riders (passengers + driver).
+- **Driver** (car owner) never owes debt — only passengers pay.
+- Payments are applied to the oldest debts first.
 
 ## Project Structure
 
