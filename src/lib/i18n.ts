@@ -76,6 +76,7 @@ const translations = {
     paidDate: "Paid Date",
     viewAll: "View All",
     allUsersActivity: "All Users Activity",
+    allUsers: "All Users",
 
     // Admin
     settings: "Settings",
@@ -220,6 +221,7 @@ const translations = {
     paidDate: "วันที่จ่าย",
     viewAll: "ดูทั้งหมด",
     allUsersActivity: "กิจกรรมผู้ใช้ทั้งหมด",
+    allUsers: "ทุกคน",
 
     // Admin
     settings: "ตั้งค่า",
