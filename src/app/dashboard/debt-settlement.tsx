@@ -38,6 +38,7 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(
     () => new Set(debts.filter((d) => d.pendingDebt > 0).map((d) => d.userId))
   );
+  const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
 
   function toggle(set: Set<string>, id: string): Set<string> {
     const next = new Set(set);
@@ -126,33 +127,49 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
             {isExpanded && (
               <div className="border-t border-gray-100 px-4 pb-3 pt-2">
                 {/* Cost breakdown */}
-                {pendingBreakdown.length > 0 && (
-                  <ul className="divide-y divide-gray-100 text-sm">
-                    {pendingBreakdown.map((b, i) => (
-                      <li key={i} className="py-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="min-w-0 truncate text-xs text-gray-600">
-                            {b.carName} &mdash; {b.date} ({b.passengerCount} {t.people})
-                          </span>
-                          <span className="shrink-0 text-xs font-medium text-gray-900">
-                            ฿{b.share.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="mt-0.5 space-y-0.5 text-xs text-gray-400">
-                          {b.gasOutbound > 0 && (
-                            <p>{t.gas} ({t.outbound}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}</p>
-                          )}
-                          {b.gasReturn > 0 && (
-                            <p>{t.gas} ({t.return}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}</p>
-                          )}
-                          {b.parkingShare > 0 && (
-                            <p>{t.parking}: ฿{(b.parkingShare * b.passengerCount).toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}</p>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {pendingBreakdown.length > 0 && (() => {
+                  const limit = visibleCounts[d.userId] ?? 5;
+                  const visible = pendingBreakdown.slice(0, limit);
+                  const hasMore = limit < pendingBreakdown.length;
+                  return (
+                    <>
+                      <ul className="divide-y divide-gray-100 text-sm">
+                        {visible.map((b, i) => (
+                          <li key={i} className="py-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="min-w-0 truncate text-xs text-gray-600">
+                                {b.carName} &mdash; {b.date} ({b.passengerCount} {t.people})
+                              </span>
+                              <span className="shrink-0 text-xs font-medium text-gray-900">
+                                ฿{b.share.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 space-y-0.5 text-xs text-gray-400">
+                              {b.gasOutbound > 0 && (
+                                <p>{t.gas} ({t.outbound}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}</p>
+                              )}
+                              {b.gasReturn > 0 && (
+                                <p>{t.gas} ({t.return}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}</p>
+                              )}
+                              {b.parkingShare > 0 && (
+                                <p>{t.parking}: ฿{(b.parkingShare * b.passengerCount).toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}</p>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      {hasMore && (
+                        <button
+                          type="button"
+                          onClick={() => setVisibleCounts((prev) => ({ ...prev, [d.userId]: limit + 5 }))}
+                          className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                        >
+                          {t.loadMore}
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Actions */}
                 <div className="mt-3">
