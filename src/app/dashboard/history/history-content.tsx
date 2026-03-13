@@ -311,7 +311,7 @@ function SummaryCard({
   const totalPaid = isAdmin ? group.entries.reduce((s, e) => s + e.totalPaid, 0) : entry?.totalPaid ?? 0;
   const pendingDebt = isAdmin ? group.entries.reduce((s, e) => s + e.pendingDebt, 0) : entry?.pendingDebt ?? 0;
 
-  // Compute grand total (total trip costs before splitting) for this period
+  // Compute grand total (total trip costs before splitting, excluding driver share) for this period
   const grandTotal = useMemo(() => {
     const seen = new Set<string>();
     let total = 0;
@@ -322,7 +322,9 @@ function SummaryCard({
         const key = `${e.carId}-${e.date}-${e.tripNumber}`;
         if (!seen.has(key)) {
           seen.add(key);
-          total += e.totalCost;
+          // Exclude driver's share: total cost minus one person's share
+          const passengerTotal = e.headcount > 1 ? e.totalCost * (e.headcount - 1) / e.headcount : 0;
+          total += passengerTotal;
         }
       }
     }
@@ -370,7 +372,7 @@ function SummaryCard({
         <div className="mt-1 flex items-center gap-3 text-sm">
           <span className="text-red-500">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
           <span className="text-green-600">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
-          <span className="text-gray-700">Total: <span className="font-bold">฿{totalDebt.toFixed(2)}</span></span>
+          <span className="ml-auto text-gray-700">Total: <span className="font-bold">฿{totalDebt.toFixed(2)}</span></span>
         </div>
       </button>
 
@@ -871,12 +873,12 @@ export default function HistoryContent({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Tab bar */}
-      <div className="flex items-center border-b border-gray-200">
+      <div className="flex border-b border-gray-200">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${
               activeTab === tab.key
                 ? "border-b-2 border-blue-600 text-blue-600"
                 : "text-gray-400 hover:text-gray-600"
@@ -886,36 +888,11 @@ export default function HistoryContent({
             {tab.label}
           </button>
         ))}
-        {isAdmin && (
-          <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-sm text-gray-500">
-            <input
-              type="checkbox"
-              checked={onlyMe}
-              onChange={(e) => setOnlyMe(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
-            />
-            {t.onlyMe}
-          </label>
-        )}
       </div>
 
       {/* Trips tab */}
       {activeTab === "trips" && (
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <DateFilterBar
-            show={showTripFilter}
-            onToggle={() => setShowTripFilter(!showTripFilter)}
-            dateFrom={tripDateFrom}
-            dateTo={tripDateTo}
-            hasFilter={hasTripFilter}
-            onFromChange={(v) => { setTripDateFrom(v); if (tripDateTo && v > tripDateTo) setTripDateTo(""); setTripRangeStep("to"); }}
-            onToChange={(v) => { setTripDateTo(v); setTripRangeStep("from"); }}
-            onClear={clearTripFilter}
-            onCalendarSelect={handleTripCalendarSelect}
-            dateLabel={t.date}
-            locale={locale}
-          />
-
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {filteredTrips.length === 0 ? (
               <p className="text-sm text-gray-400">{t.noTripHistory}</p>
@@ -1065,19 +1042,6 @@ export default function HistoryContent({
       {/* Payments tab */}
       {activeTab === "payments" && (
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <DateFilterBar
-            show={showPaymentFilter}
-            onToggle={() => setShowPaymentFilter(!showPaymentFilter)}
-            dateFrom={payDateFrom}
-            dateTo={payDateTo}
-            hasFilter={hasPaymentFilter}
-            onFromChange={(v) => { setPayDateFrom(v); if (payDateTo && v > payDateTo) setPayDateTo(""); setPayRangeStep("to"); }}
-            onToChange={(v) => { setPayDateTo(v); setPayRangeStep("from"); }}
-            onClear={clearPaymentFilter}
-            onCalendarSelect={handlePayCalendarSelect}
-            dateLabel={t.date}
-            locale={locale}
-          />
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {filteredPayments.length === 0 ? (
               <p className="text-sm text-gray-400">{t.noPayments}</p>

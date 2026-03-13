@@ -162,13 +162,6 @@ export default function DashboardContent({
             {t.recentTrips}
           </h2>
           <div className="flex items-center gap-2">
-            <a
-              href="/dashboard/history"
-              className="text-xs font-medium text-blue-500 hover:text-blue-600"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {t.viewAll}
-            </a>
             <svg
               className={`h-4 w-4 text-gray-400 transition-transform ${recentOpen ? "rotate-180" : ""}`}
               fill="none"

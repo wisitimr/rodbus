@@ -6,6 +6,7 @@ import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateShort } from "@/lib/i18n";
 import HistoryContent from "./history-content";
+import BottomNav from "../bottom-nav";
 
 export default async function HistoryPage() {
   const user = await getCurrentUser();
@@ -89,7 +90,7 @@ export default async function HistoryPage() {
   }));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
       <header className="animate-fade-in mb-6 flex items-center gap-3 px-1 pt-4 sm:mb-8">
         <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-blue-400 text-blue-500">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -147,6 +148,8 @@ export default async function HistoryPage() {
           cancel: t.cancel,
         }}
       />
+
+      <BottomNav isAdmin={isAdmin} />
     </main>
   );
 }
