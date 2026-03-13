@@ -314,7 +314,7 @@ function SummaryCard({
   const totalPaid = isAdmin ? group.entries.reduce((s, e) => s + e.totalPaid, 0) : entry?.totalPaid ?? 0;
   const pendingDebt = isAdmin ? group.entries.reduce((s, e) => s + e.pendingDebt, 0) : entry?.pendingDebt ?? 0;
 
-  // Compute grand total (total trip costs before splitting, excluding driver share) for this period
+  // Compute grand total (total trip costs before splitting) for this period
   const grandTotal = useMemo(() => {
     const seen = new Set<string>();
     let total = 0;
@@ -325,9 +325,7 @@ function SummaryCard({
         const key = `${e.carId}-${e.date}-${e.tripNumber}`;
         if (!seen.has(key)) {
           seen.add(key);
-          // Exclude driver's share: total cost minus one person's share
-          const passengerTotal = e.headcount > 1 ? e.totalCost * (e.headcount - 1) / e.headcount : 0;
-          total += passengerTotal;
+          total += e.totalCost;
         }
       }
     }
