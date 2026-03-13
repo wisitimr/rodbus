@@ -150,28 +150,37 @@ export default async function DashboardPage() {
             </div>
             <div className="px-5 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                {recentTrips.slice(0, 5).map((trip) => (
-                  <div
-                    key={trip.id}
-                    className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-800">
-                        {trip.car.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {isAdmin && trip.user?.name && (
-                          <span className="font-medium text-gray-600">{trip.user.name} &middot; </span>
-                        )}
-                        {formatDateShort(trip.date, locale)} &middot;{" "}
-                        {trip.tappedAt.toLocaleTimeString(locale, {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                {(() => {
+                  const recent = recentTrips.slice(0, 5);
+                  const countByDate = new Map<string, number>();
+                  return recent.map((trip) => {
+                    const dateKey = trip.date.toISOString().split("T")[0];
+                    const num = (countByDate.get(dateKey) ?? 0) + 1;
+                    countByDate.set(dateKey, num);
+                    return (
+                      <div
+                        key={trip.id}
+                        className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-800">
+                            {t.tripNumber} #{num} <span className="font-normal text-gray-400">&middot;</span> <span className="font-normal text-gray-500">{trip.car.name}</span>
+                          </p>
+                          <p className="mt-0.5 text-xs text-gray-500">
+                            {isAdmin && trip.user?.name && (
+                              <span className="font-medium text-gray-600">{trip.user.name} &middot; </span>
+                            )}
+                            {formatDateShort(trip.date, locale)} &middot;{" "}
+                            {trip.tappedAt.toLocaleTimeString(locale, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
               <div className="mt-4">
