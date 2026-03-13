@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { updateTripDate, deleteTrip } from "@/lib/trip-actions";
+import TripBreakdownCard from "@/components/trip-breakdown-card";
 
 type Tab = "trips" | "payments" | "summary";
 type SummaryPeriod = "day" | "month" | "year";
@@ -240,73 +241,7 @@ function useInfiniteScroll<T>(items: T[]) {
   };
 }
 
-/** Render the expanded detail for a single breakdown entry (people, gas, parking, total) */
-function BreakdownExpandedDetail({
-  entry,
-  t,
-}: {
-  entry: BreakdownEntry;
-  t: HistoryContentProps["t"];
-}) {
-  const allNames = [...entry.passengerNames];
-  if (entry.driverName && !allNames.includes(entry.driverName)) {
-    allNames.push(entry.driverName);
-  }
-  const nameList = allNames.map((n) =>
-    n === entry.driverName ? `${n} (Driver)` : n
-  ).join(", ");
-  const totalCost = entry.gasCost + entry.parkingCost;
-
-  return (
-    <div className="space-y-2 border-t border-gray-100 px-4 pb-3 pt-3 text-sm">
-      {/* People */}
-      <div>
-        <div className="flex items-center gap-1.5 text-gray-600">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-          </svg>
-          <span className="font-medium">{entry.headcount} {t.people}</span>
-        </div>
-        <p className="mt-0.5 pl-5.5 text-xs text-gray-400">{nameList}</p>
-      </div>
-
-      {/* Gas */}
-      {entry.gasShare > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-gray-600">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-            </svg>
-            <span>{t.gas}</span>
-          </div>
-          <span className="text-gray-700">฿{entry.gasCost.toFixed(2)} / {entry.headcount} = <span className="font-medium">฿{entry.gasShare.toFixed(2)}</span></span>
-        </div>
-      )}
-
-      {/* Parking */}
-      {entry.parkingShare > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-gray-600">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 20 20" strokeWidth={0} >
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.5 7.5A.5.5 0 018 7h2.5a2.5 2.5 0 010 5H8.5v1a.5.5 0 01-1 0v-5a.5.5 0 010-.5zm1 1v2H10.5a1.5 1.5 0 000-3H8.5z" clipRule="evenodd" fill="currentColor" />
-            </svg>
-            <span>{t.parking}</span>
-          </div>
-          <span className="text-gray-700">฿{entry.parkingCost.toFixed(2)} / {entry.headcount} = <span className="font-medium">฿{entry.parkingShare.toFixed(2)}</span></span>
-        </div>
-      )}
-
-      {/* Total */}
-      <div className="flex items-center justify-between border-t border-gray-100 pt-2 font-medium text-gray-800">
-        <span>Total</span>
-        <span><span className="line-through text-gray-400 font-normal">฿{totalCost.toFixed(2)}</span> / {entry.headcount} = ฿{entry.share.toFixed(2)}</span>
-      </div>
-    </div>
-  );
-}
-
-
-/** Individual breakdown entry card in the summary expanded view */
+/** Wrapper that formats date and delegates to shared TripBreakdownCard */
 function SummaryEntryCard({
   entry,
   settled,
@@ -324,45 +259,23 @@ function SummaryEntryCard({
 }) {
   const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
   const dateLabel = new Date(entry.date + "T00:00:00").toLocaleDateString(loc, { month: "short", day: "numeric", year: "numeric" });
-  const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-start gap-3 px-4 py-3 text-left"
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">{dateLabel}</span>
-            <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${settled ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
-              {settled ? t.paid : t.pending}
-            </span>
-          </div>
-          <p className="mt-1 text-sm font-semibold text-gray-800">
-            {entry.carName}{plateLabel} <span className="font-normal text-gray-400">{t.tripNumber} #{entry.tripNumber}</span>
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5 pt-2">
-          <span className={`text-sm font-bold ${settled ? "text-green-600" : "text-red-500"}`}>
-            ฿{entry.share.toFixed(2)}
-          </span>
-          <svg
-            className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
-        </div>
-      </button>
-      {isExpanded && (
-        <BreakdownExpandedDetail entry={entry} t={t} />
-      )}
-    </div>
+    <TripBreakdownCard
+      entry={{ ...entry, date: dateLabel, totalCost: entry.gasCost + entry.parkingCost }}
+      isExpanded={isExpanded}
+      onToggle={onToggle}
+      status={settled ? "paid" : "pending"}
+      t={{
+        pending: t.pending,
+        paid: t.paid,
+        tripNumber: t.tripNumber,
+        people: t.people,
+        gas: t.gas,
+        parking: t.parking,
+        total: "Total",
+      }}
+    />
   );
 }
 

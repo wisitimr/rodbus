@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { markAsSettled } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
+import TripBreakdownCard from "@/components/trip-breakdown-card";
 
 type Tab = "newTrip" | "settleDebts";
 
@@ -326,92 +327,41 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                         {pendingBreakdown.map((b, i) => {
                           const entryKey = `${d.userId}_${b.dateISO ?? b.date}_${i}`;
                           const isEntryExpanded = expandedEntries.has(entryKey);
-                          const plateLabel = b.licensePlate ? ` (${b.licensePlate})` : "";
                           const dateLabel = b.dateISO
                             ? new Date(b.dateISO + "T00:00:00").toLocaleDateString(loc, { month: "short", day: "numeric", year: "numeric" })
                             : b.date;
 
                           return (
-                            <div key={entryKey} className="overflow-hidden rounded-xl border border-gray-100 bg-white">
-                              <button
-                                type="button"
-                                onClick={() => setExpandedEntries((prev) => toggleSet(prev, entryKey))}
-                                className="flex w-full items-start gap-3 px-4 py-3 text-left"
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-xs text-gray-400">{dateLabel}</p>
-                                  <p className="mt-0.5 text-sm font-semibold text-gray-800">
-                                    {b.carName}{plateLabel} <span className="font-normal text-gray-400">{t.tripNumber} #{b.tripNumber}</span>
-                                  </p>
-                                </div>
-                                <div className="flex shrink-0 items-center gap-1.5 pt-1">
-                                  <span className="text-sm font-bold text-red-500">฿{b.share.toFixed(2)}</span>
-                                  <svg
-                                    className={`h-4 w-4 text-gray-400 transition-transform ${isEntryExpanded ? "rotate-180" : ""}`}
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth={2}
-                                    stroke="currentColor"
-                                  >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                  </svg>
-                                </div>
-                              </button>
-
-                              {/* Expanded entry detail */}
-                              {isEntryExpanded && (
-                                <div className="space-y-2 border-t border-gray-100 px-4 pb-3 pt-3 text-sm">
-                                  {/* People */}
-                                  <div>
-                                    <div className="flex items-center gap-1.5 text-gray-600">
-                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                                      </svg>
-                                      <span className="font-medium">{b.headcount} {t.people}</span>
-                                    </div>
-                                    <p className="mt-0.5 pl-5.5 text-xs text-gray-400">
-                                      {[...b.passengerNames, ...(b.driverName && !b.passengerNames.includes(b.driverName) ? [b.driverName] : [])].map((n) =>
-                                        n === b.driverName ? `${n} (Driver)` : n
-                                      ).join(", ")}
-                                    </p>
-                                  </div>
-
-                                  {/* Gas */}
-                                  {b.gasShare > 0 && (
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-1.5 text-gray-600">
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                                        </svg>
-                                        <span>{t.gas}</span>
-                                      </div>
-                                      <span className="text-gray-700">฿{b.gasCost.toFixed(2)} / {b.headcount} = <span className="font-medium">฿{b.gasShare.toFixed(2)}</span></span>
-                                    </div>
-                                  )}
-
-                                  {/* Parking */}
-                                  {b.parkingShare > 0 && (
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-1.5 text-gray-600">
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 20 20" strokeWidth={0}>
-                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.5 7.5A.5.5 0 018 7h2.5a2.5 2.5 0 010 5H8.5v1a.5.5 0 01-1 0v-5a.5.5 0 010-.5zm1 1v2H10.5a1.5 1.5 0 000-3H8.5z" clipRule="evenodd" fill="currentColor" />
-                                        </svg>
-                                        <span>{t.parking}</span>
-                                      </div>
-                                      <span className="text-gray-700">฿{b.parkingCost.toFixed(2)} / {b.headcount} = <span className="font-medium">฿{b.parkingShare.toFixed(2)}</span></span>
-                                    </div>
-                                  )}
-
-                                  {/* Total */}
-                                  <div className="flex items-center justify-between border-t border-gray-100 pt-2 font-medium text-gray-800">
-                                    <span>Total</span>
-                                    <span>
-                                      <span className="line-through text-gray-400 font-normal">฿{b.totalCost.toFixed(2)}</span> / {b.headcount} = ฿{b.share.toFixed(2)}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                            <TripBreakdownCard
+                              key={entryKey}
+                              entry={{
+                                date: dateLabel,
+                                carName: b.carName,
+                                licensePlate: b.licensePlate,
+                                share: b.share,
+                                gasShare: b.gasShare,
+                                gasCost: b.gasCost,
+                                parkingShare: b.parkingShare,
+                                parkingCost: b.parkingCost,
+                                totalCost: b.totalCost,
+                                headcount: b.headcount,
+                                tripNumber: b.tripNumber,
+                                passengerNames: b.passengerNames,
+                                driverName: b.driverName,
+                              }}
+                              isExpanded={isEntryExpanded}
+                              onToggle={() => setExpandedEntries((prev) => toggleSet(prev, entryKey))}
+                              status="pending"
+                              t={{
+                                pending: t.pending,
+                                tripNumber: t.tripNumber,
+                                people: t.people,
+                                gas: t.gas,
+                                parking: t.parking,
+                                total: t.total,
+                                driver: t.driver,
+                              }}
+                            />
                           );
                         })}
 

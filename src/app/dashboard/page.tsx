@@ -84,6 +84,40 @@ export default async function DashboardPage() {
     driverName: b.driverName,
   }));
 
+  // Compute trip numbers for recent trips by querying TripCost ordering
+  const tripNumberMap = new Map<string, number>();
+  const tripCostIds = [...new Set(recentTrips.map((t) => t.tripCostId).filter(Boolean))] as string[];
+  if (tripCostIds.length > 0) {
+    const tripCosts = await prisma.tripCost.findMany({
+      where: { id: { in: tripCostIds } },
+      select: { id: true, carId: true, date: true },
+    });
+    // For each unique car+date, get all TripCosts to determine position
+    const seen = new Set<string>();
+    const carDateCosts = new Map<string, string[]>();
+    for (const tc of tripCosts) {
+      const cdKey = `${tc.carId}-${tc.date.toISOString().split("T")[0]}`;
+      if (!seen.has(cdKey)) {
+        seen.add(cdKey);
+        const all = await prisma.tripCost.findMany({
+          where: { carId: tc.carId, date: tc.date },
+          orderBy: { createdAt: "asc" },
+          select: { id: true },
+        });
+        carDateCosts.set(cdKey, all.map((c) => c.id));
+      }
+    }
+    const costLookup = new Map(tripCosts.map((tc) => [tc.id, tc]));
+    for (const trip of recentTrips) {
+      if (!trip.tripCostId) continue;
+      const tc = costLookup.get(trip.tripCostId);
+      if (!tc) continue;
+      const cdKey = `${tc.carId}-${tc.date.toISOString().split("T")[0]}`;
+      const idx = (carDateCosts.get(cdKey) ?? []).indexOf(trip.tripCostId);
+      if (idx >= 0) tripNumberMap.set(trip.id, idx + 1);
+    }
+  }
+
   // Format recent trips for client component
   const formattedRecentTrips = recentTrips.map((trip) => ({
     id: trip.id,
@@ -95,6 +129,7 @@ export default async function DashboardPage() {
     }),
     carName: trip.car.name,
     licensePlate: trip.car.licensePlate,
+    tripNumber: tripNumberMap.get(trip.id) ?? 1,
   }));
 
   return (
