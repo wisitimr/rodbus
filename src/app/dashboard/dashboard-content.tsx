@@ -10,6 +10,9 @@ interface RecentTrip {
   time: string;
   carName: string;
   licensePlate: string | null;
+  gasCost: number;
+  parkingCost: number;
+  riderCount: number;
   tripNumber: number;
 }
 
@@ -193,13 +196,14 @@ export default function DashboardContent({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-gray-900">
                         {trip.carName}
+                        {trip.licensePlate && <span className="ml-1 font-normal text-gray-400">({trip.licensePlate})</span>}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {trip.date}
+                        {trip.date} &middot; {trip.riderCount} {t.people}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-0.5">
-                      <span className="text-xs text-gray-400">{trip.time}</span>
+                      <span className="text-sm font-semibold text-gray-900">฿{(trip.gasCost + trip.parkingCost).toFixed(0)}</span>
                       <span className="text-xs font-medium text-blue-500">
                         {t.tripNumber} #{trip.tripNumber}
                       </span>

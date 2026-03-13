@@ -55,7 +55,7 @@ model CheckIn {
 
   @@index([userId, carId, date])
   @@index([carId, date])
-  @@map("Trip")
+  @@map("CheckIn")
 }
 
 model Trip {
@@ -71,7 +71,7 @@ model Trip {
   updatedAt   DateTime  @updatedAt
 
   @@index([carId, date])
-  @@map("TripCost")
+  @@map("Trip")
 }
 
 model Payment {

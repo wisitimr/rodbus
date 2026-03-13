@@ -24,11 +24,13 @@ export default async function HistoryPage() {
   const allTimeStart = new Date(2000, 0, 1);
   const allTimeEnd = new Date(2099, 11, 31);
 
-  const [recentCheckIns, allDebts, allPayments] = await Promise.all([
-    prisma.checkIn.findMany({
-      ...(isAdmin ? {} : { where: { userId } }),
-      include: { car: true, user: { select: { name: true } } },
-      orderBy: { tappedAt: "desc" },
+  const [recentTrips, allDebts, allPayments] = await Promise.all([
+    prisma.trip.findMany({
+      include: {
+        car: true,
+        checkIns: { select: { id: true } },
+      },
+      orderBy: { createdAt: "desc" },
       take: 100,
     }),
     calculateDebts(allTimeStart, allTimeEnd),
@@ -38,19 +40,42 @@ export default async function HistoryPage() {
     }),
   ]);
 
-  const checkIns = recentCheckIns.map((ci) => ({
-    id: ci.id,
-    userId: ci.userId,
-    carName: ci.car.name,
-    licensePlate: ci.car.licensePlate ?? null,
-    userName: ci.user?.name ?? null,
-    date: formatDateShort(ci.date, locale),
-    dateISO: ci.date.toISOString().split("T")[0],
-    time: ci.tappedAt.toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  }));
+  // Compute trip numbers per car+date
+  const tripNumSeen = new Set<string>();
+  const carDateTripIds = new Map<string, string[]>();
+  for (const trip of recentTrips) {
+    const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
+    if (!tripNumSeen.has(cdKey)) {
+      tripNumSeen.add(cdKey);
+      const all = await prisma.trip.findMany({
+        where: { carId: trip.carId, date: trip.date },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      carDateTripIds.set(cdKey, all.map((t) => t.id));
+    }
+  }
+
+  const trips = recentTrips.map((trip) => {
+    const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
+    const idx = (carDateTripIds.get(cdKey) ?? []).indexOf(trip.id);
+    return {
+      id: trip.id,
+      carName: trip.car.name,
+      licensePlate: trip.car.licensePlate ?? null,
+      date: formatDateShort(trip.date, locale),
+      dateISO: trip.date.toISOString().split("T")[0],
+      time: trip.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Bangkok",
+      }),
+      gasCost: trip.gasCost,
+      parkingCost: trip.parkingCost,
+      riderCount: trip.checkIns.length,
+      tripNumber: idx >= 0 ? idx + 1 : 1,
+    };
+  });
 
   // Serialize debts with breakdown dates as ISO strings
   const serializedDebts = allDebts.map((d) => ({
@@ -113,7 +138,7 @@ export default async function HistoryPage() {
       </header>
 
       <HistoryContent
-        checkIns={checkIns}
+        checkIns={trips}
         allDebts={serializedDebts}
         allPayments={serializedPayments}
         currentUserId={userId}

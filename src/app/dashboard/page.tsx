@@ -27,12 +27,12 @@ export default async function DashboardPage() {
 
   const [debts, recentTrips] = await Promise.all([
     calculateDebts(startOfMonth, endOfMonth),
-    prisma.checkIn.findMany({
-      where: { userId },
-      orderBy: { tappedAt: "desc" },
+    prisma.trip.findMany({
+      orderBy: { createdAt: "desc" },
       take: 5,
       include: {
         car: { select: { name: true, licensePlate: true } },
+        checkIns: { select: { id: true } },
       },
     }),
   ]);
@@ -84,52 +84,40 @@ export default async function DashboardPage() {
     driverName: b.driverName,
   }));
 
-  // Compute trip numbers for recent check-ins by querying Trip ordering
+  // Compute trip numbers for each trip within same car+date
   const tripNumberMap = new Map<string, number>();
-  const tripIds = [...new Set(recentTrips.map((c) => c.tripId).filter(Boolean))] as string[];
-  if (tripIds.length > 0) {
-    const trips = await prisma.trip.findMany({
-      where: { id: { in: tripIds } },
-      select: { id: true, carId: true, date: true },
-    });
-    // For each unique car+date, get all Trips to determine position
-    const seen = new Set<string>();
-    const carDateTrips = new Map<string, string[]>();
-    for (const trip of trips) {
-      const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
-      if (!seen.has(cdKey)) {
-        seen.add(cdKey);
-        const all = await prisma.trip.findMany({
-          where: { carId: trip.carId, date: trip.date },
-          orderBy: { createdAt: "asc" },
-          select: { id: true },
-        });
-        carDateTrips.set(cdKey, all.map((t) => t.id));
-      }
+  const seen = new Set<string>();
+  const carDateTrips = new Map<string, string[]>();
+  for (const trip of recentTrips) {
+    const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
+    if (!seen.has(cdKey)) {
+      seen.add(cdKey);
+      const all = await prisma.trip.findMany({
+        where: { carId: trip.carId, date: trip.date },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      carDateTrips.set(cdKey, all.map((t) => t.id));
     }
-    const tripLookup = new Map(trips.map((t) => [t.id, t]));
-    for (const checkIn of recentTrips) {
-      if (!checkIn.tripId) continue;
-      const trip = tripLookup.get(checkIn.tripId);
-      if (!trip) continue;
-      const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
-      const idx = (carDateTrips.get(cdKey) ?? []).indexOf(checkIn.tripId);
-      if (idx >= 0) tripNumberMap.set(checkIn.id, idx + 1);
-    }
+    const idx = (carDateTrips.get(cdKey) ?? []).indexOf(trip.id);
+    if (idx >= 0) tripNumberMap.set(trip.id, idx + 1);
   }
 
-  // Format recent check-ins for client component
-  const formattedRecentTrips = recentTrips.map((checkIn) => ({
-    id: checkIn.id,
-    date: formatDateMedium(checkIn.date, locale),
-    time: checkIn.tappedAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+  // Format recent trips for client component
+  const formattedRecentTrips = recentTrips.map((trip) => ({
+    id: trip.id,
+    date: formatDateMedium(trip.date, locale),
+    time: trip.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: "Asia/Bangkok",
     }),
-    carName: checkIn.car.name,
-    licensePlate: checkIn.car.licensePlate,
-    tripNumber: tripNumberMap.get(checkIn.id) ?? 1,
+    carName: trip.car.name,
+    licensePlate: trip.car.licensePlate,
+    gasCost: trip.gasCost,
+    parkingCost: trip.parkingCost,
+    riderCount: trip.checkIns.length,
+    tripNumber: tripNumberMap.get(trip.id) ?? 1,
   }));
 
   return (

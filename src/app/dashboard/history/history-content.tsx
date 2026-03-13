@@ -9,13 +9,15 @@ type SummaryPeriod = "day" | "month" | "year";
 
 interface Trip {
   id: string;
-  userId: string;
   carName: string;
   licensePlate?: string | null;
-  userName?: string | null;
   date: string;
   dateISO: string;
   time: string;
+  gasCost: number;
+  parkingCost: number;
+  riderCount: number;
+  tripNumber: number;
 }
 
 interface PaymentRecord {
@@ -99,11 +101,11 @@ interface HistoryContentProps {
     passenger: string;
     paidDate: string;
     tripNumber: string;
-    editCheckIn: string;
-    deleteCheckIn: string;
-    confirmDeleteCheckIn: string;
-    save: string;
-    cancel: string;
+    editCheckIn?: string;
+    deleteCheckIn?: string;
+    confirmDeleteCheckIn?: string;
+    save?: string;
+    cancel?: string;
   };
 }
 
@@ -791,16 +793,15 @@ export default function HistoryContent({
   }
 
   const filteredTrips = useMemo(() => {
-    const base = isAdmin && onlyMe ? trips.filter((t) => t.userId === currentUserId) : trips;
-    if (!tripDateFrom && !tripDateTo) return base;
+    if (!tripDateFrom && !tripDateTo) return trips;
     const from = tripDateFrom;
     const to = tripDateTo || tripDateFrom;
-    return base.filter((trip) => {
+    return trips.filter((trip) => {
       if (from && trip.dateISO < from) return false;
       if (to && trip.dateISO > to) return false;
       return true;
     });
-  }, [trips, tripDateFrom, tripDateTo, isAdmin, onlyMe, currentUserId]);
+  }, [trips, tripDateFrom, tripDateTo]);
 
   const filteredPayments = useMemo(() => {
     const base = isAdmin && !onlyMe ? allPayments : allPayments.filter((p) => p.userId === currentUserId);
@@ -818,7 +819,7 @@ export default function HistoryContent({
 
   // Group visible trips by date for display
   const visibleGroupedTrips = useMemo(() => {
-    const groups: { dateISO: string; dateLabel: string; trips: (typeof filteredTrips[number] & { tripNum: number })[] }[] = [];
+    const groups: { dateISO: string; dateLabel: string; trips: (typeof filteredTrips[number])[] }[] = [];
     const map = new Map<string, (typeof groups)[number]>();
     for (const trip of tripScroll.visible) {
       let group = map.get(trip.dateISO);
@@ -827,7 +828,7 @@ export default function HistoryContent({
         map.set(trip.dateISO, group);
         groups.push(group);
       }
-      group.trips.push({ ...trip, tripNum: group.trips.length + 1 });
+      group.trips.push(trip);
     }
     return groups;
   }, [tripScroll.visible, locale]);
@@ -919,8 +920,7 @@ export default function HistoryContent({
                       {/* Trip cards */}
                       <div className="space-y-2">
                         {group.trips.map((trip) => {
-                          const canEdit = trip.userId === currentUserId || isAdmin;
-                          const isEditing = editingTripId === trip.id;
+                          const totalCost = trip.gasCost + trip.parkingCost;
                           return (
                             <div
                               key={trip.id}
@@ -935,56 +935,27 @@ export default function HistoryContent({
 
                               {/* Trip info */}
                               <div className="min-w-0 flex-1">
-                                {isEditing ? (
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <input
-                                      type="date"
-                                      value={editDate}
-                                      onChange={(e) => setEditDate(e.target.value)}
-                                      className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleEditSave(trip.id)}
-                                      disabled={isPending}
-                                      className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
-                                    >
-                                      {t.save}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={handleEditCancel}
-                                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
-                                    >
-                                      {t.cancel}
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <p className="font-semibold text-gray-800">
-                                      {trip.carName}
-                                    </p>
-                                    <p className="mt-0.5 text-xs text-gray-400">
-                                      {trip.licensePlate && <>{trip.licensePlate} &middot; </>}{trip.userName}
-                                    </p>
-                                  </>
-                                )}
+                                <p className="font-semibold text-gray-800">
+                                  {trip.carName}
+                                  {trip.licensePlate && <span className="ml-1 font-normal text-gray-400">({trip.licensePlate})</span>}
+                                </p>
+                                <p className="mt-0.5 text-xs text-gray-400">
+                                  {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(0)}
+                                </p>
                               </div>
 
                               {/* Time & trip number */}
-                              {!isEditing && (
-                                <div className="shrink-0 text-right">
-                                  <div className="flex items-center gap-1 text-xs text-gray-400">
-                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    {trip.time}
-                                  </div>
-                                  <p className="mt-0.5 text-xs font-medium text-blue-600">
-                                    {t.tripNumber} #{trip.tripNum}
-                                  </p>
+                              <div className="shrink-0 text-right">
+                                <div className="flex items-center gap-1 text-xs text-gray-400">
+                                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  {trip.time}
                                 </div>
-                              )}
+                                <p className="mt-0.5 text-xs font-medium text-blue-600">
+                                  {t.tripNumber} #{trip.tripNumber}
+                                </p>
+                              </div>
 
                             </div>
                           );
