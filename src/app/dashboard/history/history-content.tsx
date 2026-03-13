@@ -91,7 +91,6 @@ interface HistoryContentProps {
     splitAmong: string;
     passenger: string;
     paidDate: string;
-    allUsers: string;
   };
 }
 
@@ -346,6 +345,7 @@ function SummaryCard({
   toggleSubPeriod,
   settledDays,
   isAdmin,
+  currentUserId,
   locale,
   t,
 }: {
@@ -358,6 +358,7 @@ function SummaryCard({
   toggleSubPeriod: (key: string) => void;
   settledDays: Set<string>;
   isAdmin: boolean;
+  currentUserId: string;
   locale: string;
   t: HistoryContentProps["t"];
 }) {
@@ -466,11 +467,16 @@ function SummaryCard({
       {isExpanded && (
         <div className="border-t border-gray-100 px-4 pb-3">
           {/* Admin: per-user breakdown */}
-          {isAdmin && group.entries.length > 1 && (
+          {isAdmin && group.entries.length > 0 && (
             <div className="mt-2 space-y-1">
               {group.entries.map((e) => (
                 <div key={e.userId} className="flex justify-between text-xs text-gray-500">
-                  <span>{e.userName ?? e.userId}</span>
+                  <span>
+                    {e.userName ?? e.userId}
+                    {e.userId === currentUserId && (
+                      <span className="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">{t.you}</span>
+                    )}
+                  </span>
                   <span className={e.pendingDebt <= 0 ? "text-green-600" : "text-gray-700"}>
                     ฿{e.totalDebt.toFixed(2)}
                     {e.totalPaid > 0 && <> ({t.paid} ฿{e.totalPaid.toFixed(2)})</>}
@@ -776,21 +782,6 @@ export default function HistoryContent({
   const [payDateTo, setPayDateTo] = useState("");
   const [, setPayRangeStep] = useState<"from" | "to">("from");
 
-  // Admin user filter (shared across payments & summary)
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const userOptions = useMemo(() => {
-    if (!isAdmin) return [];
-    const map = new Map<string, string>();
-    for (const p of allPayments) {
-      if (p.userName) map.set(p.userId, p.userName);
-    }
-    for (const d of allDebts) {
-      if (d.userName) map.set(d.userId, d.userName);
-    }
-    return Array.from(map.entries())
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [isAdmin, allPayments, allDebts]);
 
   // Expanded payment details
   const [expandedPayments, setExpandedPayments] = useState<Set<string>>(new Set());
@@ -826,12 +817,10 @@ export default function HistoryContent({
     });
   }, []);
 
-  // Map<dateISO, BreakdownEntry[]> — raw per-car entries for each day, filtered to current user (admins see all or filtered user)
+  // Map<dateISO, BreakdownEntry[]> — raw per-car entries for each day, filtered to current user (admins see all)
   const dayBreakdownMap = useMemo(() => {
     const map = new Map<string, BreakdownEntry[]>();
-    const filterUserId = isAdmin ? selectedUserId : currentUserId;
     for (const debt of allDebts) {
-      if (filterUserId && debt.userId !== filterUserId) continue;
       if (!isAdmin && debt.userId !== currentUserId) continue;
       for (const b of debt.breakdown) {
         const list = map.get(b.date) ?? [];
@@ -840,23 +829,22 @@ export default function HistoryContent({
       }
     }
     return map;
-  }, [allDebts, currentUserId, isAdmin, selectedUserId]);
+  }, [allDebts, currentUserId, isAdmin]);
 
   // Set of settled day keys — days where pendingDebt <= 0
   const settledDays = useMemo(() => {
     const dayGroups = groupByPeriod(allDebts, allPayments, "day", locale);
-    const filterUserId = isAdmin ? selectedUserId : currentUserId;
     const settled = new Set<string>();
     for (const g of dayGroups) {
-      if (isAdmin && !filterUserId) {
+      if (isAdmin) {
         if (g.entries.every((e) => e.pendingDebt <= 0)) settled.add(g.key);
       } else {
-        const e = g.entries.find((e) => e.userId === (filterUserId || currentUserId));
+        const e = g.entries.find((e) => e.userId === currentUserId);
         if (e && e.pendingDebt <= 0) settled.add(g.key);
       }
     }
     return settled;
-  }, [allDebts, allPayments, locale, currentUserId, isAdmin, selectedUserId]);
+  }, [allDebts, allPayments, locale, currentUserId, isAdmin]);
   const togglePayment = (id: string) => {
     setExpandedPayments((prev) => {
       const next = new Set(prev);
@@ -921,9 +909,7 @@ export default function HistoryContent({
   }, [trips, tripDateFrom, tripDateTo]);
 
   const filteredPayments = useMemo(() => {
-    let base = isAdmin
-      ? (selectedUserId ? allPayments.filter((p) => p.userId === selectedUserId) : allPayments)
-      : allPayments.filter((p) => p.userId === currentUserId);
+    const base = isAdmin ? allPayments : allPayments.filter((p) => p.userId === currentUserId);
     if (!payDateFrom && !payDateTo) return base;
     const from = payDateFrom;
     const to = payDateTo || payDateFrom;
@@ -932,23 +918,22 @@ export default function HistoryContent({
       if (to && p.dateISO > to) return false;
       return true;
     });
-  }, [allPayments, payDateFrom, payDateTo, isAdmin, currentUserId, selectedUserId]);
+  }, [allPayments, payDateFrom, payDateTo, isAdmin, currentUserId]);
 
   const tripScroll = useInfiniteScroll(filteredTrips);
   const paymentScroll = useInfiniteScroll(filteredPayments);
 
-  // Group summary data by period, filtered to current user only (admins see all or filtered user)
+  // Group summary data by period, filtered to current user only (admins see all)
   const summaryGroups = useMemo(() => {
     const groups = groupByPeriod(allDebts, allPayments, summaryPeriod, locale);
-    const filterUserId = isAdmin ? selectedUserId : currentUserId;
-    if (isAdmin && !filterUserId) return groups.filter((g) => g.entries.length > 0);
+    if (isAdmin) return groups.filter((g) => g.entries.length > 0);
     return groups
       .map((g) => ({
         ...g,
-        entries: g.entries.filter((e) => e.userId === filterUserId),
+        entries: g.entries.filter((e) => e.userId === currentUserId),
       }))
       .filter((g) => g.entries.length > 0);
-  }, [allDebts, allPayments, summaryPeriod, locale, currentUserId, isAdmin, selectedUserId]);
+  }, [allDebts, allPayments, summaryPeriod, locale, currentUserId, isAdmin]);
 
   const summaryScroll = useInfiniteScroll(summaryGroups);
 
@@ -967,34 +952,20 @@ export default function HistoryContent({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Badge filter row */}
-      <div className="flex items-center gap-2">
-        <div className="flex gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                activeTab === tab.key
-                  ? "bg-gray-900 text-white shadow-sm"
-                  : "bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {isAdmin && (activeTab === "payments" || activeTab === "summary") && userOptions.length > 0 && (
-          <select
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            className="ml-auto rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm focus:border-gray-400 focus:outline-none"
+      <div className="flex gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+              activeTab === tab.key
+                ? "bg-gray-900 text-white shadow-sm"
+                : "bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+            }`}
           >
-            <option value="">{t.allUsers}</option>
-            {userOptions.map((u) => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
-          </select>
-        )}
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Trips tab */}
@@ -1134,7 +1105,14 @@ export default function HistoryContent({
                             <p className="font-medium text-gray-800">{p.carName}</p>
                             <p className="text-xs text-gray-500">
                               {fmtDate(p.dateISO, locale)}
-                              {isAdmin && p.userName && <> · {p.userName}</>}
+                              {isAdmin && p.userName && (
+                                <>
+                                  {" · "}{p.userName}
+                                  {p.userId === currentUserId && (
+                                    <span className="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">{t.you}</span>
+                                  )}
+                                </>
+                              )}
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
@@ -1213,7 +1191,14 @@ export default function HistoryContent({
                                 </svg>
                               </td>
                               <td className="py-3 text-gray-700">{fmtDate(p.dateISO, locale)}</td>
-                              {isAdmin && <td className="py-3 text-gray-600">{p.userName ?? "—"}</td>}
+                              {isAdmin && (
+                                <td className="py-3 text-gray-600">
+                                  {p.userName ?? "—"}
+                                  {p.userId === currentUserId && (
+                                    <span className="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">{t.you}</span>
+                                  )}
+                                </td>
+                              )}
                               <td className="py-3 font-medium text-gray-800">{p.carName}</td>
                               <td className="py-3 text-gray-500">{p.paidAt}</td>
                               <td className="py-3 text-right font-semibold text-green-600">
@@ -1286,6 +1271,7 @@ export default function HistoryContent({
                     toggleSubPeriod={toggleSubPeriod}
                     settledDays={settledDays}
                     isAdmin={isAdmin}
+                    currentUserId={currentUserId}
                     locale={locale}
                     t={t}
                   />

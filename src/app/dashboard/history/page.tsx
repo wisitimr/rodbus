@@ -136,7 +136,6 @@ export default async function HistoryPage() {
           splitAmong: t.splitAmong,
           passenger: t.passenger,
           paidDate: t.paidDate,
-          allUsers: t.allUsers,
         }}
       />
     </main>
