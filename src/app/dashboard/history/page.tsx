@@ -72,7 +72,7 @@ export default async function HistoryPage() {
       }),
       gasCost: trip.gasCost,
       parkingCost: trip.parkingCost,
-      riderCount: trip.checkIns.length,
+      riderCount: trip.checkIns.length + 1,
       tripNumber: idx >= 0 ? idx + 1 : 1,
     };
   });

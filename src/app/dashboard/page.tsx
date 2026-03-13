@@ -116,7 +116,7 @@ export default async function DashboardPage() {
     licensePlate: trip.car.licensePlate,
     gasCost: trip.gasCost,
     parkingCost: trip.parkingCost,
-    riderCount: trip.checkIns.length,
+    riderCount: trip.checkIns.length + 1,
     tripNumber: tripNumberMap.get(trip.id) ?? 1,
   }));
 
