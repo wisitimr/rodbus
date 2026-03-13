@@ -22,6 +22,7 @@ export interface UserDebt {
     tripNumber: number;
     passengerNames: string[];
     driverName: string | null;
+    createdAt: Date;
   }[];
 }
 
@@ -128,6 +129,7 @@ export async function calculateDebts(
         tripNumber: tripNumberMap.get(cost.id) ?? 1,
         passengerNames: Array.from(nameSet.values()),
         driverName: cost.car.owner.name ?? null,
+        createdAt: cost.createdAt,
       });
     }
   }

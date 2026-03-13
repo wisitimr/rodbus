@@ -45,6 +45,7 @@ interface BreakdownEntry {
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
+  time?: string;
 }
 
 interface DebtWithBreakdown {
@@ -262,7 +263,7 @@ function SummaryEntryCard({
 
   return (
     <TripBreakdownCard
-      entry={{ ...entry, date: dateLabel, totalCost: entry.gasCost + entry.parkingCost }}
+      entry={{ ...entry, date: dateLabel, totalCost: entry.gasCost + entry.parkingCost, time: entry.time }}
       isExpanded={isExpanded}
       onToggle={onToggle}
       status={settled ? "paid" : "pending"}

@@ -74,6 +74,11 @@ export default async function HistoryPage() {
       tripNumber: b.tripNumber,
       passengerNames: b.passengerNames,
       driverName: b.driverName,
+      time: b.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Bangkok",
+      }),
     })),
   }));
 
