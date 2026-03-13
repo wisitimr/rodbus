@@ -99,7 +99,7 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
     e.preventDefault();
 
     const carName = cars.find((c) => c.id === carId)?.name ?? "";
-    const summary = `${t.confirmSaveCostsTitle}\n\n${t.car}: ${carName}\n${t.date}: ${date}\n${t.gasCost}: ฿${parseFloat(gasCost) || 0}\n${t.parkingCost}: ฿${parseFloat(parkingCost) || 0}`;
+    const summary = `${t.confirmSaveCostsTitle}\n\n${t.car}: ${carName}\n${t.date}: ${date}\n${t.gasCost}: ${(parseFloat(gasCost) || 0).toFixed(2)}\n${t.parkingCost}: ${(parseFloat(parkingCost) || 0).toFixed(2)}`;
     if (!confirm(summary)) return;
 
     setStatus("saving");
