@@ -69,7 +69,8 @@ export async function calculateDebts(
 
     // Gas: split total daily cost in half per leg, then divide by headcount per leg
     const gasPerLeg = cost.gasCost / 2;
-    // Parking: only split among outbound riders (including driver)
+    // Parking: only split among outbound riders (including driver),
+    // because the parking fee is paid once when arriving in the morning.
     const parkingHeadcount = outboundHeadcount;
 
     const allUsers = new Set([...outboundUsers, ...returnUsers]);
@@ -190,7 +191,7 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
     const gasOutbound = hasOutbound ? gasPerLeg / outboundHeadcount : 0;
     const gasReturn = hasReturn ? gasPerLeg / returnHeadcount : 0;
     const gasShare = gasOutbound + gasReturn;
-    // Parking: only outbound riders pay, split by outbound headcount
+    // Parking: only outbound riders pay, because the parking fee is paid once when arriving in the morning.
     const parkingShare = hasOutbound && outboundHeadcount > 0 ? cost.parkingCost / outboundHeadcount : 0;
     const share = Math.round((gasShare + parkingShare) * 100) / 100;
 
