@@ -140,18 +140,18 @@ export default function CarManagement({ cars }: CarManagementProps) {
               <button
                 type="submit"
                 disabled={isAnyLoading || !name.trim()}
-                className="flex items-center gap-1.5 rounded-xl bg-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 active:scale-[0.98] disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 active:scale-[0.98] disabled:opacity-50"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                {t.addCar}
+                {t.add}
                 {loadingAction === "add" && "..."}
               </button>
               <button
                 type="button"
                 onClick={() => { setShowAddForm(false); setName(""); setLicensePlate(""); setDefaultGas("0"); setStatus("idle"); }}
-                className="rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                className="flex-1 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
               >
                 {t.cancel}
               </button>

@@ -328,7 +328,7 @@ function SummaryCard({
         }
       }
     }
-    return Math.round(total * 100) / 100;
+    return total;
   }, [group.key, dayBreakdownMap]);
 
   // Collect all breakdown entries for expanded view
@@ -367,7 +367,7 @@ function SummaryCard({
           </svg>
         </div>
         <p className="mt-1 text-sm text-gray-500">
-          Grand Total: <span className="font-bold text-gray-900">฿{grandTotal.toFixed(2)}</span>
+          Grand Total: <span className="font-bold text-gray-900">฿{grandTotal}</span>
         </p>
         <div className="mt-1 flex items-center gap-3 text-sm">
           <span className="text-red-500">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>

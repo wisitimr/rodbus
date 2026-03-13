@@ -91,17 +91,19 @@ export default async function HistoryPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
-      <header className="animate-fade-in mb-6 flex items-center gap-3 px-1 pt-4 sm:mb-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-blue-400 text-blue-500">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-            {t.history}
-          </h1>
-          <p className="text-sm text-gray-400">{t.trips}, {t.payments} &amp; {t.summary}</p>
+      <header className="animate-fade-in sticky top-0 z-40 -mx-4 mb-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-3 sm:-mx-6 sm:px-6">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+            <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-gray-900">
+              {t.history}
+            </h1>
+            <p className="text-xs text-gray-500">{t.trips}, {t.payments} &amp; {t.summary}</p>
+          </div>
         </div>
       </header>
 

@@ -121,9 +121,9 @@ export default function TripBreakdownCard({
                   </svg>
                   {t.gas}
                 </div>
-                <span className="text-gray-700">
-                  <span className="text-gray-300">&#3647;{entry.gasCost.toFixed(2)}</span>
-                  {" "}/ {entry.headcount} = <span className="font-semibold text-gray-900">&#3647;{entry.gasShare.toFixed(2)}</span>
+                <span className="text-gray-900">
+                  &#3647;{entry.gasCost.toFixed(2)}
+                  {" "}/ {entry.headcount} = <span className="font-bold">&#3647;{entry.gasShare.toFixed(2)}</span>
                 </span>
               </div>
             )}
@@ -135,18 +135,18 @@ export default function TripBreakdownCard({
                   </svg>
                   {t.parking}
                 </div>
-                <span className="text-gray-700">
-                  <span className="text-gray-300">&#3647;{entry.parkingCost.toFixed(2)}</span>
-                  {" "}/ {entry.headcount} = <span className="font-semibold text-gray-900">&#3647;{entry.parkingShare.toFixed(2)}</span>
+                <span className="text-gray-900">
+                  &#3647;{entry.parkingCost.toFixed(2)}
+                  {" "}/ {entry.headcount} = <span className="font-bold">&#3647;{entry.parkingShare.toFixed(2)}</span>
                 </span>
               </div>
             )}
             {/* Total */}
-            <div className="flex items-center justify-between border-t border-gray-100 pt-2 font-semibold">
-              <span className="text-gray-700">{t.total}</span>
-              <span className="text-gray-700">
-                <span className="font-normal text-gray-300">&#3647;{entry.totalCost.toFixed(2)}</span>
-                {" "}/ {entry.headcount} = <span className="text-gray-900">&#3647;{entry.share.toFixed(2)}</span>
+            <div className="flex items-center justify-between border-t border-gray-100 pt-2 font-bold">
+              <span className="text-gray-900">{t.total}</span>
+              <span className="text-gray-900">
+                &#3647;{entry.totalCost.toFixed(2)}
+                {" "}/ {entry.headcount} = &#3647;{entry.share.toFixed(2)}
               </span>
             </div>
           </div>
