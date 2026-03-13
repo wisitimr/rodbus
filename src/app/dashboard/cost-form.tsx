@@ -158,9 +158,13 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
       {/* Confirm modal */}
       {confirmData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]" onClick={() => resolveConfirm(false)}>
-          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900">{t.confirmSaveCostsTitle}</h3>
-            <dl className="mt-4 space-y-2 text-sm">
+          <div className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="border-b border-gray-100 px-6 py-4">
+              <h3 className="text-lg font-semibold text-gray-900">{t.confirmSaveCostsTitle}</h3>
+            </div>
+            {/* Body */}
+            <dl className="space-y-3 px-6 py-5 text-sm">
               <div className="flex justify-between">
                 <dt className="text-gray-500">{t.car}</dt>
                 <dd className="font-medium text-gray-900">{confirmData.carName}</dd>
@@ -178,11 +182,12 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
                 <dd className="font-medium text-gray-900">{confirmData.parking}</dd>
               </div>
             </dl>
-            <div className="mt-6 flex justify-end gap-3">
+            {/* Footer */}
+            <div className="flex justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
               <button
                 type="button"
                 onClick={() => resolveConfirm(false)}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100"
+                className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-200"
               >
                 {t.cancel}
               </button>
