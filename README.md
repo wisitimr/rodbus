@@ -84,7 +84,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Cost Splitting Logic
 
 - **Gas:** Daily gas cost is split in half per leg (outbound / return). Each half is divided equally among that leg's headcount (passengers + driver). A passenger only pays for legs they rode.
-- **Parking:** Split equally among outbound riders (passengers + driver).
+- **Parking:** Split equally among outbound riders only (passengers + driver), because the fee is paid once when arriving in the morning.
 - **Driver** (car owner) never owes debt — only passengers pay.
 - Payments are applied to the oldest debts first.
 
