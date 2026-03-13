@@ -168,7 +168,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                   <div className="flex items-center gap-2">
                     <p className="truncate font-semibold text-gray-900">{user.name ?? t.noName}</p>
                     <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${roleBadgeStyle[user.role] || "bg-gray-100 text-gray-700"}`}>
-                      {user.role === "ADMIN" ? t.admin : t.passenger}
+                      {user.role === "ADMIN" ? t.admin.toUpperCase() : t.passenger.toUpperCase()}
                     </span>
                   </div>
                   <p className="truncate text-sm text-gray-500">{user.email}</p>
