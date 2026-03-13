@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   const [allCars, ownedCar, recentTrips, debts] =
     await Promise.all([
       prisma.car.findMany({
-        ...(isAdmin ? {} : { where: { ownerId: userId } }),
+        where: { ownerId: userId },
         select: { id: true, name: true, defaultGasCost: true },
         orderBy: { name: "asc" },
       }),
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {isAdmin && allCars.length > 0 && (
+      {ownedCar && allCars.length > 0 && (
         <CostReminderBanner initialMissingDates={missingCostDates} cars={allCars.map((c) => ({ id: c.id, name: c.name }))} />
       )}
 
@@ -254,7 +254,7 @@ export default async function DashboardPage() {
         )}
 
         {/* Driver: Enter Costs */}
-        {isAdmin && allCars.length > 0 && (
+        {ownedCar && allCars.length > 0 && (
           <section id="enter-daily-costs" className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
             <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">

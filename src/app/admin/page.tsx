@@ -107,7 +107,7 @@ export default async function AdminPage() {
         </section>
 
         {/* Cost Management */}
-        {allCars.length > 0 && (
+        {myCars.length > 0 && (
           <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-blue-200">
             <div className="border-b border-blue-100 bg-blue-50/50 px-5 py-3 sm:px-6 sm:py-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-blue-600 sm:text-sm">
@@ -116,7 +116,7 @@ export default async function AdminPage() {
             </div>
             <div className="px-5 py-4 sm:px-6 sm:py-5">
               <CostManagement
-                cars={allCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
+                cars={myCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
               />
             </div>
           </section>
