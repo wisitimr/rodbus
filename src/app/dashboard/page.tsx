@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations, formatDateShort } from "@/lib/i18n";
+import { detectLocale, getTranslations, formatDateMedium, formatDateShort } from "@/lib/i18n";
 import CostForm from "./cost-form";
 import ProfileMenu from "./profile-menu";
 import DebtSettlement from "./debt-settlement";
-import PendingBreakdown from "./pending-breakdown";
+import DashboardContent from "./dashboard-content";
+import BottomNav from "./bottom-nav";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 
 export default async function DashboardPage() {
@@ -50,18 +51,90 @@ export default async function DashboardPage() {
 
   const myDebt = debts.find((d) => d.userId === userId);
 
+  // Compute pending breakdown entries
+  const pendingEntries = (() => {
+    if (!myDebt || myDebt.pendingDebt <= 0) return [];
+    const sorted = [...myDebt.breakdown].sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    );
+    let remaining = myDebt.totalPaid;
+    const pending: typeof sorted = [];
+    for (const entry of sorted) {
+      if (remaining >= entry.share) {
+        remaining = Math.round((remaining - entry.share) * 100) / 100;
+      } else if (remaining > 0) {
+        const ratio = (entry.share - remaining) / entry.share;
+        pending.push({
+          ...entry,
+          share: Math.round((entry.share - remaining) * 100) / 100,
+          gasShare: Math.round(entry.gasShare * ratio * 100) / 100,
+          parkingShare: Math.round(entry.parkingShare * ratio * 100) / 100,
+        });
+        remaining = 0;
+      } else {
+        pending.push(entry);
+      }
+    }
+    pending.reverse();
+    return pending;
+  })();
+
+  // Format debt entries for client component
+  const debtEntries = pendingEntries.map((b) => ({
+    date: formatDateMedium(b.date, locale),
+    carName: b.carName,
+    licensePlate: b.licensePlate,
+    share: b.share,
+    gasShare: b.gasShare,
+    gasCost: b.gasCost,
+    parkingShare: b.parkingShare,
+    parkingCost: b.parkingCost,
+    totalCost: b.totalCost,
+    headcount: b.headcount,
+    tripNumber: b.tripNumber,
+    passengerNames: b.passengerNames,
+    driverName: b.driverName,
+  }));
+
+  // Format recent trips for client component
+  const recentTripsData = (() => {
+    const countByDateCar = new Map<string, number>();
+    return recentTrips.map((trip) => {
+      const key = `${trip.date.toISOString().split("T")[0]}-${trip.carId}`;
+      const num = (countByDateCar.get(key) ?? 0) + 1;
+      countByDateCar.set(key, num);
+      return {
+        id: trip.id,
+        carName: trip.car.name,
+        date: formatDateMedium(trip.date, locale),
+        time: trip.tappedAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        tripNumber: num,
+      };
+    });
+  })();
+
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
       {/* Header */}
-      <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 bg-gray-50 px-4 py-3 sm:-mx-6 sm:mb-8 sm:px-6">
+      <header className="animate-fade-in sticky top-0 z-40 -mx-4 mb-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-3 sm:-mx-6 sm:px-6">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-              {t.dashboard}
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              {t.welcome}, {user.name ?? user.email}
-            </p>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-gray-900">
+                RodBus
+              </h1>
+              <p className="text-xs text-gray-500">
+                {t.welcome}, {user.name ?? user.email}
+              </p>
+            </div>
           </div>
           <ProfileMenu
             image={user.image}
@@ -73,131 +146,13 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <div className="stagger-children space-y-4 sm:space-y-6">
-        {/* Debt Card */}
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-              {t.yourPendingDebt}
-            </h2>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {myDebt && myDebt.pendingDebt > 0 ? (
-              <div>
-                <p className="text-3xl font-extrabold tracking-tight text-red-600 sm:text-4xl">
-                  ฿{myDebt.pendingDebt.toFixed(2)}
-                </p>
-
-                {(() => {
-                  const sorted = [...myDebt.breakdown].sort(
-                    (a, b) => a.date.getTime() - b.date.getTime()
-                  );
-                  let remaining = myDebt.totalPaid;
-                  const pending: typeof sorted = [];
-                  for (const entry of sorted) {
-                    if (remaining >= entry.share) {
-                      remaining = Math.round((remaining - entry.share) * 100) / 100;
-                    } else if (remaining > 0) {
-                      const ratio = (entry.share - remaining) / entry.share;
-                      pending.push({
-                        ...entry,
-                        share: Math.round((entry.share - remaining) * 100) / 100,
-                        gasShare: Math.round(entry.gasShare * ratio * 100) / 100,
-                        parkingShare: Math.round(entry.parkingShare * ratio * 100) / 100,
-                      });
-                      remaining = 0;
-                    } else {
-                      pending.push(entry);
-                    }
-                  }
-                  pending.reverse();
-                  if (pending.length === 0) return null;
-                  return (
-                    <PendingBreakdown
-                      entries={pending.map((b) => ({
-                        carName: b.carName,
-                        date: formatDateShort(b.date, locale),
-                        share: b.share,
-                        gasShare: b.gasShare,
-                        gasCost: b.gasCost,
-                        parkingShare: b.parkingShare,
-                        parkingCost: b.parkingCost,
-                        totalCost: b.totalCost,
-                        headcount: b.headcount,
-                      }))}
-                    />
-                  );
-                })()}
-              </div>
-            ) : (
-              <p className="text-2xl font-extrabold tracking-tight text-green-600 sm:text-3xl">
-                ฿0.00
-                <span className="ml-2 text-base font-normal text-gray-400">
-                  {t.allClear}
-                </span>
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* Recent */}
-        {recentTrips.length > 0 && (
-          <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-            <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-                {t.recent}
-              </h2>
-            </div>
-            <div className="px-5 py-4 sm:px-6 sm:py-5">
-              <div className="space-y-2">
-                {(() => {
-                  const recent = recentTrips.slice(0, 5);
-                  const countByDate = new Map<string, number>();
-                  return recent.map((trip) => {
-                    const dateKey = trip.date.toISOString().split("T")[0];
-                    const num = (countByDate.get(dateKey) ?? 0) + 1;
-                    countByDate.set(dateKey, num);
-                    return (
-                      <div
-                        key={trip.id}
-                        className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 transition hover:border-gray-200 hover:shadow-sm"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-800">
-                            {t.tripNumber} #{num} <span className="font-normal text-gray-400">&middot;</span> <span className="font-normal text-gray-500">{trip.car.name}</span>
-                          </p>
-                          <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
-                            <span>
-                              {formatDateShort(trip.date, locale)} &middot;{" "}
-                              {trip.tappedAt.toLocaleTimeString(locale, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                            {isAdmin && trip.user?.name && (
-                              <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-600">
-                                {trip.user.name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-
-              <div className="mt-4">
-                <a
-                  href="/dashboard/history"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
-                >
-                  {t.viewAll}
-                </a>
-              </div>
-            </div>
-          </section>
-        )}
+      <div className="stagger-children space-y-1">
+        <DashboardContent
+          pendingDebt={myDebt?.pendingDebt ?? 0}
+          pendingCount={pendingEntries.length}
+          debtEntries={debtEntries}
+          recentTrips={recentTripsData}
+        />
 
         {/* Driver: New Trip */}
         {ownedCar && allCars.length > 0 && (
@@ -255,6 +210,7 @@ export default async function DashboardPage() {
         )}
       </div>
 
+      <BottomNav isAdmin={isAdmin} />
     </main>
   );
 }

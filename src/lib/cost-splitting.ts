@@ -7,8 +7,10 @@ export interface UserDebt {
   totalPaid: number;
   pendingDebt: number;
   breakdown: {
+    tripCostId: string;
     carId: string;
     carName: string;
+    licensePlate: string | null;
     date: Date;
     share: number;
     gasShare: number;
@@ -17,6 +19,9 @@ export interface UserDebt {
     parkingCost: number;
     totalCost: number;
     headcount: number;
+    tripNumber: number;
+    passengerNames: string[];
+    driverName: string | null;
   }[];
 }
 
@@ -32,7 +37,8 @@ export async function calculateDebts(
     where: {
       date: { gte: startDate, lte: endDate },
     },
-    include: { car: true },
+    include: { car: { include: { owner: { select: { name: true } } } } },
+    orderBy: { createdAt: "asc" },
   });
 
   const allTrips = await prisma.trip.findMany({
@@ -41,6 +47,18 @@ export async function calculateDebts(
     },
     include: { user: true },
   });
+
+  // Pre-compute trip numbers per car+date
+  const tripNumberMap = new Map<string, number>();
+  const carDateGroups = new Map<string, string[]>();
+  for (const tc of tripCosts) {
+    const key = `${tc.carId}-${tc.date.toISOString()}`;
+    if (!carDateGroups.has(key)) carDateGroups.set(key, []);
+    carDateGroups.get(key)!.push(tc.id);
+  }
+  for (const [, ids] of carDateGroups) {
+    ids.forEach((id, i) => tripNumberMap.set(id, i + 1));
+  }
 
   const debtMap = new Map<string, UserDebt>();
 
@@ -85,10 +103,20 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
+      // Collect unique passenger names
+      const nameSet = new Map<string, string>();
+      for (const trip of linkedTrips) {
+        if (trip.user.name && !nameSet.has(trip.userId)) {
+          nameSet.set(trip.userId, trip.user.name);
+        }
+      }
+
       entry.totalDebt += perPerson;
       entry.breakdown.push({
+        tripCostId: cost.id,
         carId: cost.carId,
         carName: cost.car.name,
+        licensePlate: cost.car.licensePlate,
         date: cost.date,
         share: Math.round(perPerson * 100) / 100,
         gasShare: Math.round(gasPerPerson * 100) / 100,
@@ -97,6 +125,9 @@ export async function calculateDebts(
         parkingCost: cost.parkingCost,
         totalCost,
         headcount,
+        tripNumber: tripNumberMap.get(cost.id) ?? 1,
+        passengerNames: Array.from(nameSet.values()),
+        driverName: cost.car.owner.name ?? null,
       });
     }
   }

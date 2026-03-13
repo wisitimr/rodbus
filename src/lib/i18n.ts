@@ -23,8 +23,14 @@ const translations = {
     paid: "Paid",
     allClear: "All clear!",
     viewCostBreakdown: "View cost breakdown",
-    loadMore: "Load more",
+    debtBreakdown: "Debt Breakdown",
+    loadMore: "Load More",
+    showLess: "Show Less",
     people: "people",
+    pendingItems: "pending items",
+    total: "Total",
+    driver: "Driver",
+    manage: "Manage",
     todaysRides: "Today's Rides",
     noRidesToday: "No rides logged today.",
     outbound: "Outbound",
@@ -183,8 +189,14 @@ const translations = {
     paid: "จ่ายแล้ว",
     allClear: "ไม่มียอดค้าง!",
     viewCostBreakdown: "ดูรายละเอียดค่าใช้จ่าย",
+    debtBreakdown: "รายละเอียดหนี้",
     loadMore: "โหลดเพิ่ม",
+    showLess: "แสดงน้อยลง",
     people: "คน",
+    pendingItems: "รายการค้าง",
+    total: "รวม",
+    driver: "คนขับ",
+    manage: "จัดการ",
     todaysRides: "การเดินทางวันนี้",
     noRidesToday: "ยังไม่มีการเดินทางวันนี้",
     outbound: "ขาไป",
@@ -342,6 +354,7 @@ export function dateLocale(locale: Locale): string {
 }
 
 const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * Server-safe date formatting that guarantees Buddhist Era for Thai.
@@ -355,6 +368,20 @@ export function formatDateShort(date: Date, locale: Locale): string {
     return `${d} ${m} ${y}`;
   }
   return date.toLocaleDateString("en-US");
+}
+
+/** Format a date as "Mar 10, 2026" (EN) or "10 มี.ค. 2569" (TH) */
+export function formatDateMedium(date: Date, locale: Locale): string {
+  if (locale === "th") {
+    const d = date.getDate();
+    const m = thMonths[date.getMonth()];
+    const y = date.getFullYear() + 543;
+    return `${d} ${m} ${y}`;
+  }
+  const m = enMonths[date.getMonth()];
+  const d = date.getDate();
+  const y = date.getFullYear();
+  return `${m} ${d}, ${y}`;
 }
 
 /** Format a date with full weekday, day, month, year (Buddhist Era for Thai) */
