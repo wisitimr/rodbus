@@ -168,7 +168,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                   <div className="flex items-center gap-2">
                     <p className="truncate font-semibold text-gray-900">{user.name ?? t.noName}</p>
                     <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${roleBadgeStyle[user.role] || "bg-gray-100 text-gray-700"}`}>
-                      {user.role === "ADMIN" ? t.admin : t.user}
+                      {user.role === "ADMIN" ? t.admin : t.passenger}
                     </span>
                   </div>
                   <p className="truncate text-sm text-gray-500">{user.email}</p>
@@ -192,7 +192,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                           onClick={() => handleRoleChange(user.id, "USER" as Role)}
                           className={`flex w-full items-center px-4 py-2.5 text-sm transition hover:bg-gray-50 ${user.role === "USER" ? "font-semibold text-blue-600" : "text-gray-700"}`}
                         >
-                          {t.user.toUpperCase()}
+                          {t.passenger.toUpperCase()}
                         </button>
                         <button
                           type="button"
