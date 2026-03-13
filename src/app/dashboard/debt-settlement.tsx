@@ -9,6 +9,11 @@ interface BreakdownItem {
   date: string;
   share: number;
   gasShare: number;
+  gasOutbound: number;
+  gasReturn: number;
+  gasCost: number;
+  outboundHeadcount: number;
+  returnHeadcount: number;
   parkingShare: number;
   passengerCount: number;
 }
@@ -66,6 +71,8 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
           ...entry,
           share: Math.round((entry.share - remaining) * 100) / 100,
           gasShare: Math.round(entry.gasShare * ratio * 100) / 100,
+          gasOutbound: Math.round(entry.gasOutbound * ratio * 100) / 100,
+          gasReturn: Math.round(entry.gasReturn * ratio * 100) / 100,
           parkingShare: Math.round(entry.parkingShare * ratio * 100) / 100,
         });
         remaining = 0;
@@ -131,12 +138,15 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
                             ฿{b.share.toFixed(2)}
                           </span>
                         </div>
-                        <div className="mt-0.5 flex gap-3 text-xs text-gray-400">
-                          {b.gasShare > 0 && (
-                            <span>{t.gas}: ฿{b.gasShare.toFixed(2)}</span>
+                        <div className="mt-0.5 space-y-0.5 text-xs text-gray-400">
+                          {b.gasOutbound > 0 && (
+                            <p>{t.gas} ({t.outbound}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}</p>
+                          )}
+                          {b.gasReturn > 0 && (
+                            <p>{t.gas} ({t.return}): ฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}</p>
                           )}
                           {b.parkingShare > 0 && (
-                            <span>{t.parking}: ฿{b.parkingShare.toFixed(2)}</span>
+                            <p>{t.parking}: ฿{(b.parkingShare * b.passengerCount).toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}</p>
                           )}
                         </div>
                       </li>
