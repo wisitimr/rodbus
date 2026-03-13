@@ -1054,13 +1054,9 @@ export default function HistoryContent({
                   {visibleGroupedTrips.map((group) => (
                     <div key={group.dateISO}>
                       {/* Date header */}
-                      <div className="mb-3 flex items-center gap-3">
-                        <div className="flex h-8 items-center rounded-lg bg-gray-900 px-3">
-                          <span className="text-xs font-semibold text-white">{group.dateLabel}</span>
-                        </div>
-                        <span className="text-xs text-gray-400">
-                          {group.trips.length} {group.trips.length === 1 ? t.trip : t.trips}
-                        </span>
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{group.dateLabel}</span>
+                        <span className="text-xs text-gray-300">&middot; {group.trips.length} {group.trips.length === 1 ? t.trip : t.trips}</span>
                         <div className="h-px flex-1 bg-gray-100" />
                       </div>
 
