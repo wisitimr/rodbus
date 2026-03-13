@@ -39,6 +39,7 @@ export default async function HistoryPage() {
 
   const trips = recentTrips.map((trip) => ({
     id: trip.id,
+    userId: trip.userId,
     carName: trip.car.name,
     userName: trip.user?.name ?? null,
     date: formatDateShort(trip.date, locale),
