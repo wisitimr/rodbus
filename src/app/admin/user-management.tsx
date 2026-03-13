@@ -10,6 +10,8 @@ interface UserManagementProps {
   currentUserId: string;
 }
 
+const PAGE_SIZE = 5;
+
 const roleBadge: Record<Role, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   USER: "bg-green-100 text-green-800",
@@ -26,6 +28,8 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
   const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [pendingVisible, setPendingVisible] = useState(PAGE_SIZE);
+  const [activeVisible, setActiveVisible] = useState(PAGE_SIZE);
 
   function toggleUser(id: string) {
     setExpandedUsers((prev) => {
@@ -79,7 +83,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
             {t.pendingApproval} ({pendingUsers.length})
           </h3>
           <ul className="space-y-2">
-            {pendingUsers.map((user) => (
+            {pendingUsers.slice(0, pendingVisible).map((user) => (
               <li
                 key={user.id}
                 className="rounded-xl bg-yellow-50"
@@ -100,6 +104,15 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
               </li>
             ))}
           </ul>
+          {pendingVisible < pendingUsers.length && (
+            <button
+              type="button"
+              onClick={() => setPendingVisible((v) => v + PAGE_SIZE)}
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+            >
+              {t.loadMore}
+            </button>
+          )}
         </div>
       )}
 
@@ -113,7 +126,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
           {t.activeUsers} ({activeUsers.length})
         </h3>
         <ul className="space-y-2">
-          {activeUsers.map((user) => {
+          {activeUsers.slice(0, activeVisible).map((user) => {
             const isMe = user.id === currentUserId;
             const isExpanded = expandedUsers.has(user.id);
             return (
@@ -175,6 +188,15 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
             );
           })}
         </ul>
+        {activeVisible < activeUsers.length && (
+          <button
+            type="button"
+            onClick={() => setActiveVisible((v) => v + PAGE_SIZE)}
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+          >
+            {t.loadMore}
+          </button>
+        )}
       </div>
     </div>
   );
