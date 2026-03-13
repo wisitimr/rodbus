@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { updateTripDate, deleteTrip } from "@/lib/trip-actions";
+import { updateCheckInDate, deleteCheckIn } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 
 type Tab = "trips" | "payments" | "summary";
@@ -64,7 +64,7 @@ interface GroupedPeriod {
 }
 
 interface HistoryContentProps {
-  trips: Trip[];
+  checkIns: Trip[];
   allDebts: DebtWithBreakdown[];
   allPayments: PaymentRecord[];
   currentUserId: string;
@@ -77,7 +77,7 @@ interface HistoryContentProps {
     day: string;
     month: string;
     year: string;
-    noTripHistory: string;
+    noCheckInHistory: string;
     noPayments: string;
     noData: string;
     date: string;
@@ -99,9 +99,9 @@ interface HistoryContentProps {
     passenger: string;
     paidDate: string;
     tripNumber: string;
-    editTrip: string;
-    deleteTrip: string;
-    confirmDeleteTrip: string;
+    editCheckIn: string;
+    deleteCheckIn: string;
+    confirmDeleteCheckIn: string;
     save: string;
     cancel: string;
   };
@@ -615,7 +615,7 @@ function groupByPeriod(
 }
 
 export default function HistoryContent({
-  trips,
+  checkIns: trips,
   allDebts,
   allPayments,
   currentUserId,
@@ -657,21 +657,21 @@ export default function HistoryContent({
     setEditDate("");
   }
 
-  function handleEditSave(tripId: string) {
+  function handleEditSave(checkInId: string) {
     startTransition(async () => {
       try {
-        await updateTripDate(tripId, editDate);
+        await updateCheckInDate(checkInId, editDate);
         setEditingTripId(null);
         setEditDate("");
       } catch { /* ignore */ }
     });
   }
 
-  function handleDelete(tripId: string) {
-    if (!confirm(t.confirmDeleteTrip)) return;
+  function handleDelete(checkInId: string) {
+    if (!confirm(t.confirmDeleteCheckIn)) return;
     startTransition(async () => {
       try {
-        await deleteTrip(tripId);
+        await deleteCheckIn(checkInId);
       } catch { /* ignore */ }
     });
   }
@@ -903,7 +903,7 @@ export default function HistoryContent({
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {filteredTrips.length === 0 ? (
-              <p className="text-sm text-gray-400">{t.noTripHistory}</p>
+              <p className="text-sm text-gray-400">{t.noCheckInHistory}</p>
             ) : (
               <>
                 <div className="space-y-6">

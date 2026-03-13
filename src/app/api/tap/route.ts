@@ -11,7 +11,7 @@ type ValidateError =
   | { error: "already_recorded"; car: string }
   | { error: "no_open_trip"; car: string };
 
-type ValidateSuccess = { ok: true; tripCostId: string; car: string; today: Date };
+type ValidateSuccess = { ok: true; tripId: string; car: string; today: Date };
 
 async function validateTap(
   user: { id: string; role: string },
@@ -33,21 +33,21 @@ async function validateTap(
     return { error: "disabled", reason: disabledDate.reason ?? "System is disabled for today" };
   }
 
-  // Find active trip costs for this car today that user hasn't tapped yet
-  const todaysCosts = await prisma.tripCost.findMany({
+  // Find active trips for this car today that user hasn't checked in yet
+  const todaysTrips = await prisma.trip.findMany({
     where: { carId, date: today },
     orderBy: { createdAt: "asc" },
-    include: { trips: { where: { userId: user.id } } },
+    include: { checkIns: { where: { userId: user.id } } },
   });
 
-  for (const cost of todaysCosts) {
-    if (cost.trips.length === 0) {
-      return { ok: true, tripCostId: cost.id, car: car.name, today };
+  for (const trip of todaysTrips) {
+    if (trip.checkIns.length === 0) {
+      return { ok: true, tripId: trip.id, car: car.name, today };
     }
   }
 
-  // All trips already tapped or no trips exist
-  if (todaysCosts.length === 0) {
+  // All trips already checked in or no trips exist
+  if (todaysTrips.length === 0) {
     return { error: "no_open_trip", car: car.name };
   }
   return { error: "already_recorded", car: car.name };
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
   const confirmUrl = new URL("/tap-confirm", request.url);
   confirmUrl.searchParams.set("carId", carId);
   confirmUrl.searchParams.set("car", result.car);
-  confirmUrl.searchParams.set("tripCostId", result.tripCostId);
+  confirmUrl.searchParams.set("tripId", result.tripId);
   return NextResponse.redirect(confirmUrl);
 }
 
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { carId, tripCostId } = body;
+  const { carId, tripId } = body;
   if (!carId) {
     return NextResponse.json({ error: "Missing carId" }, { status: 400 });
   }
@@ -112,14 +112,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error, car: "car" in result ? result.car : undefined }, { status: 400 });
   }
 
-  // Use the tripCostId from validation (most accurate) or from request body
-  const finalTripCostId = result.tripCostId || tripCostId;
+  // Use the tripId from validation (most accurate) or from request body
+  const finalTripId = result.tripId || tripId;
 
-  await prisma.trip.create({
+  await prisma.checkIn.create({
     data: {
       userId: user.id,
       carId,
-      tripCostId: finalTripCostId,
+      tripId: finalTripId,
       date: result.today,
     },
   });
