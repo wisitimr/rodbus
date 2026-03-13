@@ -69,11 +69,11 @@ export async function calculateDebts(
 
     // Gas: split total daily cost in half per leg, then divide by headcount per leg
     const gasPerLeg = cost.gasCost / 2;
-    // Parking: only split among outbound riders (including driver),
-    // because the parking fee is paid once when arriving in the morning.
-    const parkingHeadcount = outboundHeadcount;
-
+    // Parking: split among ALL riders (outbound + return), including the driver.
     const allUsers = new Set([...outboundUsers, ...returnUsers]);
+    // Ensure driver is counted in the total headcount
+    const totalHeadcount = allUsers.size + (allUsers.has(cost.car.ownerId) ? 0 : 1);
+
     for (const uid of allUsers) {
       // Skip the car owner — they are the driver and don't owe debt
       if (uid === cost.car.ownerId) continue;
@@ -85,8 +85,8 @@ export async function calculateDebts(
       const gasOutbound = hasOutbound ? gasPerLeg / outboundHeadcount : 0;
       const gasReturn = hasReturn ? gasPerLeg / returnHeadcount : 0;
       const gasShare = gasOutbound + gasReturn;
-      // Parking: only outbound riders pay, split by outbound headcount
-      const parkingShare = hasOutbound && parkingHeadcount > 0 ? cost.parkingCost / parkingHeadcount : 0;
+      // Parking: split among all riders (outbound + return)
+      const parkingShare = totalHeadcount > 0 ? cost.parkingCost / totalHeadcount : 0;
       const share = gasShare + parkingShare;
 
       let entry = debtMap.get(uid);
@@ -113,7 +113,7 @@ export async function calculateDebts(
         outboundCount: hasOutbound ? 1 : 0,
         returnCount: hasReturn ? 1 : 0,
         totalCost: cost.gasCost + cost.parkingCost,
-        passengerCount: parkingHeadcount,
+        passengerCount: totalHeadcount,
       });
     }
   }
@@ -191,8 +191,10 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
     const gasOutbound = hasOutbound ? gasPerLeg / outboundHeadcount : 0;
     const gasReturn = hasReturn ? gasPerLeg / returnHeadcount : 0;
     const gasShare = gasOutbound + gasReturn;
-    // Parking: only outbound riders pay, because the parking fee is paid once when arriving in the morning.
-    const parkingShare = hasOutbound && outboundHeadcount > 0 ? cost.parkingCost / outboundHeadcount : 0;
+    // Parking: split among all riders (outbound + return)
+    const allRiders = new Set([...outboundUsers, ...returnUsers]);
+    const totalHeadcount = allRiders.size + (allRiders.has(cost.car.ownerId) ? 0 : 1);
+    const parkingShare = totalHeadcount > 0 ? cost.parkingCost / totalHeadcount : 0;
     const share = Math.round((gasShare + parkingShare) * 100) / 100;
 
     if (share > 0) {
