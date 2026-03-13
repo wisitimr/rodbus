@@ -147,19 +147,19 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
                             <div className="mt-0.5 space-y-0.5 text-xs text-gray-400">
                               {b.gasOutbound > 0 && (
                                 <div className="flex justify-between">
-                                  <span>{t.gas} ({t.outbound})</span>
+                                  <span>{t.gas} ({t.outbound}):</span>
                                   <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}</span>
                                 </div>
                               )}
                               {b.gasReturn > 0 && (
                                 <div className="flex justify-between">
-                                  <span>{t.gas} ({t.return})</span>
+                                  <span>{t.gas} ({t.return}):</span>
                                   <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}</span>
                                 </div>
                               )}
                               {b.parkingShare > 0 && (
                                 <div className="flex justify-between">
-                                  <span>{t.parking}</span>
+                                  <span>{t.parking}:</span>
                                   <span className="text-gray-700">฿{(b.parkingShare * b.passengerCount).toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
                                 </div>
                               )}
