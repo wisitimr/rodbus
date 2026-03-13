@@ -10,6 +10,7 @@ interface Trip {
   id: string;
   userId: string;
   carName: string;
+  licensePlate?: string | null;
   userName?: string | null;
   date: string;
   dateISO: string;
@@ -988,10 +989,34 @@ export default function HistoryContent({
 
   const summaryScroll = useInfiniteScroll(summaryGroups);
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "trips", label: t.trips },
-    { key: "payments", label: t.payments },
-    { key: "summary", label: t.summary },
+  const tabs: { key: Tab; label: string; icon: JSX.Element }[] = [
+    {
+      key: "trips",
+      label: t.trips,
+      icon: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+        </svg>
+      ),
+    },
+    {
+      key: "payments",
+      label: t.payments,
+      icon: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+        </svg>
+      ),
+    },
+    {
+      key: "summary",
+      label: t.summary,
+      icon: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+      ),
+    },
   ];
 
   const summaryPeriods: { key: SummaryPeriod; label: string }[] = [
@@ -1002,23 +1027,24 @@ export default function HistoryContent({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Badge filter row */}
-      <div className="flex items-center gap-2">
+      {/* Tab bar */}
+      <div className="flex items-center border-b border-gray-200">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === tab.key
-                ? "bg-gray-900 text-white shadow-sm"
-                : "bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+                ? "border-b-2 border-blue-600 text-blue-600"
+                : "text-gray-400 hover:text-gray-600"
             }`}
           >
+            {tab.icon}
             {tab.label}
           </button>
         ))}
         {isAdmin && (
-          <label className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-500">
+          <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-sm text-gray-500">
             <input
               type="checkbox"
               checked={onlyMe}
@@ -1072,6 +1098,13 @@ export default function HistoryContent({
                               key={trip.id}
                               className="group flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 transition hover:border-gray-200 hover:shadow-sm"
                             >
+                              {/* Bus icon */}
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                                </svg>
+                              </div>
+
                               {/* Trip info */}
                               <div className="min-w-0 flex-1">
                                 {isEditing ? (
@@ -1100,20 +1133,30 @@ export default function HistoryContent({
                                   </div>
                                 ) : (
                                   <>
-                                    <p className="font-medium text-gray-800">
-                                      {t.tripNumber} #{trip.tripNum} <span className="font-normal text-gray-400">&middot;</span> <span className="font-normal text-gray-500">{trip.carName}</span>
+                                    <p className="font-semibold text-gray-800">
+                                      {trip.carName}
                                     </p>
-                                    <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
-                                      <span>{trip.time}</span>
-                                      {isAdmin && trip.userName && (
-                                        <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-600">
-                                          {trip.userName}
-                                        </span>
-                                      )}
-                                    </div>
+                                    <p className="mt-0.5 text-xs text-gray-400">
+                                      {trip.licensePlate && <>{trip.licensePlate} &middot; </>}{trip.userName}
+                                    </p>
                                   </>
                                 )}
                               </div>
+
+                              {/* Time & trip number */}
+                              {!isEditing && (
+                                <div className="shrink-0 text-right">
+                                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {trip.time}
+                                  </div>
+                                  <p className="mt-0.5 text-xs font-medium text-blue-600">
+                                    {t.tripNumber} #{trip.tripNum}
+                                  </p>
+                                </div>
+                              )}
 
                               {/* Options menu */}
                               {canEdit && !isEditing && (
@@ -1198,66 +1241,35 @@ export default function HistoryContent({
             ) : (
               <>
                 <div className="space-y-2">
-                  {paymentScroll.visible.map((p) => {
-                    const isExpanded = expandedPayments.has(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        className="overflow-hidden rounded-xl border border-gray-100 bg-white transition hover:border-gray-200 hover:shadow-sm"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => togglePayment(p.id)}
-                          className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-gray-800">
-                              {p.carName}
-                            </p>
-                            <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
-                              <span>{fmtDate(p.dateISO, locale)} &middot; {t.paid}: {p.paidAt}</span>
-                              {isAdmin && p.userName && (
-                                <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-600">
-                                  {p.userName}
-                                  {p.userId === currentUserId && ` (${t.you})`}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <span className="text-sm font-semibold text-green-600">
-                              ฿{p.amount.toFixed(2)}
-                            </span>
-                            <svg
-                              className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth={2}
-                              stroke="currentColor"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                          </div>
-                        </button>
-                        {isExpanded && (
-                          <div className="space-y-1 border-t border-gray-100 px-4 pb-3 pt-2 text-xs text-gray-500">
-                            <div className="flex justify-between">
-                              <span>{t.car}:</span>
-                              <span className="text-gray-700">{p.carName}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>{t.amount}:</span>
-                              <span className="font-medium text-green-600">฿{p.amount.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>{t.paidDate}:</span>
-                              <span className="text-gray-700">{p.paidAt}</span>
-                            </div>
-                          </div>
-                        )}
+                  {paymentScroll.visible.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 transition hover:border-gray-200 hover:shadow-sm"
+                    >
+                      {/* Payment icon */}
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-500">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                        </svg>
                       </div>
-                    );
-                  })}
+
+                      {/* Payment info */}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-800">
+                          {p.userName}
+                          {isAdmin && p.userId === currentUserId && <span className="font-normal text-gray-400"> ({t.you})</span>}
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-400">
+                          {p.carName} &middot; {t.paid} {p.paidAt}
+                        </p>
+                      </div>
+
+                      {/* Amount */}
+                      <span className="shrink-0 text-sm font-semibold text-green-600">
+                        ฿{p.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
                 {paymentScroll.hasMore && (

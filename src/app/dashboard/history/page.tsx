@@ -41,6 +41,7 @@ export default async function HistoryPage() {
     id: trip.id,
     userId: trip.userId,
     carName: trip.car.name,
+    licensePlate: trip.car.licensePlate ?? null,
     userName: trip.user?.name ?? null,
     date: formatDateShort(trip.date, locale),
     dateISO: trip.date.toISOString().split("T")[0],
@@ -85,19 +86,18 @@ export default async function HistoryPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
-      <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 flex items-center bg-gray-50 px-4 py-3 sm:-mx-6 sm:mb-8 sm:px-6">
-        <a
-          href="/dashboard"
-          className="shrink-0 rounded-xl bg-gray-900 p-2 text-white shadow-sm transition hover:bg-gray-800"
-        >
+      <header className="animate-fade-in mb-6 flex items-center gap-3 px-1 pt-4 sm:mb-8">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-blue-400 text-blue-500">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-        </a>
-        <h1 className="flex-1 text-center text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-          {t.history}
-        </h1>
-        <div className="w-9" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+            {t.history}
+          </h1>
+          <p className="text-sm text-gray-400">{t.trips}, {t.payments} &amp; {t.summary}</p>
+        </div>
       </header>
 
       <HistoryContent
