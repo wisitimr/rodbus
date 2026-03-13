@@ -154,7 +154,7 @@ export default function CostForm({ cars, todayTrips: initialTrips }: CostFormPro
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {t.gasCost}
+                {t.gasCost} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -169,7 +169,7 @@ export default function CostForm({ cars, todayTrips: initialTrips }: CostFormPro
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {t.parkingCost}
+                {t.parkingCost} <span className="normal-case tracking-normal font-normal text-gray-400">({t.optional})</span>
               </label>
               <input
                 type="number"

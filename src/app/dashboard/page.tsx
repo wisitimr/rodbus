@@ -202,13 +202,7 @@ export default async function DashboardPage() {
 
         {/* Driver: New Trip */}
         {ownedCar && allCars.length > 0 && (
-          <section id="enter-daily-costs" className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-            <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-                {t.newTrip}
-              </h2>
-            </div>
-            <div className="px-5 py-4 sm:px-6 sm:py-5">
+          <div id="enter-daily-costs" className="scroll-mt-4">
               <CostForm
                 cars={allCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
                 todayTrips={todayTripCosts.map((tc) => ({
@@ -220,8 +214,7 @@ export default async function DashboardPage() {
                   passengerCount: tc.trips.length,
                 }))}
               />
-            </div>
-          </section>
+          </div>
         )}
 
         {/* Debt Settlement (admin only) */}
