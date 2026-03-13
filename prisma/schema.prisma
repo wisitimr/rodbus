@@ -22,54 +22,56 @@ model User {
   image     String?
   role      Role      @default(PENDING)
   ownedCars Car[]     @relation("OwnedCars")
-  trips     Trip[]
+  checkIns  CheckIn[]
   payments  Payment[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
 model Car {
-  id             String     @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
   licensePlate   String?
-  defaultGasCost Float      @default(0)
+  defaultGasCost Float     @default(0)
   ownerId        String
-  owner          User       @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner          User      @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
+  checkIns       CheckIn[]
   trips          Trip[]
-  tripCosts      TripCost[]
   payments       Payment[]
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
-model Trip {
-  id         String    @id @default(cuid())
-  userId     String
-  carId      String
-  tripCostId String?
-  date       DateTime  @db.Date
-  tappedAt   DateTime  @default(now())
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  car        Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
-  tripCost   TripCost? @relation(fields: [tripCostId], references: [id])
+model CheckIn {
+  id      String   @id @default(cuid())
+  userId  String
+  carId   String
+  tripId  String?
+  date    DateTime @db.Date
+  tappedAt DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car     Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  trip    Trip?    @relation(fields: [tripId], references: [id])
 
   @@index([userId, carId, date])
   @@index([carId, date])
+  @@map("Trip")
 }
 
-model TripCost {
-  id          String   @id @default(cuid())
+model Trip {
+  id          String    @id @default(cuid())
   carId       String
-  date        DateTime @db.Date
-  gasCost     Float    @default(0)
-  parkingCost Float    @default(0)
+  date        DateTime  @db.Date
+  gasCost     Float     @default(0)
+  parkingCost Float     @default(0)
   label       String?
-  car         Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
-  trips       Trip[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  car         Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  checkIns    CheckIn[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([carId, date])
+  @@map("TripCost")
 }
 
 model Payment {

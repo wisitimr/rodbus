@@ -177,7 +177,7 @@ export default function DashboardContent({
         {recentOpen && (
           <>
             {recentTrips.length === 0 ? (
-              <p className="py-4 text-center text-sm text-gray-400">{t.noTripHistory}</p>
+              <p className="py-4 text-center text-sm text-gray-400">{t.noCheckInHistory}</p>
             ) : (
               <div className="mt-1 space-y-2">
                 {recentTrips.map((trip) => (

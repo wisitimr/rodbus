@@ -80,7 +80,7 @@ export async function setUserRole(userId: string, role: Role): Promise<{ error?:
 // Cost Management — Admin can update gas/parking for their owned cars
 // ---------------------------------------------------------------------------
 
-export async function createTripCost(
+export async function createTrip(
   carId: string,
   date: string,
   gasCost: number,
@@ -96,7 +96,7 @@ export async function createTripCost(
   const parsedDate = new Date(date);
   parsedDate.setHours(0, 0, 0, 0);
 
-  await prisma.tripCost.create({
+  await prisma.trip.create({
     data: { carId, date: parsedDate, gasCost, parkingCost },
   });
 

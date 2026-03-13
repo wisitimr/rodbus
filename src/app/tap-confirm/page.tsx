@@ -10,7 +10,7 @@ function TapConfirm() {
   const router = useRouter();
   const carId = searchParams.get("carId");
   const car = searchParams.get("car");
-  const tripCostId = searchParams.get("tripCostId");
+  const tripId = searchParams.get("tripId");
   const [loading, setLoading] = useState(false);
 
   async function handleConfirm() {
@@ -20,7 +20,7 @@ function TapConfirm() {
       const res = await fetch("/api/tap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ carId, tripCostId }),
+        body: JSON.stringify({ carId, tripId }),
       });
       const data = await res.json();
       if (res.ok) {

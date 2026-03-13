@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/costs?date=YYYY-MM-DD&carIds=id1,id2 — Fetch trip costs for given date and cars
+// GET /api/costs?date=YYYY-MM-DD&carIds=id1,id2 — Fetch trips for given date and cars
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
@@ -20,28 +20,28 @@ export async function GET(request: NextRequest) {
   const parsedDate = new Date(date);
   parsedDate.setHours(0, 0, 0, 0);
 
-  const costs = await prisma.tripCost.findMany({
+  const trips = await prisma.trip.findMany({
     where: {
       carId: { in: carIds.split(",") },
       date: parsedDate,
     },
-    include: { trips: { select: { id: true, userId: true } } },
+    include: { checkIns: { select: { id: true, userId: true } } },
     orderBy: { createdAt: "asc" },
   });
 
   return NextResponse.json(
-    costs.map((c) => ({
-      id: c.id,
-      carId: c.carId,
-      gasCost: c.gasCost,
-      parkingCost: c.parkingCost,
-      label: c.label,
-      passengerCount: c.trips.length,
+    trips.map((t) => ({
+      id: t.id,
+      carId: t.carId,
+      gasCost: t.gasCost,
+      parkingCost: t.parkingCost,
+      label: t.label,
+      passengerCount: t.checkIns.length,
     }))
   );
 }
 
-// POST /api/costs — Owner creates a new trip (TripCost record)
+// POST /api/costs — Owner creates a new trip
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   const parsedDate = new Date(date);
   parsedDate.setHours(0, 0, 0, 0);
 
-  const tripCost = await prisma.tripCost.create({
+  const trip = await prisma.trip.create({
     data: {
       carId,
       date: parsedDate,
@@ -74,5 +74,5 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json(tripCost);
+  return NextResponse.json(trip);
 }

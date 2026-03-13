@@ -24,8 +24,8 @@ export default async function HistoryPage() {
   const allTimeStart = new Date(2000, 0, 1);
   const allTimeEnd = new Date(2099, 11, 31);
 
-  const [recentTrips, allDebts, allPayments] = await Promise.all([
-    prisma.trip.findMany({
+  const [recentCheckIns, allDebts, allPayments] = await Promise.all([
+    prisma.checkIn.findMany({
       ...(isAdmin ? {} : { where: { userId } }),
       include: { car: true, user: { select: { name: true } } },
       orderBy: { tappedAt: "desc" },
@@ -38,15 +38,15 @@ export default async function HistoryPage() {
     }),
   ]);
 
-  const trips = recentTrips.map((trip) => ({
-    id: trip.id,
-    userId: trip.userId,
-    carName: trip.car.name,
-    licensePlate: trip.car.licensePlate ?? null,
-    userName: trip.user?.name ?? null,
-    date: formatDateShort(trip.date, locale),
-    dateISO: trip.date.toISOString().split("T")[0],
-    time: trip.tappedAt.toLocaleTimeString(locale, {
+  const checkIns = recentCheckIns.map((ci) => ({
+    id: ci.id,
+    userId: ci.userId,
+    carName: ci.car.name,
+    licensePlate: ci.car.licensePlate ?? null,
+    userName: ci.user?.name ?? null,
+    date: formatDateShort(ci.date, locale),
+    dateISO: ci.date.toISOString().split("T")[0],
+    time: ci.tappedAt.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     }),
@@ -74,6 +74,11 @@ export default async function HistoryPage() {
       tripNumber: b.tripNumber,
       passengerNames: b.passengerNames,
       driverName: b.driverName,
+      time: b.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Bangkok",
+      }),
     })),
   }));
 
@@ -108,7 +113,7 @@ export default async function HistoryPage() {
       </header>
 
       <HistoryContent
-        trips={trips}
+        checkIns={checkIns}
         allDebts={serializedDebts}
         allPayments={serializedPayments}
         currentUserId={userId}
@@ -121,7 +126,7 @@ export default async function HistoryPage() {
           day: t.day,
           month: t.month,
           year: t.year,
-          noTripHistory: t.noTripHistory,
+          noCheckInHistory: t.noCheckInHistory,
           noPayments: t.noPayments,
           noData: t.noData,
           date: t.date,
@@ -143,9 +148,9 @@ export default async function HistoryPage() {
           passenger: t.passenger,
           paidDate: t.paidDate,
           tripNumber: t.tripNumber,
-          editTrip: t.editTrip,
-          deleteTrip: t.deleteTrip,
-          confirmDeleteTrip: t.confirmDeleteTrip,
+          editCheckIn: t.editCheckIn,
+          deleteCheckIn: t.deleteCheckIn,
+          confirmDeleteCheckIn: t.confirmDeleteCheckIn,
           save: t.save,
           cancel: t.cancel,
         }}

@@ -14,6 +14,7 @@ export interface BreakdownCardEntry {
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
+  time?: string;
 }
 
 interface TripBreakdownCardProps {
@@ -61,7 +62,7 @@ export default function TripBreakdownCard({
       >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">{entry.date}</span>
+            <span className="text-sm text-gray-500">{entry.date}{entry.time ? ` · ${entry.time}` : ""}</span>
             <span
               className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${
                 isPending

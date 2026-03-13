@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { updateTripDate, deleteTrip } from "@/lib/trip-actions";
+import { updateCheckInDate, deleteCheckIn } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 
 type Tab = "trips" | "payments" | "summary";
@@ -45,6 +45,7 @@ interface BreakdownEntry {
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
+  time?: string;
 }
 
 interface DebtWithBreakdown {
@@ -63,7 +64,7 @@ interface GroupedPeriod {
 }
 
 interface HistoryContentProps {
-  trips: Trip[];
+  checkIns: Trip[];
   allDebts: DebtWithBreakdown[];
   allPayments: PaymentRecord[];
   currentUserId: string;
@@ -76,7 +77,7 @@ interface HistoryContentProps {
     day: string;
     month: string;
     year: string;
-    noTripHistory: string;
+    noCheckInHistory: string;
     noPayments: string;
     noData: string;
     date: string;
@@ -98,9 +99,9 @@ interface HistoryContentProps {
     passenger: string;
     paidDate: string;
     tripNumber: string;
-    editTrip: string;
-    deleteTrip: string;
-    confirmDeleteTrip: string;
+    editCheckIn: string;
+    deleteCheckIn: string;
+    confirmDeleteCheckIn: string;
     save: string;
     cancel: string;
   };
@@ -262,7 +263,7 @@ function SummaryEntryCard({
 
   return (
     <TripBreakdownCard
-      entry={{ ...entry, date: dateLabel, totalCost: entry.gasCost + entry.parkingCost }}
+      entry={{ ...entry, date: dateLabel, totalCost: entry.gasCost + entry.parkingCost, time: entry.time }}
       isExpanded={isExpanded}
       onToggle={onToggle}
       status={settled ? "paid" : "pending"}
@@ -328,17 +329,24 @@ function SummaryCard({
         }
       }
     }
-    return total;
+    return Math.round(total * 100) / 100;
   }, [group.key, dayBreakdownMap]);
 
-  // Collect all breakdown entries for expanded view
+  // Collect all breakdown entries for expanded view (deduplicated by trip)
   const allEntries = useMemo(() => {
     if (!isExpanded) return [];
+    const seen = new Set<string>();
     const entries: BreakdownEntry[] = [];
     const prefix = group.key;
     for (const [dateISO, dayEntries] of dayBreakdownMap) {
       if (dateISO.startsWith(prefix)) {
-        entries.push(...dayEntries);
+        for (const e of dayEntries) {
+          const key = `${e.carId}-${e.date}-${e.tripNumber}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            entries.push(e);
+          }
+        }
       }
     }
     // Sort by date descending
@@ -367,7 +375,7 @@ function SummaryCard({
           </svg>
         </div>
         <p className="mt-1 text-sm text-gray-500">
-          Grand Total: <span className="font-bold text-gray-900">฿{grandTotal}</span>
+          Grand Total: <span className="font-bold text-gray-900">฿{grandTotal.toFixed(2)}</span>
         </p>
         <div className="mt-1 flex items-center gap-3 text-sm">
           <span className="text-red-500">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
@@ -607,7 +615,7 @@ function groupByPeriod(
 }
 
 export default function HistoryContent({
-  trips,
+  checkIns: trips,
   allDebts,
   allPayments,
   currentUserId,
@@ -649,21 +657,21 @@ export default function HistoryContent({
     setEditDate("");
   }
 
-  function handleEditSave(tripId: string) {
+  function handleEditSave(checkInId: string) {
     startTransition(async () => {
       try {
-        await updateTripDate(tripId, editDate);
+        await updateCheckInDate(checkInId, editDate);
         setEditingTripId(null);
         setEditDate("");
       } catch { /* ignore */ }
     });
   }
 
-  function handleDelete(tripId: string) {
-    if (!confirm(t.confirmDeleteTrip)) return;
+  function handleDelete(checkInId: string) {
+    if (!confirm(t.confirmDeleteCheckIn)) return;
     startTransition(async () => {
       try {
-        await deleteTrip(tripId);
+        await deleteCheckIn(checkInId);
       } catch { /* ignore */ }
     });
   }
@@ -895,7 +903,7 @@ export default function HistoryContent({
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {filteredTrips.length === 0 ? (
-              <p className="text-sm text-gray-400">{t.noTripHistory}</p>
+              <p className="text-sm text-gray-400">{t.noCheckInHistory}</p>
             ) : (
               <>
                 <div className="space-y-6">
@@ -978,48 +986,6 @@ export default function HistoryContent({
                                 </div>
                               )}
 
-                              {/* Options menu */}
-                              {canEdit && !isEditing && (
-                                <div className="relative shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => setOpenMenuId(openMenuId === trip.id ? null : trip.id)}
-                                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                                  >
-                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
-                                    </svg>
-                                  </button>
-                                  {openMenuId === trip.id && (
-                                    <>
-                                      <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                                      <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-                                        <button
-                                          type="button"
-                                          onClick={() => { setOpenMenuId(null); handleEditStart(trip); }}
-                                          className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-gray-50"
-                                        >
-                                          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-                                          </svg>
-                                          {t.editTrip}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => { setOpenMenuId(null); handleDelete(trip.id); }}
-                                          disabled={isPending}
-                                          className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                                        >
-                                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                          </svg>
-                                          {t.deleteTrip}
-                                        </button>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           );
                         })}
