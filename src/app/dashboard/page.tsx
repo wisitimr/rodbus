@@ -25,7 +25,17 @@ export default async function DashboardPage() {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
-  const debts = await calculateDebts(startOfMonth, endOfMonth);
+  const [debts, recentTrips] = await Promise.all([
+    calculateDebts(startOfMonth, endOfMonth),
+    prisma.trip.findMany({
+      where: { userId },
+      orderBy: { tappedAt: "desc" },
+      take: 5,
+      include: {
+        car: { select: { name: true, licensePlate: true } },
+      },
+    }),
+  ]);
 
   const myDebt = debts.find((d) => d.userId === userId);
 
@@ -74,6 +84,19 @@ export default async function DashboardPage() {
     driverName: b.driverName,
   }));
 
+  // Format recent trips for client component
+  const formattedRecentTrips = recentTrips.map((trip) => ({
+    id: trip.id,
+    date: formatDateMedium(trip.date, locale),
+    time: trip.tappedAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Bangkok",
+    }),
+    carName: trip.car.name,
+    licensePlate: trip.car.licensePlate,
+  }));
+
   return (
     <main className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
       {/* Header */}
@@ -109,6 +132,7 @@ export default async function DashboardPage() {
           pendingDebt={myDebt?.pendingDebt ?? 0}
           pendingCount={pendingEntries.length}
           debtEntries={debtEntries}
+          recentTrips={formattedRecentTrips}
         />
       </div>
 

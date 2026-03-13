@@ -92,6 +92,14 @@ const translations = {
     deleteTrip: "Delete",
     confirmDeleteTrip: "Delete this trip? This action cannot be undone.",
     save: "Save",
+    settingsSubtitle: "Users, cars & QR codes",
+    users: "Users",
+    cars: "Cars",
+    qr: "QR",
+    allUsersLabel: "All Users",
+    user: "User",
+    deleteUserAction: "Delete",
+    addNewCar: "Add New Car",
 
     // Admin
     settings: "Settings",
@@ -263,6 +271,14 @@ const translations = {
     deleteTrip: "ลบ",
     confirmDeleteTrip: "ลบการเดินทางนี้? ไม่สามารถยกเลิกได้",
     save: "บันทึก",
+    settingsSubtitle: "ผู้ใช้, รถ & QR codes",
+    users: "ผู้ใช้",
+    cars: "รถ",
+    qr: "QR",
+    allUsersLabel: "ผู้ใช้ทั้งหมด",
+    user: "ผู้ใช้",
+    deleteUserAction: "ลบ",
+    addNewCar: "เพิ่มรถใหม่",
 
     // Admin
     settings: "ตั้งค่า",

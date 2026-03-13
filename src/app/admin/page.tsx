@@ -5,8 +5,10 @@ import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import UserManagement from "./user-management";
-import CostManagement from "./cost-management";
 import CarManagement from "./car-management";
+import QRTab from "./qr-tab";
+import SettingsTabs from "./settings-tabs";
+import BottomNav from "@/app/dashboard/bottom-nav";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
@@ -19,95 +21,71 @@ export default async function AdminPage() {
 
   const userId = user.id;
 
-  const [allUsers, myCars] =
-    await Promise.all([
-      prisma.user.findMany({
-        select: { id: true, name: true, email: true, role: true },
-        orderBy: [{ role: "asc" }, { name: "asc" }],
-      }),
-      prisma.car.findMany({
-        where: { ownerId: userId },
-        select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
-      }),
-    ]);
+  const [allUsers, myCars] = await Promise.all([
+    prisma.user.findMany({
+      select: { id: true, name: true, email: true, role: true },
+      orderBy: [{ role: "asc" }, { name: "asc" }],
+    }),
+    prisma.car.findMany({
+      where: { ownerId: userId },
+      select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
+    }),
+  ]);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
+    <main className="mx-auto max-w-4xl px-4 pb-24 sm:px-6">
       {/* Header */}
-      <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 bg-gray-50 px-4 py-3 sm:-mx-6 sm:mb-8 sm:px-6">
-        <div className="flex items-center">
-          <a
-            href="/dashboard"
-            className="shrink-0 rounded-xl bg-gray-900 p-2 text-white shadow-sm transition hover:bg-gray-800"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+      <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-4 bg-gray-50 px-4 py-3 sm:-mx-6 sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+            <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-          </a>
-          <h1 className="flex-1 text-center text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-            {t.settings}
-          </h1>
-          <div className="w-9" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-gray-900">
+              {t.settings}
+            </h1>
+            <p className="text-xs text-gray-500">{t.settingsSubtitle}</p>
+          </div>
         </div>
       </header>
 
-      <div className="stagger-children space-y-4 sm:space-y-6">
-        {/* User Management */}
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-red-200">
-          <div className="border-b border-red-100 bg-red-50/50 px-5 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-red-600 sm:text-sm">
-              {t.userManagement}
-            </h2>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            <UserManagement
-              users={allUsers.map((u) => ({
-                id: u.id,
-                name: u.name,
-                email: u.email,
-                role: u.role,
-              }))}
-              currentUserId={userId}
-            />
-          </div>
-        </section>
+      <SettingsTabs
+        usersTab={
+          <UserManagement
+            users={allUsers.map((u) => ({
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+            }))}
+            currentUserId={userId}
+          />
+        }
+        carsTab={
+          <CarManagement
+            cars={myCars.map((c) => ({
+              id: c.id,
+              name: c.name,
+              licensePlate: c.licensePlate,
+              defaultGasCost: c.defaultGasCost,
+            }))}
+          />
+        }
+        qrTab={
+          <QRTab
+            cars={myCars.map((c) => ({
+              id: c.id,
+              name: c.name,
+              licensePlate: c.licensePlate,
+            }))}
+          />
+        }
+      />
 
-        {/* Car Management */}
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-purple-200">
-          <div className="border-b border-purple-100 bg-purple-50/50 px-5 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-purple-600 sm:text-sm">
-              {t.carManagement}
-            </h2>
-          </div>
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            <CarManagement
-              cars={myCars.map((c) => ({
-                id: c.id,
-                name: c.name,
-                licensePlate: c.licensePlate,
-              }))}
-            />
-          </div>
-        </section>
-
-        {/* Cost Management */}
-        {myCars.length > 0 && (
-          <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-blue-200">
-            <div className="border-b border-blue-100 bg-blue-50/50 px-5 py-3 sm:px-6 sm:py-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-blue-600 sm:text-sm">
-                {t.costManagement}
-              </h2>
-            </div>
-            <div className="px-5 py-4 sm:px-6 sm:py-5">
-              <CostManagement
-                cars={myCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
-              />
-            </div>
-          </section>
-        )}
-
-      </div>
-
+      <BottomNav isAdmin={true} />
     </main>
   );
 }
