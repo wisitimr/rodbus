@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
 
@@ -35,7 +35,7 @@ function getBangkokToday() {
 export default function CostForm({ cars, existingCosts: initialCosts, missingCostDates: initialMissingDates = [] }: CostFormProps) {
   const { t, locale } = useT();
   const router = useRouter();
-  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const [carId, setCarId] = useState(cars[0]?.id ?? "");
   const [date, setDate] = useState(getBangkokToday);
   const [existingCosts, setExistingCosts] = useState<ExistingCost[]>(initialCosts);
@@ -183,23 +183,17 @@ export default function CostForm({ cars, existingCosts: initialCosts, missingCos
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
           {t.date}
         </label>
-        <input
-          ref={dateInputRef}
-          type="date"
-          value={date}
-          onChange={(e) => handleDateChange(e.target.value)}
-          className="sr-only"
-          tabIndex={-1}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            try { dateInputRef.current?.showPicker(); } catch { dateInputRef.current?.focus(); }
-          }}
-          className={`${inputClass} text-left`}
-        >
-          {fmtDate(date, locale)}
-        </button>
+        <div className="relative">
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className={`${inputClass} absolute inset-0 z-10 cursor-pointer opacity-0`}
+          />
+          <div className={`${inputClass} text-left`}>
+            {fmtDate(date, locale)}
+          </div>
+        </div>
       </div>
 
       {/* Car selector */}
