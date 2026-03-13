@@ -29,49 +29,47 @@ model User {
 }
 
 model Car {
-  id             String      @id @default(cuid())
+  id             String     @id @default(cuid())
   name           String
   licensePlate   String?
-  defaultGasCost Float       @default(0)
+  defaultGasCost Float      @default(0)
   ownerId        String
-  owner          User        @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
-  trips        Trip[]
-  dailyCosts   DailyCost[]
-  payments     Payment[]
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  owner          User       @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
+  trips          Trip[]
+  tripCosts      TripCost[]
+  payments       Payment[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model Trip {
-  id        String   @id @default(cuid())
-  userId    String
-  carId     String
-  type      TripType
-  date      DateTime @db.Date
-  tappedAt  DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  userId     String
+  carId      String
+  tripCostId String?
+  date       DateTime  @db.Date
+  tappedAt   DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car        Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  tripCost   TripCost? @relation(fields: [tripCostId], references: [id])
 
   @@index([userId, carId, date])
   @@index([carId, date])
 }
 
-enum TripType {
-  OUTBOUND
-  RETURN
-}
-
-model DailyCost {
+model TripCost {
   id          String   @id @default(cuid())
   carId       String
   date        DateTime @db.Date
   gasCost     Float    @default(0)
   parkingCost Float    @default(0)
+  label       String?
   car         Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  trips       Trip[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([carId, date])
+  @@index([carId, date])
 }
 
 model Payment {

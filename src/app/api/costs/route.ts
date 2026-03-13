@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/costs?date=YYYY-MM-DD&carIds=id1,id2 — Fetch costs for given date and cars
+// GET /api/costs?date=YYYY-MM-DD&carIds=id1,id2 — Fetch trip costs for given date and cars
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
@@ -20,19 +20,28 @@ export async function GET(request: NextRequest) {
   const parsedDate = new Date(date);
   parsedDate.setHours(0, 0, 0, 0);
 
-  const costs = await prisma.dailyCost.findMany({
+  const costs = await prisma.tripCost.findMany({
     where: {
       carId: { in: carIds.split(",") },
       date: parsedDate,
     },
+    include: { trips: { select: { id: true, userId: true } } },
+    orderBy: { createdAt: "asc" },
   });
 
   return NextResponse.json(
-    costs.map((c) => ({ carId: c.carId, gasCost: c.gasCost, parkingCost: c.parkingCost }))
+    costs.map((c) => ({
+      id: c.id,
+      carId: c.carId,
+      gasCost: c.gasCost,
+      parkingCost: c.parkingCost,
+      label: c.label,
+      passengerCount: c.trips.length,
+    }))
   );
 }
 
-// POST /api/costs — Driver sets gas & parking for their car on a given date
+// POST /api/costs — Owner creates a new trip (TripCost record)
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
@@ -40,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { carId, date, gasCost, parkingCost } = body;
+  const { carId, date, gasCost, parkingCost, label } = body;
 
   if (!carId || !date) {
     return NextResponse.json({ error: "carId and date are required" }, { status: 400 });
@@ -55,21 +64,15 @@ export async function POST(request: NextRequest) {
   const parsedDate = new Date(date);
   parsedDate.setHours(0, 0, 0, 0);
 
-  const dailyCost = await prisma.dailyCost.upsert({
-    where: {
-      carId_date: { carId, date: parsedDate },
-    },
-    update: {
-      gasCost: gasCost ?? 0,
-      parkingCost: parkingCost ?? 0,
-    },
-    create: {
+  const tripCost = await prisma.tripCost.create({
+    data: {
       carId,
       date: parsedDate,
       gasCost: gasCost ?? 0,
       parkingCost: parkingCost ?? 0,
+      label: label || null,
     },
   });
 
-  return NextResponse.json(dailyCost);
+  return NextResponse.json(tripCost);
 }

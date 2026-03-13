@@ -12,93 +12,71 @@ export interface UserDebt {
     date: Date;
     share: number;
     gasShare: number;
-    gasOutbound: number;
-    gasReturn: number;
-    gasCost: number;
-    outboundHeadcount: number;
-    returnHeadcount: number;
     parkingShare: number;
-    outboundCount: number;
-    returnCount: number;
+    gasCost: number;
+    parkingCost: number;
     totalCost: number;
-    passengerCount: number;
+    headcount: number;
   }[];
 }
 
 /**
- * Calculate debts for all users within a date range.
- * pendingDebt = totalDebt (accumulated cost shares) - totalPaid (sum of payments)
+ * For each TripCost, split total cost (gas + parking) among linked passengers + driver.
+ * Legacy trips (without tripCostId) fall back to matching by carId+date.
  */
 export async function calculateDebts(
   startDate: Date,
   endDate: Date
 ): Promise<UserDebt[]> {
-  // Fetch all daily costs in the date range with their car info
-  const dailyCosts = await prisma.dailyCost.findMany({
+  const tripCosts = await prisma.tripCost.findMany({
     where: {
       date: { gte: startDate, lte: endDate },
     },
     include: { car: true },
   });
 
-  // For each daily cost entry, find distinct passengers for that car on that day
+  const allTrips = await prisma.trip.findMany({
+    where: {
+      date: { gte: startDate, lte: endDate },
+    },
+    include: { user: true },
+  });
+
   const debtMap = new Map<string, UserDebt>();
 
-  for (const cost of dailyCosts) {
+  for (const cost of tripCosts) {
     if (cost.gasCost === 0 && cost.parkingCost === 0) continue;
 
-    // Fetch ALL trips (not distinct) to count per-user trip count
-    const trips = await prisma.trip.findMany({
-      where: {
-        carId: cost.carId,
-        date: cost.date,
-      },
-      include: { user: true },
-    });
+    // Find trips linked to this TripCost (or legacy match by carId+date)
+    const linkedTrips = allTrips.filter(
+      (t) =>
+        t.tripCostId === cost.id ||
+        (t.tripCostId === null && t.carId === cost.carId && t.date.getTime() === cost.date.getTime())
+    );
 
-    if (trips.length === 0) continue;
+    if (linkedTrips.length === 0) continue;
 
-    // Track which users have outbound/return trips
-    const userNames = new Map<string, string | null>();
-    const outboundUsers = new Set<string>();
-    const returnUsers = new Set<string>();
-    for (const trip of trips) {
-      userNames.set(trip.userId, trip.user.name);
-      if (trip.type === "OUTBOUND") outboundUsers.add(trip.userId);
-      else returnUsers.add(trip.userId);
-    }
+    // Unique passengers
+    const passengerIds = new Set(linkedTrips.map((t) => t.userId));
+    // headcount = unique passengers + 1 for driver
+    const headcount = passengerIds.size + (passengerIds.has(cost.car.ownerId) ? 0 : 1);
 
-    // Include driver in both leg headcounts (driver always travels both legs)
-    const outboundHeadcount = outboundUsers.size + (outboundUsers.has(cost.car.ownerId) ? 0 : 1);
-    const returnHeadcount = returnUsers.size + (returnUsers.has(cost.car.ownerId) ? 0 : 1);
+    const totalCost = cost.gasCost + cost.parkingCost;
+    const perPerson = totalCost / headcount;
+    const gasPerPerson = cost.gasCost / headcount;
+    const parkingPerPerson = cost.parkingCost / headcount;
 
-    // Gas: split total daily cost in half per leg, then divide by headcount per leg
-    const gasPerLeg = cost.gasCost / 2;
-    // Parking: split among ALL riders (outbound + return), including the driver.
-    const allUsers = new Set([...outboundUsers, ...returnUsers]);
-    // Ensure driver is counted in the total headcount
-    const totalHeadcount = allUsers.size + (allUsers.has(cost.car.ownerId) ? 0 : 1);
-
-    for (const uid of allUsers) {
+    for (const uid of passengerIds) {
       // Skip the car owner — they are the driver and don't owe debt
       if (uid === cost.car.ownerId) continue;
 
-      const hasOutbound = outboundUsers.has(uid);
-      const hasReturn = returnUsers.has(uid);
-
-      // Gas: per-leg share based on headcount for that leg
-      const gasOutbound = hasOutbound ? gasPerLeg / outboundHeadcount : 0;
-      const gasReturn = hasReturn ? gasPerLeg / returnHeadcount : 0;
-      const gasShare = gasOutbound + gasReturn;
-      // Parking: split among all riders (outbound + return)
-      const parkingShare = totalHeadcount > 0 ? cost.parkingCost / totalHeadcount : 0;
-      const share = gasShare + parkingShare;
+      const tripUser = linkedTrips.find((t) => t.userId === uid);
 
       let entry = debtMap.get(uid);
       if (!entry) {
         entry = {
           userId: uid,
-          userName: userNames.get(uid) ?? null,
+          userName: tripUser?.user.name ?? null,
           totalDebt: 0,
           totalPaid: 0,
           pendingDebt: 0,
@@ -107,23 +85,18 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
-      entry.totalDebt += share;
+      entry.totalDebt += perPerson;
       entry.breakdown.push({
         carId: cost.carId,
         carName: cost.car.name,
         date: cost.date,
-        share: Math.round(share * 100) / 100,
-        gasShare: Math.round(gasShare * 100) / 100,
-        gasOutbound: Math.round(gasOutbound * 100) / 100,
-        gasReturn: Math.round(gasReturn * 100) / 100,
+        share: Math.round(perPerson * 100) / 100,
+        gasShare: Math.round(gasPerPerson * 100) / 100,
+        parkingShare: Math.round(parkingPerPerson * 100) / 100,
         gasCost: cost.gasCost,
-        outboundHeadcount,
-        returnHeadcount,
-        parkingShare: Math.round(parkingShare * 100) / 100,
-        outboundCount: hasOutbound ? 1 : 0,
-        returnCount: hasReturn ? 1 : 0,
-        totalCost: cost.gasCost + cost.parkingCost,
-        passengerCount: totalHeadcount,
+        parkingCost: cost.parkingCost,
+        totalCost,
+        headcount,
       });
     }
   }
@@ -160,52 +133,37 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
   totalPending: number;
   perDate: { date: Date; amount: number }[];
 }> {
-  const dailyCosts = await prisma.dailyCost.findMany({
+  const tripCosts = await prisma.tripCost.findMany({
     include: { car: true },
     orderBy: { date: "asc" },
   });
 
-  // Collect per-date shares (oldest first)
+  const allTrips = await prisma.trip.findMany({
+    include: { user: true },
+  });
+
   const dateShares: { date: Date; amount: number }[] = [];
 
-  for (const cost of dailyCosts) {
+  for (const cost of tripCosts) {
     if (cost.gasCost === 0 && cost.parkingCost === 0) continue;
 
-    const trips = await prisma.trip.findMany({
-      where: { carId: cost.carId, date: cost.date },
-    });
-
-    if (trips.length === 0) continue;
-
-    // Skip if user is the car owner (driver doesn't owe debt)
+    // Skip if user is the car owner
     if (userId === cost.car.ownerId) continue;
 
-    // Track outbound/return riders separately
-    const outboundUsers = new Set<string>();
-    const returnUsers = new Set<string>();
-    for (const t of trips) {
-      if (t.type === "OUTBOUND") outboundUsers.add(t.userId);
-      else returnUsers.add(t.userId);
-    }
+    const linkedTrips = allTrips.filter(
+      (t) =>
+        t.tripCostId === cost.id ||
+        (t.tripCostId === null && t.carId === cost.carId && t.date.getTime() === cost.date.getTime())
+    );
 
-    const hasOutbound = outboundUsers.has(userId);
-    const hasReturn = returnUsers.has(userId);
-    if (!hasOutbound && !hasReturn) continue;
+    if (linkedTrips.length === 0) continue;
 
-    // Include driver in both leg headcounts
-    const outboundHeadcount = outboundUsers.size + (outboundUsers.has(cost.car.ownerId) ? 0 : 1);
-    const returnHeadcount = returnUsers.size + (returnUsers.has(cost.car.ownerId) ? 0 : 1);
+    const passengerIds = new Set(linkedTrips.map((t) => t.userId));
+    if (!passengerIds.has(userId)) continue;
 
-    // Gas: split total daily cost in half per leg, divide by headcount per leg
-    const gasPerLeg = cost.gasCost / 2;
-    const gasOutbound = hasOutbound ? gasPerLeg / outboundHeadcount : 0;
-    const gasReturn = hasReturn ? gasPerLeg / returnHeadcount : 0;
-    const gasShare = gasOutbound + gasReturn;
-    // Parking: split among all riders (outbound + return)
-    const allRiders = new Set([...outboundUsers, ...returnUsers]);
-    const totalHeadcount = allRiders.size + (allRiders.has(cost.car.ownerId) ? 0 : 1);
-    const parkingShare = totalHeadcount > 0 ? cost.parkingCost / totalHeadcount : 0;
-    const share = Math.round((gasShare + parkingShare) * 100) / 100;
+    const headcount = passengerIds.size + (passengerIds.has(cost.car.ownerId) ? 0 : 1);
+    const totalCost = cost.gasCost + cost.parkingCost;
+    const share = Math.round((totalCost / headcount) * 100) / 100;
 
     if (share > 0) {
       dateShares.push({ date: cost.date, amount: share });

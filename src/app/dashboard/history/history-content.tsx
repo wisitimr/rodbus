@@ -13,7 +13,6 @@ interface Trip {
   date: string;
   dateISO: string;
   time: string;
-  type: "OUTBOUND" | "RETURN";
 }
 
 interface PaymentRecord {
@@ -34,15 +33,11 @@ interface BreakdownEntry {
   carName: string;
   share: number;
   gasShare: number;
-  gasOutbound: number;
-  gasReturn: number;
   gasCost: number;
-  outboundHeadcount: number;
-  returnHeadcount: number;
   parkingShare: number;
-  outboundCount: number;
-  returnCount: number;
-  passengerCount: number;
+  parkingCost: number;
+  totalCost: number;
+  headcount: number;
 }
 
 interface DebtWithBreakdown {
@@ -57,7 +52,7 @@ interface DebtWithBreakdown {
 interface GroupedPeriod {
   key: string; // ISO date, YYYY-MM, or YYYY
   label: string;
-  entries: { userId: string; userName: string | null; totalDebt: number; totalPaid: number; pendingDebt: number; gasTotal: number; parkingTotal: number; outboundCount: number; returnCount: number }[];
+  entries: { userId: string; userName: string | null; totalDebt: number; totalPaid: number; pendingDebt: number; gasTotal: number; parkingTotal: number }[];
 }
 
 interface HistoryContentProps {
@@ -80,9 +75,6 @@ interface HistoryContentProps {
     date: string;
     time: string;
     car: string;
-    type: string;
-    outbound: string;
-    return: string;
     note: string;
     amount: string;
     gas: string;
@@ -247,8 +239,6 @@ function DayBreakdownDetail({
   return (
     <ul className="divide-y divide-gray-100 text-sm">
       {entries.map((b, i) => {
-        const tripCount = b.outboundCount + b.returnCount;
-        const parkingTotal = b.parkingShare * b.passengerCount;
         return (
           <li key={`${b.carId}-${i}`} className="py-2.5">
             <div className="flex items-center justify-between gap-3">
@@ -256,35 +246,16 @@ function DayBreakdownDetail({
               <span className="shrink-0 font-medium text-gray-900">฿{b.share.toFixed(2)}</span>
             </div>
             <div className="mt-1 space-y-0.5 text-xs text-gray-400">
-              {tripCount > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">{t.trips}:</span>
-                  <span className="flex items-center gap-1.5">
-                    {b.outboundCount > 0 && (
-                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-600">{b.outboundCount} {t.outbound}</span>
-                    )}
-                    {b.returnCount > 0 && (
-                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-600">{b.returnCount} {t.return}</span>
-                    )}
-                  </span>
-                </div>
-              )}
-              {b.gasOutbound > 0 && (
+              {b.gasShare > 0 && (
                 <div className="flex justify-between">
-                  <span>{t.gas} ({t.outbound}):</span>
-                  <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}</span>
-                </div>
-              )}
-              {b.gasReturn > 0 && (
-                <div className="flex justify-between">
-                  <span>{t.gas} ({t.return}):</span>
-                  <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}</span>
+                  <span>{t.gas}:</span>
+                  <span className="text-gray-700">฿{b.gasCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.gasShare.toFixed(2)}</span>
                 </div>
               )}
               {b.parkingShare > 0 && (
                 <div className="flex justify-between">
                   <span>{t.parking}:</span>
-                  <span className="text-gray-700">฿{parkingTotal.toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
+                  <span className="text-gray-700">฿{b.parkingCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -691,8 +662,6 @@ function groupByPeriod(
   const userPeriodDebt = new Map<string, Map<string, number>>();
   const userPeriodGas = new Map<string, Map<string, number>>();
   const userPeriodParking = new Map<string, Map<string, number>>();
-  const userPeriodOutbound = new Map<string, Map<string, number>>();
-  const userPeriodReturn = new Map<string, Map<string, number>>();
 
   for (const debt of allDebts) {
     for (const b of debt.breakdown) {
@@ -703,8 +672,6 @@ function groupByPeriod(
         [userPeriodDebt, b.share],
         [userPeriodGas, b.gasShare],
         [userPeriodParking, b.parkingShare],
-        [userPeriodOutbound, b.outboundCount],
-        [userPeriodReturn, b.returnCount],
       ] as [Map<string, Map<string, number>>, number][]) {
         if (!map.has(debt.userId)) map.set(debt.userId, new Map());
         const pm = map.get(debt.userId)!;
@@ -753,8 +720,6 @@ function groupByPeriod(
         pendingDebt: Math.round((totalDebt - totalPaid) * 100) / 100,
         gasTotal: Math.round((userPeriodGas.get(uid)?.get(key) ?? 0) * 100) / 100,
         parkingTotal: Math.round((userPeriodParking.get(uid)?.get(key) ?? 0) * 100) / 100,
-        outboundCount: userPeriodOutbound.get(uid)?.get(key) ?? 0,
-        returnCount: userPeriodReturn.get(uid)?.get(key) ?? 0,
       });
     }
 
@@ -1044,15 +1009,6 @@ export default function HistoryContent({
                           {fmtDate(trip.dateISO, locale)} &middot; {trip.time}
                         </p>
                       </div>
-                      <span
-                        className={`shrink-0 rounded-md px-2.5 py-0.5 text-xs font-semibold ${
-                          trip.type === "OUTBOUND"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-indigo-50 text-indigo-700"
-                        }`}
-                      >
-                        {trip.type === "OUTBOUND" ? t.outbound : t.return}
-                      </span>
                     </div>
                   ))}
                 </div>
@@ -1066,7 +1022,6 @@ export default function HistoryContent({
                         <th className="pb-3 font-semibold">{t.time}</th>
                         {isAdmin && <th className="pb-3 font-semibold">{t.passenger}</th>}
                         <th className="pb-3 font-semibold">{t.car}</th>
-                        <th className="pb-3 text-right font-semibold">{t.type}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -1076,17 +1031,6 @@ export default function HistoryContent({
                           <td className="py-3 text-gray-500">{trip.time}</td>
                           {isAdmin && <td className="py-3 text-gray-600">{trip.userName ?? "—"}</td>}
                           <td className="py-3 font-medium text-gray-800">{trip.carName}</td>
-                          <td className="py-3 text-right">
-                            <span
-                              className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${
-                                trip.type === "OUTBOUND"
-                                  ? "bg-amber-50 text-amber-700"
-                                  : "bg-indigo-50 text-indigo-700"
-                              }`}
-                            >
-                              {trip.type === "OUTBOUND" ? t.outbound : t.return}
-                            </span>
-                          </td>
                         </tr>
                       ))}
                     </tbody>

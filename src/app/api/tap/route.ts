@@ -1,11 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { TripType, Role } from "@prisma/client";
-import { nowBangkok, todayBangkok } from "@/lib/timezone";
+import { Role } from "@prisma/client";
+import { todayBangkok } from "@/lib/timezone";
 
-const DEBOUNCE_HOURS = 2;
-const RETURN_GAP_HOURS = 4;
+type ValidateError =
+  | { error: "not_found" }
+  | { error: "owner"; car: string }
+  | { error: "disabled"; reason: string }
+  | { error: "already_recorded"; car: string }
+  | { error: "no_open_trip"; car: string };
+
+type ValidateSuccess = { ok: true; tripCostId: string; car: string; today: Date };
+
+async function validateTap(
+  user: { id: string; role: string },
+  carId: string,
+): Promise<ValidateError | ValidateSuccess> {
+  const car = await prisma.car.findUnique({ where: { id: carId } });
+  if (!car) return { error: "not_found" };
+
+  if (user.id === car.ownerId) {
+    return { error: "owner", car: car.name };
+  }
+
+  const today = todayBangkok();
+
+  const disabledDate = await prisma.disabledDate.findUnique({
+    where: { date: today },
+  });
+  if (disabledDate) {
+    return { error: "disabled", reason: disabledDate.reason ?? "System is disabled for today" };
+  }
+
+  // Find active trip costs for this car today that user hasn't tapped yet
+  const todaysCosts = await prisma.tripCost.findMany({
+    where: { carId, date: today },
+    orderBy: { createdAt: "asc" },
+    include: { trips: { where: { userId: user.id } } },
+  });
+
+  for (const cost of todaysCosts) {
+    if (cost.trips.length === 0) {
+      return { ok: true, tripCostId: cost.id, car: car.name, today };
+    }
+  }
+
+  // All trips already tapped or no trips exist
+  if (todaysCosts.length === 0) {
+    return { error: "no_open_trip", car: car.name };
+  }
+  return { error: "already_recorded", car: car.name };
+}
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -15,7 +61,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // --- Check: user must not be PENDING ---
   if (user.role === Role.PENDING) {
     const pendingUrl = new URL("/pending-approval", request.url);
     return NextResponse.redirect(pendingUrl);
@@ -26,106 +71,61 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing carId parameter" }, { status: 400 });
   }
 
-  const car = await prisma.car.findUnique({ where: { id: carId } });
-  if (!car) {
-    return NextResponse.json({ error: "Car not found" }, { status: 404 });
-  }
+  const result = await validateTap(user, carId);
 
-  const userId = user.id;
-
-  // --- Check: owner cannot tap their own car ---
-  if (userId === car.ownerId) {
+  if (!("ok" in result)) {
     const successUrl = new URL("/tap-success", request.url);
-    successUrl.searchParams.set("status", "owner");
-    successUrl.searchParams.set("car", car.name);
+    successUrl.searchParams.set("status", result.error);
+    if ("car" in result) successUrl.searchParams.set("car", result.car);
+    if ("reason" in result) successUrl.searchParams.set("reason", result.reason);
     return NextResponse.redirect(successUrl);
   }
 
-  const now = nowBangkok();
-  const today = todayBangkok();
+  const confirmUrl = new URL("/tap-confirm", request.url);
+  confirmUrl.searchParams.set("carId", carId);
+  confirmUrl.searchParams.set("car", result.car);
+  confirmUrl.searchParams.set("tripCostId", result.tripCostId);
+  return NextResponse.redirect(confirmUrl);
+}
 
-  // --- Check: date must not be disabled ---
-  const disabledDate = await prisma.disabledDate.findUnique({
-    where: { date: today },
-  });
-  if (disabledDate) {
-    const successUrl = new URL("/tap-success", request.url);
-    successUrl.searchParams.set("status", "disabled");
-    successUrl.searchParams.set("reason", disabledDate.reason ?? "System is disabled for today");
-    return NextResponse.redirect(successUrl);
+export async function POST(request: NextRequest) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // --- Debounce: prevent duplicate taps within 2 hours ---
-  const debounceThreshold = new Date(now.getTime() - DEBOUNCE_HOURS * 60 * 60 * 1000);
-  const recentTap = await prisma.trip.findFirst({
-    where: {
-      userId,
-      carId,
-      tappedAt: { gte: debounceThreshold },
-    },
-    orderBy: { tappedAt: "desc" },
-  });
-
-  if (recentTap) {
-    const successUrl = new URL("/tap-success", request.url);
-    successUrl.searchParams.set("status", "already_recorded");
-    successUrl.searchParams.set("car", car.name);
-    return NextResponse.redirect(successUrl);
+  if (user.role === Role.PENDING) {
+    return NextResponse.json({ error: "Account pending approval" }, { status: 403 });
   }
 
-  // --- Determine Outbound vs Return ---
-  const todaysTrips = await prisma.trip.findMany({
-    where: { userId, date: today },
-    orderBy: { tappedAt: "asc" },
-  });
-
-  let tripType: TripType;
-
-  if (todaysTrips.length === 0) {
-    // First tap of the day -> Outbound
-    tripType = TripType.OUTBOUND;
-  } else {
-    const outboundTap = todaysTrips.find((t) => t.type === TripType.OUTBOUND);
-    if (outboundTap) {
-      const hoursSinceOutbound =
-        (now.getTime() - outboundTap.tappedAt.getTime()) / (1000 * 60 * 60);
-
-      if (hoursSinceOutbound >= RETURN_GAP_HOURS) {
-        // Check if user already has a return tap today (from any car)
-        const hasReturn = todaysTrips.some((t) => t.type === TripType.RETURN);
-        if (hasReturn) {
-          const successUrl = new URL("/tap-success", request.url);
-          successUrl.searchParams.set("status", "already_recorded");
-          successUrl.searchParams.set("car", car.name);
-          return NextResponse.redirect(successUrl);
-        }
-        tripType = TripType.RETURN;
-      } else {
-        // Too soon for return tap — treat as debounce
-        const successUrl = new URL("/tap-success", request.url);
-        successUrl.searchParams.set("status", "too_soon");
-        successUrl.searchParams.set("car", car.name);
-        return NextResponse.redirect(successUrl);
-      }
-    } else {
-      // No outbound tap found (shouldn't happen), default to outbound
-      tripType = TripType.OUTBOUND;
-    }
+  const body = await request.json();
+  const { carId, tripCostId } = body;
+  if (!carId) {
+    return NextResponse.json({ error: "Missing carId" }, { status: 400 });
   }
 
-  // --- Create the trip record ---
+  // Re-validate to prevent race conditions
+  const result = await validateTap(user, carId);
+
+  if (!("ok" in result)) {
+    return NextResponse.json({ error: result.error, car: "car" in result ? result.car : undefined }, { status: 400 });
+  }
+
+  // Use the tripCostId from validation (most accurate) or from request body
+  const finalTripCostId = result.tripCostId || tripCostId;
+
   await prisma.trip.create({
     data: {
-      userId,
+      userId: user.id,
       carId,
-      type: tripType,
-      date: today,
+      tripCostId: finalTripCostId,
+      date: result.today,
     },
   });
 
-  const successUrl = new URL("/tap-success", request.url);
-  successUrl.searchParams.set("status", "recorded");
-  successUrl.searchParams.set("type", tripType.toLowerCase());
-  successUrl.searchParams.set("car", car.name);
-  return NextResponse.redirect(successUrl);
+  return NextResponse.json({
+    status: "recorded",
+    car: result.car,
+  });
 }

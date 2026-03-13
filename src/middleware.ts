@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/tap-success(.*)",
+  "/tap-confirm(.*)",
   "/api/tap(.*)",
 ]);
 

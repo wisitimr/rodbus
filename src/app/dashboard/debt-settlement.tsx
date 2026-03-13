@@ -9,13 +9,10 @@ interface BreakdownItem {
   date: string;
   share: number;
   gasShare: number;
-  gasOutbound: number;
-  gasReturn: number;
   gasCost: number;
-  outboundHeadcount: number;
-  returnHeadcount: number;
   parkingShare: number;
-  passengerCount: number;
+  parkingCost: number;
+  headcount: number;
 }
 
 interface DebtEntry {
@@ -72,8 +69,6 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
           ...entry,
           share: Math.round((entry.share - remaining) * 100) / 100,
           gasShare: Math.round(entry.gasShare * ratio * 100) / 100,
-          gasOutbound: Math.round(entry.gasOutbound * ratio * 100) / 100,
-          gasReturn: Math.round(entry.gasReturn * ratio * 100) / 100,
           parkingShare: Math.round(entry.parkingShare * ratio * 100) / 100,
         });
         remaining = 0;
@@ -126,7 +121,6 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
 
             {isExpanded && (
               <div className="border-t border-gray-100 px-4 pb-3 pt-2">
-                {/* Cost breakdown */}
                 {pendingBreakdown.length > 0 && (() => {
                   const limit = visibleCounts[d.userId] ?? 5;
                   const visible = pendingBreakdown.slice(0, limit);
@@ -138,29 +132,23 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
                           <li key={i} className="py-2">
                             <div className="flex items-center justify-between gap-3">
                               <span className="min-w-0 truncate text-xs text-gray-600">
-                                {b.carName} &mdash; {b.date} ({b.passengerCount} {t.people})
+                                {b.carName} &mdash; {b.date} ({b.headcount} {t.people})
                               </span>
                               <span className="shrink-0 text-xs font-medium text-gray-900">
                                 ฿{b.share.toFixed(2)}
                               </span>
                             </div>
                             <div className="mt-0.5 space-y-0.5 text-xs text-gray-400">
-                              {b.gasOutbound > 0 && (
+                              {b.gasShare > 0 && (
                                 <div className="flex justify-between">
-                                  <span>{t.gas} ({t.outbound}):</span>
-                                  <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.outboundHeadcount} {t.people} = ฿{b.gasOutbound.toFixed(2)}</span>
-                                </div>
-                              )}
-                              {b.gasReturn > 0 && (
-                                <div className="flex justify-between">
-                                  <span>{t.gas} ({t.return}):</span>
-                                  <span className="text-gray-700">฿{(b.gasCost / 2).toFixed(2)} ÷ {b.returnHeadcount} {t.people} = ฿{b.gasReturn.toFixed(2)}</span>
+                                  <span>{t.gas}:</span>
+                                  <span className="text-gray-700">฿{b.gasCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.gasShare.toFixed(2)}</span>
                                 </div>
                               )}
                               {b.parkingShare > 0 && (
                                 <div className="flex justify-between">
                                   <span>{t.parking}:</span>
-                                  <span className="text-gray-700">฿{(b.parkingShare * b.passengerCount).toFixed(2)} ÷ {b.passengerCount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
+                                  <span className="text-gray-700">฿{b.parkingCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
                                 </div>
                               )}
                             </div>

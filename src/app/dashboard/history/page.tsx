@@ -48,7 +48,6 @@ export default async function HistoryPage() {
       hour: "2-digit",
       minute: "2-digit",
     }),
-    type: trip.type as "OUTBOUND" | "RETURN",
   }));
 
   // Serialize debts with breakdown dates as ISO strings
@@ -64,15 +63,11 @@ export default async function HistoryPage() {
       carName: b.carName,
       share: b.share,
       gasShare: b.gasShare,
-      gasOutbound: b.gasOutbound,
-      gasReturn: b.gasReturn,
       gasCost: b.gasCost,
-      outboundHeadcount: b.outboundHeadcount,
-      returnHeadcount: b.returnHeadcount,
       parkingShare: b.parkingShare,
-      outboundCount: b.outboundCount,
-      returnCount: b.returnCount,
-      passengerCount: b.passengerCount,
+      parkingCost: b.parkingCost,
+      totalCost: b.totalCost,
+      headcount: b.headcount,
     })),
   }));
 
@@ -125,9 +120,6 @@ export default async function HistoryPage() {
           date: t.date,
           time: t.time,
           car: t.car,
-          type: t.type,
-          outbound: t.outbound,
-          return: t.return,
           note: t.note,
           gas: t.gas,
           parking: t.parking,

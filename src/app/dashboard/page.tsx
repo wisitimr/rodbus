@@ -7,7 +7,6 @@ import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateShort } from "@/lib/i18n";
 import CostForm from "./cost-form";
 import ProfileMenu from "./profile-menu";
-import CostReminderBanner from "./cost-reminder-banner";
 import DebtSettlement from "./debt-settlement";
 import PendingBreakdown from "./pending-breakdown";
 import { todayBangkok, startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
@@ -51,47 +50,17 @@ export default async function DashboardPage() {
 
   const carIds = allCars.map((c) => c.id);
 
-  // Find dates with trips for my cars but missing cost entries
-  const [tripsForMyCars, costsThisMonth, todayCosts] = allCars.length > 0
-    ? await Promise.all([
-        prisma.trip.findMany({
-          where: {
-            carId: { in: carIds },
-            date: { gte: startOfMonth, lte: today },
-          },
-          select: { carId: true, date: true },
-        }),
-        prisma.dailyCost.findMany({
-          where: {
-            carId: { in: carIds },
-            date: { gte: startOfMonth, lte: today },
-          },
-          select: { carId: true, date: true },
-        }),
-        prisma.dailyCost.findMany({
-          where: {
-            carId: { in: carIds },
-            date: today,
-          },
-        }),
-      ])
-    : [[], [], []];
-
-  // Build set of carId+date that have costs
-  const costSet = new Set(
-    costsThisMonth.map((c) => `${c.carId}_${c.date.toISOString().split("T")[0]}`)
-  );
-  // Find unique carId+date combos from trips that are missing costs
-  const missingCostEntries = tripsForMyCars
-    .filter((tr) => !costSet.has(`${tr.carId}_${tr.date.toISOString().split("T")[0]}`))
-    .map((tr) => ({ carId: tr.carId, date: tr.date.toISOString().split("T")[0] }));
-  const seen = new Set<string>();
-  const missingCostDates = missingCostEntries.filter((e) => {
-    const key = `${e.carId}_${e.date}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).sort((a, b) => a.date.localeCompare(b.date));
+  // Fetch today's trip costs for owned cars
+  const todayTripCosts = allCars.length > 0
+    ? await prisma.tripCost.findMany({
+        where: {
+          carId: { in: carIds },
+          date: today,
+        },
+        include: { trips: { select: { id: true, userId: true } } },
+        orderBy: { createdAt: "asc" },
+      })
+    : [];
 
   const myDebt = debts.find((d) => d.userId === userId);
 
@@ -118,10 +87,6 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {ownedCar && allCars.length > 0 && (
-        <CostReminderBanner initialMissingDates={missingCostDates} cars={allCars.map((c) => ({ id: c.id, name: c.name }))} />
-      )}
-
       <div className="stagger-children space-y-4 sm:space-y-6">
         {/* Debt Card */}
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
@@ -138,7 +103,6 @@ export default async function DashboardPage() {
                 </p>
 
                 {(() => {
-                  // Show only unpaid breakdown entries (subtract payments from oldest first)
                   const sorted = [...myDebt.breakdown].sort(
                     (a, b) => a.date.getTime() - b.date.getTime()
                   );
@@ -153,8 +117,6 @@ export default async function DashboardPage() {
                         ...entry,
                         share: Math.round((entry.share - remaining) * 100) / 100,
                         gasShare: Math.round(entry.gasShare * ratio * 100) / 100,
-                        gasOutbound: Math.round(entry.gasOutbound * ratio * 100) / 100,
-                        gasReturn: Math.round(entry.gasReturn * ratio * 100) / 100,
                         parkingShare: Math.round(entry.parkingShare * ratio * 100) / 100,
                       });
                       remaining = 0;
@@ -162,7 +124,6 @@ export default async function DashboardPage() {
                       pending.push(entry);
                     }
                   }
-                  // Show newest first
                   pending.reverse();
                   if (pending.length === 0) return null;
                   return (
@@ -172,16 +133,11 @@ export default async function DashboardPage() {
                         date: formatDateShort(b.date, locale),
                         share: b.share,
                         gasShare: b.gasShare,
-                        gasOutbound: b.gasOutbound,
-                        gasReturn: b.gasReturn,
                         gasCost: b.gasCost,
-                        outboundHeadcount: b.outboundHeadcount,
-                        returnHeadcount: b.returnHeadcount,
                         parkingShare: b.parkingShare,
-                        outboundCount: b.outboundCount,
-                        returnCount: b.returnCount,
+                        parkingCost: b.parkingCost,
                         totalCost: b.totalCost,
-                        passengerCount: b.passengerCount,
+                        headcount: b.headcount,
                       }))}
                     />
                   );
@@ -228,15 +184,6 @@ export default async function DashboardPage() {
                         })}
                       </p>
                     </div>
-                    <span
-                      className={`shrink-0 rounded-md px-2.5 py-0.5 text-xs font-semibold ${
-                        trip.type === "OUTBOUND"
-                          ? "bg-amber-50 text-amber-700"
-                          : "bg-indigo-50 text-indigo-700"
-                      }`}
-                    >
-                      {trip.type === "OUTBOUND" ? t.outbound : t.return}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -253,19 +200,25 @@ export default async function DashboardPage() {
           </section>
         )}
 
-        {/* Driver: Enter Costs */}
+        {/* Driver: New Trip */}
         {ownedCar && allCars.length > 0 && (
           <section id="enter-daily-costs" className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
             <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
-                {t.enterDailyCosts}
+                {t.newTrip}
               </h2>
             </div>
             <div className="px-5 py-4 sm:px-6 sm:py-5">
               <CostForm
                 cars={allCars.map((c) => ({ id: c.id, name: c.name, defaultGasCost: c.defaultGasCost }))}
-                existingCosts={todayCosts.map((tc) => ({ carId: tc.carId, gasCost: tc.gasCost, parkingCost: tc.parkingCost }))}
-                missingCostDates={missingCostDates}
+                todayTrips={todayTripCosts.map((tc) => ({
+                  id: tc.id,
+                  carId: tc.carId,
+                  gasCost: tc.gasCost,
+                  parkingCost: tc.parkingCost,
+                  label: tc.label,
+                  passengerCount: tc.trips.length,
+                }))}
               />
             </div>
           </section>
@@ -296,13 +249,10 @@ export default async function DashboardPage() {
                         date: formatDateShort(b.date, locale),
                         share: b.share,
                         gasShare: b.gasShare,
-                        gasOutbound: b.gasOutbound,
-                        gasReturn: b.gasReturn,
                         gasCost: b.gasCost,
-                        outboundHeadcount: b.outboundHeadcount,
-                        returnHeadcount: b.returnHeadcount,
                         parkingShare: b.parkingShare,
-                        passengerCount: b.passengerCount,
+                        parkingCost: b.parkingCost,
+                        headcount: b.headcount,
                       })),
                     };
                   })

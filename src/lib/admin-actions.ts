@@ -80,7 +80,7 @@ export async function setUserRole(userId: string, role: Role): Promise<{ error?:
 // Cost Management — Admin can update gas/parking for their owned cars
 // ---------------------------------------------------------------------------
 
-export async function updateDailyCost(
+export async function createTripCost(
   carId: string,
   date: string,
   gasCost: number,
@@ -96,10 +96,8 @@ export async function updateDailyCost(
   const parsedDate = new Date(date);
   parsedDate.setHours(0, 0, 0, 0);
 
-  await prisma.dailyCost.upsert({
-    where: { carId_date: { carId, date: parsedDate } },
-    update: { gasCost, parkingCost },
-    create: { carId, date: parsedDate, gasCost, parkingCost },
+  await prisma.tripCost.create({
+    data: { carId, date: parsedDate, gasCost, parkingCost },
   });
 
   revalidatePath("/admin");
