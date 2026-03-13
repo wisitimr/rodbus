@@ -924,7 +924,7 @@ export default function HistoryContent({
 
   const summaryScroll = useInfiniteScroll(summaryGroups);
 
-  const tabs: { key: Tab; label: string; icon: JSX.Element }[] = [
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     {
       key: "trips",
       label: t.trips,
