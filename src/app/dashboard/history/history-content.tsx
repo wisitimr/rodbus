@@ -7,6 +7,7 @@ type SummaryPeriod = "day" | "month" | "year";
 
 interface Trip {
   id: string;
+  userId: string;
   carName: string;
   userName?: string | null;
   date: string;
@@ -479,7 +480,6 @@ function SummaryCard({
                   </span>
                   <span className={e.pendingDebt <= 0 ? "text-green-600" : "text-gray-700"}>
                     ฿{e.totalDebt.toFixed(2)}
-                    {e.totalPaid > 0 && <> ({t.paid} ฿{e.totalPaid.toFixed(2)})</>}
                   </span>
                 </div>
               ))}
@@ -782,6 +782,9 @@ export default function HistoryContent({
   const [payDateTo, setPayDateTo] = useState("");
   const [, setPayRangeStep] = useState<"from" | "to">("from");
 
+  // Admin: filter to own data only
+  const [onlyMe, setOnlyMe] = useState(false);
+
 
   // Expanded payment details
   const [expandedPayments, setExpandedPayments] = useState<Set<string>>(new Set());
@@ -817,11 +820,11 @@ export default function HistoryContent({
     });
   }, []);
 
-  // Map<dateISO, BreakdownEntry[]> — raw per-car entries for each day, filtered to current user (admins see all)
+  // Map<dateISO, BreakdownEntry[]> — raw per-car entries for each day, filtered to current user (admins see all unless onlyMe)
   const dayBreakdownMap = useMemo(() => {
     const map = new Map<string, BreakdownEntry[]>();
     for (const debt of allDebts) {
-      if (!isAdmin && debt.userId !== currentUserId) continue;
+      if ((!isAdmin || onlyMe) && debt.userId !== currentUserId) continue;
       for (const b of debt.breakdown) {
         const list = map.get(b.date) ?? [];
         list.push(b);
@@ -829,14 +832,14 @@ export default function HistoryContent({
       }
     }
     return map;
-  }, [allDebts, currentUserId, isAdmin]);
+  }, [allDebts, currentUserId, isAdmin, onlyMe]);
 
   // Set of settled day keys — days where pendingDebt <= 0
   const settledDays = useMemo(() => {
     const dayGroups = groupByPeriod(allDebts, allPayments, "day", locale);
     const settled = new Set<string>();
     for (const g of dayGroups) {
-      if (isAdmin) {
+      if (isAdmin && !onlyMe) {
         if (g.entries.every((e) => e.pendingDebt <= 0)) settled.add(g.key);
       } else {
         const e = g.entries.find((e) => e.userId === currentUserId);
@@ -844,7 +847,7 @@ export default function HistoryContent({
       }
     }
     return settled;
-  }, [allDebts, allPayments, locale, currentUserId, isAdmin]);
+  }, [allDebts, allPayments, locale, currentUserId, isAdmin, onlyMe]);
   const togglePayment = (id: string) => {
     setExpandedPayments((prev) => {
       const next = new Set(prev);
@@ -898,18 +901,19 @@ export default function HistoryContent({
   }
 
   const filteredTrips = useMemo(() => {
-    if (!tripDateFrom && !tripDateTo) return trips;
+    const base = isAdmin && onlyMe ? trips.filter((t) => t.userId === currentUserId) : trips;
+    if (!tripDateFrom && !tripDateTo) return base;
     const from = tripDateFrom;
     const to = tripDateTo || tripDateFrom;
-    return trips.filter((trip) => {
+    return base.filter((trip) => {
       if (from && trip.dateISO < from) return false;
       if (to && trip.dateISO > to) return false;
       return true;
     });
-  }, [trips, tripDateFrom, tripDateTo]);
+  }, [trips, tripDateFrom, tripDateTo, isAdmin, onlyMe, currentUserId]);
 
   const filteredPayments = useMemo(() => {
-    const base = isAdmin ? allPayments : allPayments.filter((p) => p.userId === currentUserId);
+    const base = isAdmin && !onlyMe ? allPayments : allPayments.filter((p) => p.userId === currentUserId);
     if (!payDateFrom && !payDateTo) return base;
     const from = payDateFrom;
     const to = payDateTo || payDateFrom;
@@ -918,22 +922,22 @@ export default function HistoryContent({
       if (to && p.dateISO > to) return false;
       return true;
     });
-  }, [allPayments, payDateFrom, payDateTo, isAdmin, currentUserId]);
+  }, [allPayments, payDateFrom, payDateTo, isAdmin, currentUserId, onlyMe]);
 
   const tripScroll = useInfiniteScroll(filteredTrips);
   const paymentScroll = useInfiniteScroll(filteredPayments);
 
-  // Group summary data by period, filtered to current user only (admins see all)
+  // Group summary data by period, filtered to current user only (admins see all unless onlyMe)
   const summaryGroups = useMemo(() => {
     const groups = groupByPeriod(allDebts, allPayments, summaryPeriod, locale);
-    if (isAdmin) return groups.filter((g) => g.entries.length > 0);
+    if (isAdmin && !onlyMe) return groups.filter((g) => g.entries.length > 0);
     return groups
       .map((g) => ({
         ...g,
         entries: g.entries.filter((e) => e.userId === currentUserId),
       }))
       .filter((g) => g.entries.length > 0);
-  }, [allDebts, allPayments, summaryPeriod, locale, currentUserId, isAdmin]);
+  }, [allDebts, allPayments, summaryPeriod, locale, currentUserId, isAdmin, onlyMe]);
 
   const summaryScroll = useInfiniteScroll(summaryGroups);
 
@@ -952,7 +956,7 @@ export default function HistoryContent({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Badge filter row */}
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -966,6 +970,17 @@ export default function HistoryContent({
             {tab.label}
           </button>
         ))}
+        {isAdmin && (
+          <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-sm text-gray-500">
+            <input
+              type="checkbox"
+              checked={onlyMe}
+              onChange={(e) => setOnlyMe(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+            />
+            {t.you}
+          </label>
+        )}
       </div>
 
       {/* Trips tab */}
