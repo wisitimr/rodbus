@@ -100,21 +100,29 @@ export default async function DashboardPage() {
     } : null,
   }));
 
-  // Compute trip numbers for each trip within same car+date
-  const tripNumberMap = new Map<string, number>();
-  const seen = new Set<string>();
+  // Compute trip numbers for each trip within same car+date (batch query)
+  const carDatePairs = [...new Map(
+    recentTrips.map(t => [`${t.carId}-${t.date.toISOString().split("T")[0]}`, { carId: t.carId, date: t.date }])
+  ).values()];
+
+  const allRelatedTrips = carDatePairs.length > 0
+    ? await prisma.trip.findMany({
+        where: { OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, carId: true, date: true },
+      })
+    : [];
+
   const carDateTrips = new Map<string, string[]>();
+  for (const t of allRelatedTrips) {
+    const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
+    if (!carDateTrips.has(key)) carDateTrips.set(key, []);
+    carDateTrips.get(key)!.push(t.id);
+  }
+
+  const tripNumberMap = new Map<string, number>();
   for (const trip of recentTrips) {
     const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
-    if (!seen.has(cdKey)) {
-      seen.add(cdKey);
-      const all = await prisma.trip.findMany({
-        where: { carId: trip.carId, date: trip.date },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      });
-      carDateTrips.set(cdKey, all.map((t) => t.id));
-    }
     const idx = (carDateTrips.get(cdKey) ?? []).indexOf(trip.id);
     if (idx >= 0) tripNumberMap.set(trip.id, idx + 1);
   }

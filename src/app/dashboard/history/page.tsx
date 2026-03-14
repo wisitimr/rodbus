@@ -21,9 +21,11 @@ export default async function HistoryPage() {
   const userId = user.id;
   const isAdmin = user.role === Role.ADMIN;
 
-  // Fetch all-time data for summary (breakdown has per-date granularity)
-  const allTimeStart = new Date(2000, 0, 1);
-  const allTimeEnd = new Date(2099, 11, 31);
+  // Fetch data scoped to 1 year back for summary
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  oneYearAgo.setDate(1);
+  const farFuture = new Date(2099, 11, 31);
 
   const [recentTrips, allDebts, allPayments] = await Promise.all([
     prisma.trip.findMany({
@@ -31,34 +33,39 @@ export default async function HistoryPage() {
         ? {}
         : { checkIns: { some: { userId } } },
       include: {
-        car: true,
+        car: { select: { name: true, licensePlate: true } },
         checkIns: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
-    calculateDebts(allTimeStart, allTimeEnd),
+    calculateDebts(oneYearAgo, farFuture),
     prisma.payment.findMany({
       where: isAdmin ? {} : { userId },
-      include: { car: true, user: { select: { name: true } } },
+      include: { car: { select: { name: true, licensePlate: true } }, user: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
+      take: 200,
     }),
   ]);
 
-  // Compute trip numbers per car+date
-  const tripNumSeen = new Set<string>();
-  const carDateTripIds = new Map<string, string[]>();
-  for (const trip of recentTrips) {
-    const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
-    if (!tripNumSeen.has(cdKey)) {
-      tripNumSeen.add(cdKey);
-      const all = await prisma.trip.findMany({
-        where: { carId: trip.carId, date: trip.date },
+  // Batch: compute trip numbers per car+date in a single query
+  const carDatePairs = [...new Map(
+    recentTrips.map(t => [`${t.carId}-${t.date.toISOString().split("T")[0]}`, { carId: t.carId, date: t.date }])
+  ).values()];
+
+  const allRelatedTrips = carDatePairs.length > 0
+    ? await prisma.trip.findMany({
+        where: { OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
         orderBy: { createdAt: "asc" },
-        select: { id: true },
-      });
-      carDateTripIds.set(cdKey, all.map((t) => t.id));
-    }
+        select: { id: true, carId: true, date: true },
+      })
+    : [];
+
+  const carDateTripIds = new Map<string, string[]>();
+  for (const t of allRelatedTrips) {
+    const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
+    if (!carDateTripIds.has(key)) carDateTripIds.set(key, []);
+    carDateTripIds.get(key)!.push(t.id);
   }
 
   const trips = recentTrips.map((trip) => {
@@ -128,7 +135,31 @@ export default async function HistoryPage() {
   // Payments for the same (userId, carId, date) are created in trip order,
   // so we match by position: 1st payment → Trip #1, 2nd → Trip #2, etc.
   const paymentTripCounters = new Map<string, number>();
+
+  // Batch: get trip counts for all payment car+date pairs not already cached
+  const paymentCarDatePairs = [...new Map(
+    allPayments
+      .filter(p => !carDateTripIds.has(`${p.carId}-${p.date.toISOString().split("T")[0]}`))
+      .map(p => [`${p.carId}-${p.date.toISOString().split("T")[0]}`, { carId: p.carId, date: p.date }])
+  ).values()];
+
+  const paymentTripCounts = paymentCarDatePairs.length > 0
+    ? await prisma.trip.findMany({
+        where: { OR: paymentCarDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        select: { carId: true, date: true },
+      })
+    : [];
+
   const paymentTripTotalCache = new Map<string, number>();
+  // Pre-fill from existing carDateTripIds
+  for (const [key, ids] of carDateTripIds) {
+    paymentTripTotalCache.set(key, ids.length);
+  }
+  // Add counts from batch query
+  for (const t of paymentTripCounts) {
+    const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
+    paymentTripTotalCache.set(key, (paymentTripTotalCache.get(key) ?? 0) + 1);
+  }
 
   // Sort payments by createdAt ascending to assign trip numbers in order
   const paymentsByCreated = [...allPayments].sort(
@@ -141,20 +172,6 @@ export default async function HistoryPage() {
     const idx = (paymentTripCounters.get(groupKey) ?? 0) + 1;
     paymentTripCounters.set(groupKey, idx);
     paymentTripNumberMap.set(p.id, idx);
-
-    // Cache total trip count for this carId + date
-    const cdKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
-    if (!paymentTripTotalCache.has(cdKey)) {
-      const cached = carDateTripIds.get(cdKey);
-      if (cached) {
-        paymentTripTotalCache.set(cdKey, cached.length);
-      } else {
-        const count = await prisma.trip.count({
-          where: { carId: p.carId, date: p.date },
-        });
-        paymentTripTotalCache.set(cdKey, count);
-      }
-    }
   }
 
   const serializedPayments = allPayments.map((p) => {
