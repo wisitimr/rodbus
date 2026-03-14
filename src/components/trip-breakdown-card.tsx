@@ -203,7 +203,10 @@ export default function TripBreakdownCard({
             <div className={`flex items-center justify-between font-bold ${compact ? "text-xs" : "text-sm"}`}>
               <span className="text-foreground">{t.total}</span>
               <span className="font-mono text-foreground">
-                &#3647;{(entry.gasCost + entry.parkingCost).toFixed(2)} / {entry.headcount} = &#3647;{entry.share.toFixed(2)}
+                {hasSharedParking
+                  ? <>&#3647;{entry.gasShare.toFixed(2)} + &#3647;{entry.parkingShare.toFixed(2)} = <strong>&#3647;{entry.share.toFixed(2)}</strong></>
+                  : <>&#3647;{(entry.gasCost + entry.parkingCost).toFixed(2)} / {entry.headcount} = &#3647;{entry.share.toFixed(2)}</>
+                }
               </span>
             </div>
           </div>
