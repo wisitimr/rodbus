@@ -31,25 +31,27 @@ export default async function QRPage({
   if (!car) redirect("/admin");
 
   return (
-    <main className="mx-auto max-w-xl px-4 pb-8 sm:px-6">
-      <header className="animate-fade-in sticky top-0 z-50 -mx-4 mb-6 flex items-center bg-gray-50 px-4 py-3 sm:-mx-6 sm:mb-8 sm:px-6">
-        <a
-          href="/admin"
-          className="shrink-0 rounded-xl bg-gray-900 p-2 text-white shadow-sm transition hover:bg-gray-800"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-        </a>
-        <h1 className="flex-1 text-center text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-          {t.qrCodeCheckin}
-        </h1>
-        <div className="w-9" />
+    <div className="min-h-screen pb-24">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-lg items-center gap-2 px-4 py-3">
+          <a
+            href="/admin"
+            className="shrink-0 rounded-xl bg-foreground p-2 text-background shadow-sm transition hover:bg-foreground/90"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
+          </a>
+          <h1 className="flex-1 text-center text-lg font-bold text-foreground">
+            {t.qrCodeCheckin}
+          </h1>
+          <div className="w-9" />
+        </div>
       </header>
 
-      <div className="animate-fade-in-up">
+      <main className="mx-auto max-w-lg p-4">
         <AdminQRCode car={car} />
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

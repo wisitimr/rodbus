@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Fuel, ParkingCircle, Car, Plus } from "lucide-react";
 import { useT } from "@/lib/i18n-context";
 
 interface CostFormProps {
@@ -54,16 +55,18 @@ export default function CostForm({ cars }: CostFormProps) {
     }
   }
 
+  const totalCost = (parseFloat(gasCost) || 0) + (parseFloat(parkingCost) || 0);
+
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none sm:py-2.5";
+    "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-medium";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Car selector */}
       {cars.length > 1 && (
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            {t.car}
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            <Car className="mr-1 inline h-3 w-3" /> {t.car}
           </label>
           <select
             value={carId}
@@ -85,11 +88,11 @@ export default function CostForm({ cars }: CostFormProps) {
       )}
 
       {/* Cost form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-              {t.gasCost} <span className="text-red-500">*</span>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost} (&#3647;)
             </label>
             <input
               type="number"
@@ -98,13 +101,13 @@ export default function CostForm({ cars }: CostFormProps) {
               required
               value={gasCost}
               onChange={(e) => setGasCost(e.target.value)}
-              placeholder="0.00"
+              placeholder="0"
               className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-              {t.parkingCost} <span className="normal-case tracking-normal font-normal text-gray-400">({t.optional})</span>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost} (&#3647;)
             </label>
             <input
               type="number"
@@ -118,15 +121,23 @@ export default function CostForm({ cars }: CostFormProps) {
           </div>
         </div>
 
+        {/* Total */}
+        {totalCost > 0 && (
+          <div className="rounded-lg bg-accent/50 p-2 text-xs text-muted-foreground">
+            Total: <strong className="text-foreground">&#3647;{totalCost.toFixed(2)}</strong>
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={status === "saving"}
-          className="w-full rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 sm:py-2.5"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
         >
+          <Plus className="h-4 w-4" />
           {t.saveCosts}{status === "saving" && "..."}
         </button>
         {status === "error" && (
-          <p className="text-sm font-medium text-red-600">
+          <p className="text-sm font-medium text-debt">
             {t.failedToSave}
           </p>
         )}

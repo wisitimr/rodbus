@@ -2,6 +2,75 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Color tokens matching target design */
+  --color-background: #f8fafc;
+  --color-foreground: #1c2533;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #1c2533;
+
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #334155;
+
+  --color-muted: #eef1f4;
+  --color-muted-foreground: #64748b;
+
+  --color-accent: #edf4ff;
+  --color-accent-foreground: #2563eb;
+
+  --color-border: #dde4ec;
+  --color-input: #dde4ec;
+  --color-ring: #3b82f6;
+
+  --color-debt: #dc2626;
+  --color-debt-foreground: #ffffff;
+
+  --color-settled: #16a34a;
+  --color-settled-foreground: #ffffff;
+
+  --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
+
+  --color-success: #16a34a;
+  --color-success-foreground: #ffffff;
+
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes pulse-success {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
+  }
 }
 
 /* Smooth scrolling */
@@ -44,54 +113,24 @@ input[type="date"] {
   }
 }
 
-/* Fade in animation */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Global border color */
+* {
+  border-color: var(--color-border);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out both;
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out both;
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.3s ease-out both;
+/* Body background gradient */
+body {
+  background: linear-gradient(180deg,
+    hsl(210 20% 97%) 0%,
+    hsl(0 0% 100%) 40%,
+    hsl(214 95% 97%) 100%
+  );
+  min-height: 100vh;
 }
 
 /* Stagger children animations */
 .stagger-children > * {
-  animation: fadeInUp 0.4s ease-out both;
+  animation: fade-in 0.3s ease-out both;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
 .stagger-children > *:nth-child(2) { animation-delay: 60ms; }
@@ -101,9 +140,7 @@ input[type="date"] {
 .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(7) { animation-delay: 360ms; }
 
-/* Glass card effect */
-.glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* Safe area for mobile bottom nav */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

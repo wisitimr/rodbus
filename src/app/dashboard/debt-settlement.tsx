@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import { markAsSettled } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 
@@ -83,7 +84,7 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
   const usersWithDebt = debts.filter((d) => d.pendingDebt > 0);
 
   if (usersWithDebt.length === 0) {
-    return <p className="text-sm text-gray-500">{t.allBalancesCleared}</p>;
+    return <p className="text-sm text-muted-foreground">{t.allBalancesCleared}</p>;
   }
 
   return (
@@ -93,73 +94,75 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
         const isClearLoading = loadingAction === `clear-${d.userId}`;
         const isAnyLoading = loadingAction !== null;
         const pendingBreakdown = getPendingBreakdown(d);
+        const initial = (d.userName ?? "?")[0].toUpperCase();
+
         return (
-          <div key={d.userId} className="rounded-xl bg-gray-50">
+          <div key={d.userId} className="rounded-2xl border border-border bg-card p-4 shadow-sm animate-fade-in">
             <button
               type="button"
               onClick={() => setExpandedUsers((prev) => toggle(prev, d.userId))}
-              className="flex w-full items-center justify-between px-4 py-3 text-left"
+              className="flex w-full items-center justify-between"
             >
-              <div className="min-w-0">
-                <p className="font-medium text-gray-800">{d.userName ?? "Unknown"}</p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-debt/10 text-sm font-bold text-debt">
+                  {initial}
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-foreground">{d.userName ?? "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground">{pendingBreakdown.length} {t.pendingItems ?? "pending items"}</p>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="font-bold text-red-600">
-                  ฿{d.pendingDebt.toFixed(2)}
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-debt">
+                  &#3647;{d.pendingDebt.toFixed(2)}
                 </span>
-                <svg
-                  className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
               </div>
             </button>
 
             {isExpanded && (
-              <div className="border-t border-gray-100 px-4 pb-3 pt-2">
+              <div className="mt-3 space-y-2 animate-fade-in">
                 {pendingBreakdown.length > 0 && (() => {
                   const limit = visibleCounts[d.userId] ?? 5;
                   const visible = pendingBreakdown.slice(0, limit);
                   const hasMore = limit < pendingBreakdown.length;
                   return (
                     <>
-                      <ul className="divide-y divide-gray-100 text-sm">
-                        {visible.map((b, i) => (
-                          <li key={i} className="py-2">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="min-w-0 truncate text-xs text-gray-600">
-                                {b.carName} &mdash; {b.date} ({b.headcount} {t.people})
-                              </span>
-                              <span className="shrink-0 text-xs font-medium text-gray-900">
-                                ฿{b.share.toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="mt-0.5 space-y-0.5 text-xs text-gray-400">
-                              {b.gasShare > 0 && (
-                                <div className="flex justify-between">
-                                  <span>{t.gas}:</span>
-                                  <span className="text-gray-700">฿{b.gasCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.gasShare.toFixed(2)}</span>
-                                </div>
-                              )}
-                              {b.parkingShare > 0 && (
-                                <div className="flex justify-between">
-                                  <span>{t.parking}:</span>
-                                  <span className="text-gray-700">฿{b.parkingCost.toFixed(2)} ÷ {b.headcount} {t.people} = ฿{b.parkingShare.toFixed(2)}</span>
-                                </div>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {visible.map((b, i) => (
+                        <div key={i} className="rounded-xl border border-border bg-card p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="min-w-0 truncate text-sm text-muted-foreground">
+                              {b.carName} &mdash; {b.date}
+                            </span>
+                            <span className="shrink-0 text-sm font-semibold font-mono text-foreground">
+                              &#3647;{b.share.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                            {b.gasShare > 0 && (
+                              <div className="flex justify-between">
+                                <span>{t.gas}:</span>
+                                <span className="font-mono text-foreground">&#3647;{b.gasCost.toFixed(2)} / {b.headcount} = &#3647;{b.gasShare.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {b.parkingShare > 0 && (
+                              <div className="flex justify-between">
+                                <span>{t.parking}:</span>
+                                <span className="font-mono text-foreground">&#3647;{b.parkingCost.toFixed(2)} / {b.headcount} = &#3647;{b.parkingShare.toFixed(2)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                       {hasMore && (
                         <button
                           type="button"
                           onClick={() => setVisibleCounts((prev) => ({ ...prev, [d.userId]: limit + 5 }))}
-                          className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                          className="w-full rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-primary transition hover:bg-accent"
                         >
                           {t.loadMore}
                         </button>
@@ -169,15 +172,14 @@ export default function DebtSettlement({ debts, carId }: DebtSettlementProps) {
                 })()}
 
                 {/* Actions */}
-                <div className="mt-3">
-                  <button
-                    onClick={() => handleClearFull(d.userId)}
-                    disabled={isAnyLoading}
-                    className="w-full rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto"
-                  >
-                    {t.markAsSettled}{isClearLoading && "..."}
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleClearFull(d.userId)}
+                  disabled={isAnyLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-settled px-4 py-3 text-sm font-semibold text-white transition hover:bg-settled/90 active:scale-[0.98] disabled:opacity-50"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {t.markAsSettled}{isClearLoading && "..."}
+                </button>
               </div>
             )}
           </div>

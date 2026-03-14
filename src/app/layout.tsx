@@ -40,7 +40,7 @@ export default async function RootLayout({
             rel="stylesheet"
           />
         </head>
-        <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 font-sans text-gray-900 antialiased">
+        <body className="min-h-screen bg-background font-sans text-foreground antialiased">
           <I18nProvider locale={locale}>{children}</I18nProvider>
         </body>
       </html>

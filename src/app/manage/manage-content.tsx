@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { markAsSettled } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
@@ -134,37 +135,33 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     {
       key: "newTrip",
-      label: `+ ${t.newTrip}`,
-      icon: null,
+      label: t.newTrip,
+      icon: <Plus className="h-4 w-4" />,
     },
     {
       key: "settleDebts",
       label: t.settleDebts,
-      icon: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-        </svg>
-      ),
+      icon: <Wallet className="h-4 w-4" />,
     },
   ];
 
   const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
 
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none";
+    "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-medium";
 
   return (
     <div className="space-y-4">
       {/* Tab bar */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-border">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 pb-2.5 pt-1 text-sm font-medium transition-colors ${
               activeTab === tab.key
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-400 hover:text-gray-600"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab.icon}
@@ -175,20 +172,16 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
 
       {/* New Trip tab */}
       {activeTab === "newTrip" && (
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="px-5 py-5 sm:px-6">
-            <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">
-              {t.newTrip}
-            </h3>
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {t.newTrip}
+          </h3>
 
-            <form onSubmit={handleCreateTrip} className="space-y-4">
+            <form onSubmit={handleCreateTrip} className="space-y-3">
               {/* Car selection */}
               <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                  </svg>
-                  {t.selectCar}
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  <Car className="mr-1 inline h-3 w-3" /> {t.selectCar}
                 </label>
                 <select
                   value={selectedCarId}
@@ -209,13 +202,10 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
               </div>
 
               {/* Gas & Parking */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                    </svg>
-                    {t.gasCost}
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost} (฿)
                   </label>
                   <input
                     type="number"
@@ -229,11 +219,8 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 20 20" strokeWidth={0}>
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.5 7.5A.5.5 0 018 7h2.5a2.5 2.5 0 010 5H8.5v1a.5.5 0 01-1 0v-5a.5.5 0 010-.5zm1 1v2H10.5a1.5 1.5 0 000-3H8.5z" clipRule="evenodd" fill="currentColor" />
-                    </svg>
-                    {t.parkingCost}
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost} (฿)
                   </label>
                   <input
                     type="number"
@@ -248,40 +235,39 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
               </div>
 
               {/* Total */}
-              <div className="rounded-xl bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
-                Total: <span className="font-bold text-gray-900">฿{totalCost.toFixed(2)}</span>
-              </div>
+              {totalCost > 0 && (
+                <div className="rounded-lg bg-accent/50 p-2 text-xs text-muted-foreground">
+                  Total: <strong className="text-foreground">฿{totalCost.toFixed(2)}</strong>
+                </div>
+              )}
 
               {/* Submit */}
               <button
                 type="submit"
                 disabled={formStatus === "saving"}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
+                <Plus className="h-4 w-4" />
                 Create{formStatus === "saving" && "..."}
               </button>
               {formStatus === "error" && (
-                <p className="text-sm font-medium text-red-600">{t.failedToSave}</p>
+                <p className="text-sm font-medium text-debt">{t.failedToSave}</p>
               )}
             </form>
-          </div>
-        </section>
+        </div>
       )}
 
       {/* Settle Debts tab */}
       {activeTab === "settleDebts" && (
-        <section>
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">
+        <div>
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {t.pending} {t.debtSettlement.toLowerCase()} by user
           </h3>
 
           {usersWithDebt.length === 0 ? (
-            <p className="text-sm text-gray-400">{t.allBalancesCleared}</p>
+            <p className="text-sm text-muted-foreground">{t.allBalancesCleared}</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {usersWithDebt.map((d) => {
                 const isUserExpanded = expandedUsers.has(d.userId);
                 const pendingBreakdown = getPendingBreakdown(d);
@@ -290,40 +276,37 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                 const initial = (d.userName ?? "?")[0].toUpperCase();
 
                 return (
-                  <div key={d.userId} className="overflow-hidden rounded-xl border border-gray-100 bg-white">
+                  <div key={d.userId} className="rounded-2xl border border-border bg-card p-4 shadow-sm animate-fade-in">
                     {/* User header */}
                     <button
                       type="button"
                       onClick={() => setExpandedUsers((prev) => toggleSet(prev, d.userId))}
-                      className="flex w-full items-center gap-3 px-4 py-4 text-left"
+                      className="flex w-full items-center justify-between"
                     >
-                      {/* Avatar */}
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-sm font-bold text-red-500">
-                        {initial}
+                      <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-debt/10 text-sm font-bold text-debt">
+                          {initial}
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-foreground">{d.userName ?? "Unknown"}</p>
+                          <p className="text-xs text-muted-foreground">{pendingBreakdown.length} {t.pendingItems}</p>
+                        </div>
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <p className="text-base font-bold text-gray-900">{d.userName ?? "Unknown"}</p>
-                        <p className="text-xs text-gray-400">{pendingBreakdown.length} {t.pendingItems}</p>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-base font-bold text-red-500">฿{d.pendingDebt.toFixed(2)}</span>
-                        <svg
-                          className={`h-4 w-4 text-gray-400 transition-transform ${isUserExpanded ? "rotate-180" : ""}`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-debt">฿{d.pendingDebt.toFixed(2)}</span>
+                        {isUserExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        )}
                       </div>
                     </button>
 
                     {/* Expanded: breakdown entries */}
                     {isUserExpanded && (
-                      <div className="space-y-2 px-4 pb-4">
+                      <div className="mt-3 space-y-2 animate-fade-in">
                         {pendingBreakdown.map((b, i) => {
                           const entryKey = `${d.userId}_${b.dateISO ?? b.date}_${i}`;
                           const isEntryExpanded = expandedEntries.has(entryKey);
@@ -370,23 +353,21 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                           <button
                             type="button"
                             onClick={() => setConfirmingUserId(d.userId)}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 active:scale-[0.98]"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-settled px-4 py-3 text-sm font-semibold text-white transition hover:bg-settled/90 active:scale-[0.98]"
                           >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <CheckCircle2 className="h-4 w-4" />
                             {t.markAsSettled}
                           </button>
                         ) : (
-                          <div className="rounded-xl border-2 border-green-500 bg-green-50 px-4 py-4">
-                            <p className="mb-3 text-center text-sm font-medium text-gray-800">
+                          <div className="rounded-xl border-2 border-settled bg-settled/5 p-3 text-center animate-fade-in">
+                            <p className="mb-3 text-sm font-medium text-foreground">
                               {t.confirmSettlement} ฿{d.pendingDebt.toFixed(2)} {t.confirmSettlementFor} {d.userName}?
                             </p>
                             <div className="flex gap-3">
                               <button
                                 type="button"
                                 onClick={() => setConfirmingUserId(null)}
-                                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                                className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-accent"
                               >
                                 {t.cancel}
                               </button>
@@ -394,11 +375,9 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                                 type="button"
                                 onClick={() => handleSettle(d.userId)}
                                 disabled={isSettleLoading}
-                                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-settled px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-settled/90 disabled:opacity-50"
                               >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+                                <CheckCircle2 className="h-4 w-4" />
                                 {t.confirm}{isSettleLoading && "..."}
                               </button>
                             </div>
@@ -411,7 +390,7 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
               })}
             </div>
           )}
-        </section>
+        </div>
       )}
     </div>
   );

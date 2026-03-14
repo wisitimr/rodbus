@@ -121,21 +121,21 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
+    <div className="min-h-screen pb-24">
       {/* Header */}
-      <header className="animate-fade-in sticky top-0 z-40 -mx-4 mb-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-3 sm:-mx-6 sm:px-6">
-        <div className="flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-gray-900">
+              <h1 className="text-lg font-bold text-foreground">
                 RodBus
               </h1>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {t.welcome}, {user.name ?? user.email}
               </p>
             </div>
@@ -150,16 +150,16 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <div className="stagger-children space-y-1">
+      <main className="mx-auto max-w-lg space-y-4 p-4">
         <DashboardContent
           pendingDebt={myDebt?.pendingDebt ?? 0}
           pendingCount={pendingEntries.length}
           debtEntries={debtEntries}
           recentTrips={formattedRecentTrips}
         />
-      </div>
+      </main>
 
       <BottomNav isAdmin={isAdmin} />
-    </main>
+    </div>
   );
 }
