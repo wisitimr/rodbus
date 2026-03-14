@@ -1149,20 +1149,20 @@ export default function HistoryContent({
                         <div
                           key={trip.id}
                           data-swipe-id={trip.id}
-                          className="relative overflow-hidden rounded-xl animate-fade-in"
+                          className="relative overflow-hidden rounded-xl bg-accent animate-fade-in"
                         >
                           {/* Action buttons behind the card */}
                           {trip.isOwner && (
                             <div className="absolute inset-y-0 right-0 flex">
                               <button
                                 onClick={() => handleTripEditStart(trip)}
-                                className="flex w-[60px] items-center justify-center bg-warning text-white"
+                                className="flex w-[60px] items-center justify-center bg-accent text-accent-foreground"
                               >
                                 <Pencil className="h-5 w-5" />
                               </button>
                               <button
                                 onClick={() => handleTripDelete(trip)}
-                                className="flex w-[60px] items-center justify-center rounded-r-xl bg-destructive text-white"
+                                className="flex w-[60px] items-center justify-center rounded-r-xl bg-secondary text-secondary-foreground"
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
@@ -1309,10 +1309,10 @@ export default function HistoryContent({
       {/* Edit Trip Modal */}
       {editModalTrip && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) handleTripEditCancel(); }}
         >
-          <div className="w-full max-w-lg rounded-t-2xl border border-border bg-card p-4 shadow-lg animate-slide-up safe-area-bottom">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-4 shadow-lg animate-scale-in">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               {t.editTrip || "Edit Trip"}
             </h3>

@@ -1,14 +1,6 @@
 export default function HistoryLoading() {
   return (
     <main className="mx-auto max-w-lg space-y-3 p-4">
-      {/* All/My toggle shimmer */}
-      <div className="flex">
-        <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
-          <div className="h-7 w-14 animate-pulse rounded-md bg-muted" />
-          <div className="h-7 w-14 animate-pulse rounded-md bg-muted/40" />
-        </div>
-      </div>
-
       {/* Tab bar shimmer */}
       <div className="flex border-b border-border">
         {[1, 2, 3].map((i) => (
