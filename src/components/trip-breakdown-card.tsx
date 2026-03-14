@@ -40,6 +40,7 @@ interface TripBreakdownCardProps {
   isExpanded: boolean;
   onToggle: () => void;
   status?: "pending" | "paid";
+  compact?: boolean;
   t: {
     pending: string;
     paid?: string;
@@ -60,6 +61,7 @@ export default function TripBreakdownCard({
   isExpanded,
   onToggle,
   status = "pending",
+  compact = false,
   t,
 }: TripBreakdownCardProps) {
   const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
@@ -75,19 +77,23 @@ export default function TripBreakdownCard({
   }
 
   return (
-    <div className="animate-fade-in rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+    <div className={
+      compact
+        ? "rounded-xl border border-border/60 bg-card p-3"
+        : "animate-fade-in rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+    }>
       <button
         type="button"
         onClick={onToggle}
         className="flex w-full items-center justify-between gap-2 text-left"
       >
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`font-medium text-muted-foreground ${compact ? "text-xs" : "text-sm"}`}>
               {entry.date}{entry.time ? ` · ${entry.time}` : ""}
             </span>
             <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+              className={`inline-flex items-center rounded-full px-1.5 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${
                 isPending
                   ? "bg-debt/10 text-debt"
                   : "bg-settled/10 text-settled"
@@ -102,36 +108,36 @@ export default function TripBreakdownCard({
               </span>
             )}
           </div>
-          <p className="mt-0.5 font-semibold text-foreground">
+          <p className={`mt-0.5 font-semibold text-foreground ${compact ? "text-sm" : ""}`}>
             {entry.carName}
             {plateLabel && (
-              <span className="text-sm font-normal text-muted-foreground">{plateLabel}</span>
+              <span className={`font-normal text-muted-foreground ${compact ? "text-xs" : "text-sm"}`}>{plateLabel}</span>
             )}
-            <span className="ml-1.5 text-xs font-medium text-primary">
+            <span className={`ml-1.5 font-medium text-primary ${compact ? "text-[10px]" : "text-xs"}`}>
               {t.tripNumber} #{entry.tripNumber}
             </span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-lg font-bold ${isPending ? "text-debt" : "text-settled"}`}>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className={`font-bold ${isPending ? "text-debt" : "text-settled"} ${compact ? "text-base" : "text-lg"}`}>
             &#3647;{entry.share.toFixed(2)}
           </span>
           {isExpanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            <ChevronUp className={`text-muted-foreground ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
           ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className={`text-muted-foreground ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
           )}
         </div>
       </button>
 
       {isExpanded && (
-        <div className="mt-3 animate-fade-in space-y-2 rounded-xl bg-accent/50 p-3">
+        <div className={`animate-fade-in rounded-xl bg-accent/50 ${compact ? "mt-2 space-y-1.5 p-2" : "mt-3 space-y-2 p-3"}`}>
           {/* People */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
+          <div className={`flex items-center gap-2 text-muted-foreground ${compact ? "text-xs" : "text-sm"}`}>
+            <Users className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
             <span className="font-medium">{entry.headcount} {t.people}</span>
           </div>
-          <div className="ml-6 space-y-0.5 text-xs text-muted-foreground">
+          <div className={`ml-6 space-y-0.5 text-muted-foreground ${compact ? "text-[11px]" : "text-xs"}`}>
             {allNames.map((n, i) => (
               <span key={i}>
                 {n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n}
@@ -141,10 +147,10 @@ export default function TripBreakdownCard({
           </div>
 
           {/* Cost breakdown */}
-          <div className="mt-2 space-y-1.5 border-t border-border/50 pt-2">
+          <div className={`space-y-1.5 border-t border-border/50 ${compact ? "mt-1.5 pt-1.5" : "mt-2 pt-2"}`}>
             {entry.gasShare > 0 && (
-              <div className="flex items-center gap-2 text-sm">
-                <Fuel className="h-4 w-4 text-primary" />
+              <div className={`flex items-center gap-2 ${compact ? "text-xs" : "text-sm"}`}>
+                <Fuel className={`text-primary ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
                 <span className="text-muted-foreground">{t.gas}</span>
                 <span className="ml-auto font-mono text-foreground">
                   &#3647;{entry.gasCost.toFixed(2)} / {entry.headcount} = <strong>&#3647;{entry.gasShare.toFixed(2)}</strong>
@@ -153,8 +159,8 @@ export default function TripBreakdownCard({
             )}
             {(entry.parkingShare > 0 || hasSharedParking) && (
               <>
-                <div className="flex items-center gap-2 text-sm">
-                  <ParkingCircle className="h-4 w-4 text-primary" />
+                <div className={`flex items-center gap-2 ${compact ? "text-xs" : "text-sm"}`}>
+                  <ParkingCircle className={`text-primary ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
                   <span className="text-muted-foreground">{t.parking}</span>
                   {hasSharedParking ? (
                     <span className="ml-auto font-mono text-foreground">
@@ -167,19 +173,19 @@ export default function TripBreakdownCard({
                   )}
                 </div>
                 {hasSharedParking && (
-                  <div className="ml-6 space-y-1 rounded-lg bg-primary/5 p-2">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                  <div className={`ml-6 space-y-1 rounded-lg bg-primary/5 ${compact ? "p-1.5" : "p-2"}`}>
+                    <div className={`flex items-center gap-1.5 font-medium text-primary ${compact ? "text-[10px]" : "text-xs"}`}>
                       <Link2 className="h-3 w-3" />
                       {t.sharedParkingAcross ?? "Shared parking across"} {sp!.trips.length} {t.tripNumber?.toLowerCase() ?? "trips"}
                     </div>
                     {sp!.trips.map((detail, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div key={i} className={`flex items-center justify-between text-muted-foreground ${compact ? "text-[10px]" : "text-xs"}`}>
                         <span>{detail.carName} · {detail.date}</span>
                         <span className="font-mono">&#3647;{detail.parkingCost.toFixed(2)} · {detail.headcount} {t.people}</span>
                       </div>
                     ))}
                     {sp!.uniqueNames.length > 0 && (
-                      <div className="mt-1 border-t border-border/30 pt-1 text-xs text-muted-foreground">
+                      <div className={`mt-1 border-t border-border/30 pt-1 text-muted-foreground ${compact ? "text-[10px]" : "text-xs"}`}>
                         <span className="font-medium text-foreground">
                           {sp!.uniqueNames.length} {t.uniquePeople ?? "unique people"}:
                         </span>{" "}
@@ -193,8 +199,8 @@ export default function TripBreakdownCard({
           </div>
 
           {/* Total */}
-          <div className="border-t border-border/50 pt-2">
-            <div className="flex items-center justify-between text-sm font-bold">
+          <div className={`border-t border-border/50 ${compact ? "pt-1.5" : "pt-2"}`}>
+            <div className={`flex items-center justify-between font-bold ${compact ? "text-xs" : "text-sm"}`}>
               <span className="text-foreground">{t.total}</span>
               <span className="font-mono text-foreground">
                 &#3647;{(entry.gasCost + entry.parkingCost).toFixed(2)} / {entry.headcount} = &#3647;{entry.share.toFixed(2)}

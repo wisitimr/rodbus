@@ -280,6 +280,7 @@ function SummaryEntryCard({
       isExpanded={isExpanded}
       onToggle={onToggle}
       status={settled ? "paid" : "pending"}
+      compact
       t={{
         pending: t.pending,
         paid: t.paid,
