@@ -124,29 +124,43 @@ export default async function HistoryPage() {
     })),
   }));
 
-  // Look up trip numbers for each payment by matching carId + date
-  const paymentTripCache = new Map<string, number[]>();
-  for (const p of allPayments) {
-    const cacheKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
-    if (!paymentTripCache.has(cacheKey)) {
-      const cdKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
-      const allTripsForDate = carDateTripIds.get(cdKey);
-      if (allTripsForDate) {
-        paymentTripCache.set(cacheKey, allTripsForDate.map((_, i) => i + 1));
+  // Assign a specific Trip # to each payment.
+  // Payments for the same (userId, carId, date) are created in trip order,
+  // so we match by position: 1st payment → Trip #1, 2nd → Trip #2, etc.
+  const paymentTripCounters = new Map<string, number>();
+  const paymentTripTotalCache = new Map<string, number>();
+
+  // Sort payments by createdAt ascending to assign trip numbers in order
+  const paymentsByCreated = [...allPayments].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+  );
+  const paymentTripNumberMap = new Map<string, number>();
+
+  for (const p of paymentsByCreated) {
+    const groupKey = `${p.userId}-${p.carId}-${p.date.toISOString().split("T")[0]}`;
+    const idx = (paymentTripCounters.get(groupKey) ?? 0) + 1;
+    paymentTripCounters.set(groupKey, idx);
+    paymentTripNumberMap.set(p.id, idx);
+
+    // Cache total trip count for this carId + date
+    const cdKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
+    if (!paymentTripTotalCache.has(cdKey)) {
+      const cached = carDateTripIds.get(cdKey);
+      if (cached) {
+        paymentTripTotalCache.set(cdKey, cached.length);
       } else {
-        const matchingTrips = await prisma.trip.findMany({
+        const count = await prisma.trip.count({
           where: { carId: p.carId, date: p.date },
-          orderBy: { createdAt: "asc" },
-          select: { id: true },
         });
-        paymentTripCache.set(cacheKey, matchingTrips.map((_, i) => i + 1));
+        paymentTripTotalCache.set(cdKey, count);
       }
     }
   }
 
   const serializedPayments = allPayments.map((p) => {
-    const cacheKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
-    const tripNumbers = paymentTripCache.get(cacheKey) ?? [];
+    const cdKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
+    const tripNumber = paymentTripNumberMap.get(p.id) ?? 1;
+    const tripTotal = paymentTripTotalCache.get(cdKey) ?? 1;
     return {
       id: p.id,
       userId: p.userId,
@@ -158,7 +172,7 @@ export default async function HistoryPage() {
       paidAt: formatDateShort(p.createdAt, locale),
       amount: p.amount,
       note: p.note,
-      tripNumbers,
+      tripNumber: tripNumber <= tripTotal ? tripNumber : 1,
     };
   });
 
