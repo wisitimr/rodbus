@@ -1,19 +1,13 @@
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
-import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateShort, formatDateMedium, type Locale } from "@/lib/i18n";
-import { ClipboardList } from "lucide-react";
 import ManageContent from "./manage-content";
-import BottomNav from "@/app/dashboard/bottom-nav";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 
 export default async function ManagePage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-  if (user.role !== Role.ADMIN) redirect("/dashboard");
+  const user = (await getCurrentUser())!;
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
@@ -116,21 +110,6 @@ export default async function ManagePage() {
     }));
 
   return (
-    <div className="min-h-screen pb-24">
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-lg items-center gap-2 px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-            <ClipboardList className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">
-              {t.manageTrips}
-            </h1>
-            <p className="text-xs text-muted-foreground">{t.createTripsAndSettle}</p>
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-lg space-y-4 p-4">
       <ManageContent
         cars={allCars.map((c) => ({
@@ -145,8 +124,5 @@ export default async function ManagePage() {
         recentTrips={recentTripsForSharing}
       />
       </main>
-
-      <BottomNav isAdmin={true} />
-    </div>
   );
 }

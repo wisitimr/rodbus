@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
@@ -8,13 +7,10 @@ import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/
 import { Home } from "lucide-react";
 import ProfileMenu from "./profile-menu";
 import DashboardContent from "./dashboard-content";
-import BottomNav from "./bottom-nav";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-  if (user.role === Role.PENDING) redirect("/pending-approval");
+  const user = (await getCurrentUser())!;
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
@@ -145,7 +141,7 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="min-h-screen pb-24">
+    <>
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
@@ -180,8 +176,6 @@ export default async function DashboardPage() {
           recentTrips={formattedRecentTrips}
         />
       </main>
-
-      <BottomNav isAdmin={isAdmin} />
-    </div>
+    </>
   );
 }

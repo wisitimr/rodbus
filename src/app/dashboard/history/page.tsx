@@ -1,18 +1,13 @@
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateShort, formatDateMedium, type Locale } from "@/lib/i18n";
-import { Clock } from "lucide-react";
 import HistoryContent from "./history-content";
-import BottomNav from "../bottom-nav";
 
 export default async function HistoryPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-  if (user.role === Role.PENDING) redirect("/pending-approval");
+  const user = (await getCurrentUser())!;
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
@@ -194,21 +189,6 @@ export default async function HistoryPage() {
   });
 
   return (
-    <div className="min-h-screen pb-24">
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-lg items-center gap-2 px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-            <Clock className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">
-              {t.history}
-            </h1>
-            <p className="text-xs text-muted-foreground">{t.trips}, {t.payments} &amp; {t.summary}</p>
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-lg space-y-3 p-4">
       <HistoryContent
         checkIns={trips}
@@ -258,8 +238,5 @@ export default async function HistoryPage() {
         }}
       />
       </main>
-
-      <BottomNav isAdmin={isAdmin} />
-    </div>
   );
 }
