@@ -50,8 +50,12 @@ interface BreakdownEntry {
   passengerNames: string[];
   driverName: string | null;
   time?: string;
-  sharedParkingTripIds?: string[];
-  sharedParkingNames?: string[];
+  sharedParking?: {
+    trips: { carName: string; date: string; parkingCost: number; headcount: number }[];
+    uniqueNames: string[];
+    totalParking: number;
+    parkingHeadcount: number;
+  } | null;
 }
 
 interface DebtWithBreakdown {
@@ -105,6 +109,9 @@ interface HistoryContentProps {
     passenger: string;
     paidDate: string;
     tripNumber: string;
+    sharedParking?: string;
+    sharedParkingAcross?: string;
+    uniquePeople?: string;
     editCheckIn?: string;
     deleteCheckIn?: string;
     confirmDeleteCheckIn?: string;
@@ -281,6 +288,9 @@ function SummaryEntryCard({
         gas: t.gas,
         parking: t.parking,
         total: "Total",
+        sharedParking: t.sharedParking,
+        sharedParkingAcross: t.sharedParkingAcross,
+        uniquePeople: t.uniquePeople,
       }}
     />
   );

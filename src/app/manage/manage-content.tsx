@@ -25,8 +25,12 @@ interface BreakdownItem {
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
-  sharedParkingTripIds: string[];
-  sharedParkingNames?: string[];
+  sharedParking?: {
+    trips: { carName: string; date: string; parkingCost: number; headcount: number }[];
+    uniqueNames: string[];
+    totalParking: number;
+    parkingHeadcount: number;
+  } | null;
 }
 
 interface DebtEntry {
@@ -429,8 +433,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
                                 tripNumber: b.tripNumber,
                                 passengerNames: b.passengerNames,
                                 driverName: b.driverName,
-                                sharedParkingTripIds: b.sharedParkingTripIds,
-                                sharedParkingNames: b.sharedParkingNames ?? [],
+                                sharedParking: b.sharedParking ?? null,
                               }}
                               isExpanded={isEntryExpanded}
                               onToggle={() => setExpandedEntries((prev) => toggleSet(prev, entryKey))}
@@ -444,6 +447,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
                                 total: t.total,
                                 driver: t.driver,
                                 sharedParking: t.sharedParking,
+                                sharedParkingAcross: t.sharedParkingAcross,
+                                uniquePeople: t.uniquePeople,
                               }}
                             />
                           );

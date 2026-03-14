@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations, formatDateMedium } from "@/lib/i18n";
+import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
 import { Home } from "lucide-react";
 import ProfileMenu from "./profile-menu";
 import DashboardContent from "./dashboard-content";
@@ -87,8 +87,17 @@ export default async function DashboardPage() {
     tripNumber: b.tripNumber,
     passengerNames: b.passengerNames,
     driverName: b.driverName,
-    sharedParkingTripIds: b.sharedParkingTripIds,
-    sharedParkingNames: b.sharedParkingNames,
+    sharedParking: b.sharedParking ? {
+      trips: b.sharedParking.trips.map((d) => ({
+        carName: d.carName,
+        date: formatDateMedium(d.date, locale as Locale),
+        parkingCost: d.parkingCost,
+        headcount: d.headcount,
+      })),
+      uniqueNames: b.sharedParking.uniqueNames,
+      totalParking: b.sharedParking.totalParking,
+      parkingHeadcount: b.sharedParking.parkingHeadcount,
+    } : null,
   }));
 
   // Compute trip numbers for each trip within same car+date

@@ -183,6 +183,8 @@ const translations = {
     moreTrips: "more trips",
     showLessTrips: "Show less",
     sharedParking: "Shared parking",
+    sharedParkingAcross: "Shared parking across",
+    uniquePeople: "unique people",
     create: "Create",
     creating: "Creating...",
 
@@ -377,6 +379,8 @@ const translations = {
     moreTrips: "เที่ยวเพิ่มเติม",
     showLessTrips: "แสดงน้อยลง",
     sharedParking: "แชร์ค่าจอด",
+    sharedParkingAcross: "แชร์ค่าจอดข้าม",
+    uniquePeople: "คนรวม",
     create: "สร้าง",
     creating: "กำลังสร้าง...",
 
