@@ -106,7 +106,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
       setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
       setParkingCost("0");
       setFormStatus("idle");
-      router.refresh();
+      router.push("/dashboard");
     } catch {
       setFormStatus("error");
     }

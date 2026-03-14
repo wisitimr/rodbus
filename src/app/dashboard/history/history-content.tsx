@@ -311,6 +311,7 @@ function SummaryCard({
   settledDays,
   locale,
   t,
+  allDebts,
 }: {
   group: GroupedPeriod;
   period: SummaryPeriod;
@@ -322,10 +323,24 @@ function SummaryCard({
   settledDays: Set<string>;
   locale: string;
   t: HistoryContentProps["t"];
+  allDebts?: DebtWithBreakdown[];
 }) {
   const totalDebt = group.entries.reduce((sum, e) => sum + e.totalDebt, 0);
   const totalPaid = group.entries.reduce((sum, e) => sum + e.totalPaid, 0);
   const pendingDebt = group.entries.reduce((sum, e) => sum + e.pendingDebt, 0);
+
+  const isMultiUser = group.entries.length > 1;
+
+  // Track which users are expanded (for multi-user / admin view)
+  const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
+  const toggleUser = (userId: string) => {
+    setExpandedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
 
   // Collect all breakdown entries for expanded view (deduplicated by trip)
   const allEntries = useMemo(() => {
@@ -349,6 +364,31 @@ function SummaryCard({
     return entries;
   }, [isExpanded, group.key, dayBreakdownMap]);
 
+  // Build per-user breakdown entries for multi-user view
+  const userEntriesMap = useMemo(() => {
+    if (!isMultiUser || !allDebts) return new Map<string, BreakdownEntry[]>();
+    const map = new Map<string, BreakdownEntry[]>();
+    const prefix = group.key;
+    for (const debt of allDebts) {
+      const entries: BreakdownEntry[] = [];
+      const seen = new Set<string>();
+      for (const b of debt.breakdown) {
+        if (b.date.startsWith(prefix)) {
+          const key = `${b.carId}-${b.date}-${b.tripNumber}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            entries.push(b);
+          }
+        }
+      }
+      if (entries.length > 0) {
+        entries.sort((a, b) => b.date.localeCompare(a.date) || b.tripNumber - a.tripNumber);
+        map.set(debt.userId, entries);
+      }
+    }
+    return map;
+  }, [isMultiUser, allDebts, group.key]);
+
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       {/* Card header */}
@@ -359,25 +399,21 @@ function SummaryCard({
       >
         <div className="flex-1">
           <p className="font-semibold text-foreground">{group.label}</p>
-          {group.entries.length > 1 ? (
-            <div className="mt-1 space-y-0.5">
-              {group.entries.map((e) => (
-                <div key={e.userId} className="flex items-center gap-3 text-xs">
-                  <span className="truncate text-muted-foreground">{e.userName ?? "—"}</span>
-                  {e.pendingDebt > 0 && (
-                    <span className="text-debt">{t.pending}: <span className="font-medium">฿{e.pendingDebt.toFixed(2)}</span></span>
-                  )}
-                  {e.totalPaid > 0 && (
-                    <span className="text-settled">{t.paid}: <span className="font-medium">฿{e.totalPaid.toFixed(2)}</span></span>
-                  )}
-                  <span className="ml-auto text-muted-foreground">฿{e.totalDebt.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
+          {!isMultiUser && (
             <div className="mt-1 flex items-center gap-3 text-xs">
               <span className="text-debt">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
               <span className="text-settled">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
+              <span className="ml-auto text-muted-foreground">Total: <span className="font-bold text-foreground">฿{totalDebt.toFixed(2)}</span></span>
+            </div>
+          )}
+          {isMultiUser && (
+            <div className="mt-1 flex items-center gap-3 text-xs">
+              {pendingDebt > 0 && (
+                <span className="text-debt">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
+              )}
+              {totalPaid > 0 && (
+                <span className="text-settled">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
+              )}
               <span className="ml-auto text-muted-foreground">Total: <span className="font-bold text-foreground">฿{totalDebt.toFixed(2)}</span></span>
             </div>
           )}
@@ -389,24 +425,86 @@ function SummaryCard({
         )}
       </button>
 
-      {/* Expanded: individual entry cards */}
-      {isExpanded && allEntries.length > 0 && (
+      {/* Expanded content */}
+      {isExpanded && (
         <div className="mt-3 space-y-2 animate-fade-in">
-          {allEntries.map((entry, i) => {
-            const entryKey = `${group.key}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
-            const entrySettled = settledDays.has(entry.date);
-            return (
-              <SummaryEntryCard
-                key={entryKey}
-                entry={entry}
-                settled={entrySettled}
-                isExpanded={expandedSubPeriods.has(entryKey)}
-                onToggle={() => toggleSubPeriod(entryKey)}
-                locale={locale}
-                t={t}
-              />
-            );
-          })}
+          {isMultiUser ? (
+            /* Multi-user: collapsible per-user rows */
+            group.entries.map((e) => {
+              const isUserOpen = expandedUserIds.has(e.userId);
+              const userEntries = userEntriesMap.get(e.userId) ?? [];
+              const initial = (e.userName ?? "?")[0].toUpperCase();
+              return (
+                <div key={e.userId} className="rounded-xl border border-border bg-accent/30 overflow-hidden">
+                  {/* User header - clickable */}
+                  <button
+                    type="button"
+                    onClick={() => toggleUser(e.userId)}
+                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left"
+                  >
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      {initial}
+                    </div>
+                    <span className="flex-1 truncate text-sm font-medium text-foreground">{e.userName ?? "—"}</span>
+                    <span className="shrink-0 text-sm font-bold text-foreground">฿{e.totalDebt.toFixed(2)}</span>
+                    {isUserOpen ? (
+                      <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </button>
+
+                  {/* User expanded details */}
+                  {isUserOpen && (
+                    <div className="border-t border-border px-3 pb-3 pt-2 space-y-2 animate-fade-in">
+                      {/* User summary line */}
+                      <div className="flex items-center gap-3 text-xs">
+                        {e.pendingDebt > 0 && (
+                          <span className="text-debt">{t.pending}: <span className="font-medium">฿{e.pendingDebt.toFixed(2)}</span></span>
+                        )}
+                        {e.totalPaid > 0 && (
+                          <span className="text-settled">{t.paid}: <span className="font-medium">฿{e.totalPaid.toFixed(2)}</span></span>
+                        )}
+                      </div>
+                      {/* User's trip breakdown entries */}
+                      {userEntries.map((entry, i) => {
+                        const entryKey = `${group.key}_${e.userId}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
+                        const entrySettled = settledDays.has(entry.date);
+                        return (
+                          <SummaryEntryCard
+                            key={entryKey}
+                            entry={entry}
+                            settled={entrySettled}
+                            isExpanded={expandedSubPeriods.has(entryKey)}
+                            onToggle={() => toggleSubPeriod(entryKey)}
+                            locale={locale}
+                            t={t}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            /* Single user: show entries directly */
+            allEntries.map((entry, i) => {
+              const entryKey = `${group.key}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
+              const entrySettled = settledDays.has(entry.date);
+              return (
+                <SummaryEntryCard
+                  key={entryKey}
+                  entry={entry}
+                  settled={entrySettled}
+                  isExpanded={expandedSubPeriods.has(entryKey)}
+                  onToggle={() => toggleSubPeriod(entryKey)}
+                  locale={locale}
+                  t={t}
+                />
+              );
+            })
+          )}
         </div>
       )}
     </div>
@@ -1049,6 +1147,7 @@ export default function HistoryContent({
                   settledDays={settledDays}
                   locale={locale}
                   t={t}
+                  allDebts={isAdmin && !onlyMe ? allDebts : undefined}
                 />
               ))}
               {summaryScroll.hasMore && (
