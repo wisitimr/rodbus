@@ -48,3 +48,53 @@ export async function deleteCheckIn(checkInId: string) {
   revalidatePath("/dashboard");
   revalidateTag("dashboard");
 }
+
+/** Update a trip's gas and parking costs. Only the car owner can edit. */
+export async function updateTrip(tripId: string, data: { gasCost: number; parkingCost: number }) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    include: { car: { select: { ownerId: true } } },
+  });
+  if (!trip) throw new Error("Trip not found");
+
+  if (trip.car.ownerId !== user.id) {
+    throw new Error("Forbidden");
+  }
+
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: {
+      gasCost: data.gasCost,
+      parkingCost: data.parkingCost,
+    },
+  });
+
+  revalidatePath("/dashboard/history");
+  revalidatePath("/dashboard");
+  revalidateTag("dashboard");
+}
+
+/** Delete a trip. Only the car owner can delete. */
+export async function deleteTrip(tripId: string) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    include: { car: { select: { ownerId: true } } },
+  });
+  if (!trip) throw new Error("Trip not found");
+
+  if (trip.car.ownerId !== user.id) {
+    throw new Error("Forbidden");
+  }
+
+  await prisma.trip.delete({ where: { id: tripId } });
+
+  revalidatePath("/dashboard/history");
+  revalidatePath("/dashboard");
+  revalidateTag("dashboard");
+}

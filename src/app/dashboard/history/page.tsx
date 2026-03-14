@@ -28,7 +28,7 @@ export default async function HistoryPage() {
         ? {}
         : { checkIns: { some: { userId } } },
       include: {
-        car: { select: { name: true, licensePlate: true } },
+        car: { select: { name: true, licensePlate: true, ownerId: true } },
         checkIns: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -81,6 +81,7 @@ export default async function HistoryPage() {
       parkingCost: trip.parkingCost,
       riderCount: trip.checkIns.length + 1,
       tripNumber: idx >= 0 ? idx + 1 : 1,
+      isOwner: trip.car.ownerId === userId,
     };
   });
 
@@ -235,6 +236,12 @@ export default async function HistoryPage() {
           confirmDeleteCheckIn: t.confirmDeleteCheckIn,
           save: t.save,
           cancel: t.cancel,
+          editTrip: t.editTrip,
+          edit: t.edit,
+          confirmDeleteTrip: t.confirmDeleteTrip,
+          gasCost: t.gasCost,
+          parkingCost: t.parkingCost,
+          total: t.total,
         }}
       />
       </main>
