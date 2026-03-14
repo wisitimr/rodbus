@@ -175,16 +175,12 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
-      // Collect all people in the trip (passengers + driver)
+      // Collect unique passenger names (from check-ins only, not driver)
       const nameSet = new Map<string, string>();
       for (const ci of linkedCheckIns) {
         if (ci.user.name && !nameSet.has(ci.userId)) {
           nameSet.set(ci.userId, ci.user.name);
         }
-      }
-      // Always include the driver
-      if (trip.car.owner.name && !nameSet.has(trip.car.ownerId)) {
-        nameSet.set(trip.car.ownerId, trip.car.owner.name);
       }
 
       // Collect shared parking participant names across all linked trips

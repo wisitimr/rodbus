@@ -50,8 +50,12 @@ export default function TripBreakdownCard({
   const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
   const isPending = status === "pending";
 
-  // passengerNames already includes driver from cost-splitting
-  const nameList = entry.passengerNames
+  // Build display list: passengers + driver
+  const allNames = [...entry.passengerNames];
+  if (entry.driverName && !allNames.includes(entry.driverName)) {
+    allNames.push(entry.driverName);
+  }
+  const nameList = allNames
     .map((n) => (n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n))
     .join(", ");
 
@@ -107,10 +111,10 @@ export default function TripBreakdownCard({
             <span className="font-medium">{entry.headcount} {t.people}</span>
           </div>
           <div className="ml-6 space-y-0.5 text-xs text-muted-foreground">
-            {entry.passengerNames.map((n, i) => (
+            {allNames.map((n, i) => (
               <span key={i}>
                 {n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n}
-                {i < entry.passengerNames.length - 1 ? ", " : ""}
+                {i < allNames.length - 1 ? ", " : ""}
               </span>
             ))}
           </div>
