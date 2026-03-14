@@ -4,9 +4,7 @@ import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
-import { Home } from "lucide-react";
-import ProfileMenu from "./profile-menu";
-import DashboardContent from "./dashboard-content";
+import DashboardContent from "../dashboard-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 import { unstable_cache } from "next/cache";
 
@@ -154,41 +152,13 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <>
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-              <Home className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">
-                RodBus
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                {t.welcome}, {user.name ?? user.email}
-              </p>
-            </div>
-          </div>
-          <ProfileMenu
-            image={user.image}
-            name={user.name}
-            email={user.email}
-            role={user.role}
-            isAdmin={isAdmin}
-          />
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-lg space-y-4 p-4">
-        <DashboardContent
-          pendingDebt={myDebt?.pendingDebt ?? 0}
-          pendingCount={pendingEntries.length}
-          debtEntries={debtEntries}
-          recentTrips={formattedRecentTrips}
-        />
-      </main>
-    </>
+    <main className="mx-auto max-w-lg space-y-4 p-4">
+      <DashboardContent
+        pendingDebt={myDebt?.pendingDebt ?? 0}
+        pendingCount={pendingEntries.length}
+        debtEntries={debtEntries}
+        recentTrips={formattedRecentTrips}
+      />
+    </main>
   );
 }
