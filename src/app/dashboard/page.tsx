@@ -8,17 +8,9 @@ import { Home } from "lucide-react";
 import ProfileMenu from "./profile-menu";
 import DashboardContent from "./dashboard-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
+import { unstable_cache } from "next/cache";
 
-export default async function DashboardPage() {
-  const user = (await getCurrentUser())!;
-
-  const headersList = await headers();
-  const locale = detectLocale(headersList.get("accept-language"));
-  const t = getTranslations(locale);
-
-  const userId = user.id;
-  const isAdmin = user.role === Role.ADMIN;
-
+async function fetchDashboardData(userId: string, isAdmin: boolean) {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
@@ -37,13 +29,61 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  // Compute trip numbers for each trip within same car+date (batch query)
+  const carDatePairs = [...new Map(
+    recentTrips.map(t => [`${t.carId}-${t.date.toISOString().split("T")[0]}`, { carId: t.carId, date: t.date }])
+  ).values()];
+
+  const allRelatedTrips = carDatePairs.length > 0
+    ? await prisma.trip.findMany({
+        where: { OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, carId: true, date: true },
+      })
+    : [];
+
+  const carDateTrips = new Map<string, string[]>();
+  for (const t of allRelatedTrips) {
+    const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
+    if (!carDateTrips.has(key)) carDateTrips.set(key, []);
+    carDateTrips.get(key)!.push(t.id);
+  }
+
+  const tripNumbers: Record<string, number> = {};
+  for (const trip of recentTrips) {
+    const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
+    const idx = (carDateTrips.get(cdKey) ?? []).indexOf(trip.id);
+    if (idx >= 0) tripNumbers[trip.id] = idx + 1;
+  }
+
+  return { debts, recentTrips, tripNumbers };
+}
+
+const getCachedDashboardData = unstable_cache(
+  fetchDashboardData,
+  ["dashboard-data"],
+  { tags: ["dashboard"], revalidate: 60 }
+);
+
+export default async function DashboardPage() {
+  const user = (await getCurrentUser())!;
+
+  const headersList = await headers();
+  const locale = detectLocale(headersList.get("accept-language"));
+  const t = getTranslations(locale);
+
+  const userId = user.id;
+  const isAdmin = user.role === Role.ADMIN;
+
+  const { debts, recentTrips, tripNumbers } = await getCachedDashboardData(userId, isAdmin);
+
   const myDebt = debts.find((d) => d.userId === userId);
 
   // Compute pending breakdown entries
   const pendingEntries = (() => {
     if (!myDebt || myDebt.pendingDebt <= 0) return [];
     const sorted = [...myDebt.breakdown].sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     let remaining = myDebt.totalPaid;
     const pending: typeof sorted = [];
@@ -69,7 +109,7 @@ export default async function DashboardPage() {
 
   // Format debt entries for client component
   const debtEntries = pendingEntries.map((b) => ({
-    date: formatDateMedium(b.date, locale),
+    date: formatDateMedium(new Date(b.date), locale),
     carName: b.carName,
     licensePlate: b.licensePlate,
     share: b.share,
@@ -86,7 +126,7 @@ export default async function DashboardPage() {
     sharedParking: b.sharedParking ? {
       trips: b.sharedParking.trips.map((d) => ({
         carName: d.carName,
-        date: formatDateMedium(d.date, locale as Locale),
+        date: formatDateMedium(new Date(d.date), locale as Locale),
         parkingCost: d.parkingCost,
         headcount: d.headcount,
       })),
@@ -96,38 +136,11 @@ export default async function DashboardPage() {
     } : null,
   }));
 
-  // Compute trip numbers for each trip within same car+date (batch query)
-  const carDatePairs = [...new Map(
-    recentTrips.map(t => [`${t.carId}-${t.date.toISOString().split("T")[0]}`, { carId: t.carId, date: t.date }])
-  ).values()];
-
-  const allRelatedTrips = carDatePairs.length > 0
-    ? await prisma.trip.findMany({
-        where: { OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
-        orderBy: { createdAt: "asc" },
-        select: { id: true, carId: true, date: true },
-      })
-    : [];
-
-  const carDateTrips = new Map<string, string[]>();
-  for (const t of allRelatedTrips) {
-    const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
-    if (!carDateTrips.has(key)) carDateTrips.set(key, []);
-    carDateTrips.get(key)!.push(t.id);
-  }
-
-  const tripNumberMap = new Map<string, number>();
-  for (const trip of recentTrips) {
-    const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
-    const idx = (carDateTrips.get(cdKey) ?? []).indexOf(trip.id);
-    if (idx >= 0) tripNumberMap.set(trip.id, idx + 1);
-  }
-
   // Format recent trips for client component
   const formattedRecentTrips = recentTrips.map((trip) => ({
     id: trip.id,
-    date: formatDateMedium(trip.date, locale),
-    time: trip.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+    date: formatDateMedium(new Date(trip.date), locale),
+    time: new Date(trip.createdAt).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: "Asia/Bangkok",
@@ -137,7 +150,7 @@ export default async function DashboardPage() {
     gasCost: trip.gasCost,
     parkingCost: trip.parkingCost,
     riderCount: trip.checkIns.length + 1,
-    tripNumber: tripNumberMap.get(trip.id) ?? 1,
+    tripNumber: tripNumbers[trip.id] ?? 1,
   }));
 
   return (
