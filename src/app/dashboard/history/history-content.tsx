@@ -1149,7 +1149,7 @@ export default function HistoryContent({
                         <div
                           key={trip.id}
                           data-swipe-id={trip.id}
-                          className="relative overflow-hidden rounded-xl animate-fade-in"
+                          className="relative overflow-hidden rounded-xl bg-accent animate-fade-in"
                         >
                           {/* Action buttons behind the card */}
                           {trip.isOwner && (
