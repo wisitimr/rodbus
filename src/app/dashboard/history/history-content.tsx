@@ -769,8 +769,8 @@ export default function HistoryContent({
   const [editParkingCost, setEditParkingCost] = useState("");
   const [editStatus, setEditStatus] = useState<"idle" | "saving">("idle");
 
-  const SWIPE_THRESHOLD = 80;
-  const ACTION_WIDTH = 120; // width of both action buttons combined
+  const SWIPE_THRESHOLD = 40;
+  const ACTION_WIDTH = 80; // width of both action buttons combined
 
   function handleSwipeTouchStart(e: React.TouchEvent, tripId: string) {
     swipeStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -1149,22 +1149,22 @@ export default function HistoryContent({
                         <div
                           key={trip.id}
                           data-swipe-id={trip.id}
-                          className="relative overflow-hidden rounded-xl bg-accent animate-fade-in"
+                          className="relative overflow-hidden rounded-xl bg-secondary animate-fade-in"
                         >
                           {/* Action buttons behind the card */}
                           {trip.isOwner && (
-                            <div className="absolute inset-y-0 right-0 flex">
+                            <div className="absolute inset-y-0 right-0 flex items-center">
                               <button
                                 onClick={() => handleTripEditStart(trip)}
-                                className="flex w-[60px] items-center justify-center bg-accent text-accent-foreground"
+                                className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
                               >
-                                <Pencil className="h-5 w-5" />
+                                <Pencil className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleTripDelete(trip)}
-                                className="flex w-[60px] items-center justify-center rounded-r-xl bg-secondary text-secondary-foreground"
+                                className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
                               >
-                                <Trash2 className="h-5 w-5" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           )}

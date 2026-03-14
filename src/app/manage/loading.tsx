@@ -11,39 +11,32 @@ export default function ManageLoading() {
         ))}
       </div>
 
-      {/* Car selector shimmer */}
-      <div className="h-10 w-full animate-pulse rounded-xl border border-border bg-muted/30" />
+      {/* New Trip card shimmer */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
+        {/* Title */}
+        <div className="h-3.5 w-28 animate-pulse rounded bg-muted/50" />
 
-      {/* Form fields shimmer */}
-      <div className="space-y-3">
+        {/* Car selector */}
         <div>
-          <div className="mb-1.5 h-3.5 w-16 animate-pulse rounded bg-muted/50" />
-          <div className="h-10 w-full animate-pulse rounded-xl border border-border bg-muted/30" />
+          <div className="mb-1 h-3 w-16 animate-pulse rounded bg-muted/40" />
+          <div className="h-10 w-full animate-pulse rounded-xl border border-input bg-muted/30" />
         </div>
-        <div>
-          <div className="mb-1.5 h-3.5 w-20 animate-pulse rounded bg-muted/50" />
-          <div className="h-10 w-full animate-pulse rounded-xl border border-border bg-muted/30" />
-        </div>
-      </div>
 
-      {/* Shared parking section shimmer */}
-      <div className="rounded-xl border border-border bg-card p-3">
-        <div className="h-4 w-36 animate-pulse rounded bg-muted/50" />
-        <div className="mt-2 space-y-2">
-          {[1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-border p-2.5">
-              <div className="h-4 w-4 animate-pulse rounded bg-muted/40" />
-              <div className="flex-1 space-y-1">
-                <div className="h-3.5 w-28 animate-pulse rounded bg-muted" />
-                <div className="h-3 w-40 animate-pulse rounded bg-muted/40" />
-              </div>
-            </div>
-          ))}
+        {/* Gas & Parking (2-column grid) */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="mb-1 h-3 w-16 animate-pulse rounded bg-muted/40" />
+            <div className="h-10 w-full animate-pulse rounded-xl border border-input bg-muted/30" />
+          </div>
+          <div>
+            <div className="mb-1 h-3 w-20 animate-pulse rounded bg-muted/40" />
+            <div className="h-10 w-full animate-pulse rounded-xl border border-input bg-muted/30" />
+          </div>
         </div>
-      </div>
 
-      {/* Submit button shimmer */}
-      <div className="h-11 w-full animate-pulse rounded-xl bg-muted/40" />
+        {/* Submit button */}
+        <div className="h-11 w-full animate-pulse rounded-xl bg-muted/40" />
+      </div>
     </main>
   );
 }
