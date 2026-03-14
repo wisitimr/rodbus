@@ -113,7 +113,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                {t.licensePlate}
+                {t.licensePlate} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
               </label>
               <input
                 type="text"
