@@ -3,7 +3,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { todayBangkok } from "@/lib/timezone";
 
 // ---------------------------------------------------------------------------
@@ -43,6 +43,7 @@ export async function deleteUser(userId: string) {
   await prisma.user.delete({ where: { id: userId } });
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidateTag("dashboard");
 }
 
 /** Revoke a USER → back to PENDING */
@@ -73,6 +74,7 @@ export async function setUserRole(userId: string, role: Role): Promise<{ error?:
   });
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidateTag("dashboard");
   return {};
 }
 
@@ -101,6 +103,7 @@ export async function createTrip(
   });
 
   revalidatePath("/admin");
+  revalidateTag("dashboard");
 }
 
 // ---------------------------------------------------------------------------
@@ -178,6 +181,7 @@ export async function addCar(name: string, licensePlate: string | null) {
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidateTag("dashboard");
 }
 
 /** Delete a car and all associated data */
@@ -249,6 +253,7 @@ export async function recordPayment(
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidateTag("dashboard");
 }
 
 /** Clear the full pending balance for a user by creating a payment for the exact amount */
@@ -275,4 +280,5 @@ export async function markAsSettled(userId: string, carId: string) {
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidateTag("dashboard");
 }

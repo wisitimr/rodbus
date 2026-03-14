@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { todayBangkok } from "@/lib/timezone";
+import { revalidateTag } from "next/cache";
 
 type ValidateError =
   | { error: "not_found" }
@@ -145,6 +146,8 @@ export async function POST(request: NextRequest) {
       date: result.today,
     },
   });
+
+  revalidateTag("dashboard");
 
   return NextResponse.json({
     status: "recorded",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag } from "next/cache";
 
 // GET /api/costs?date=YYYY-MM-DD&carIds=id1,id2 — Fetch trips for given date and cars
 export async function GET(request: NextRequest) {
@@ -123,5 +124,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  revalidateTag("dashboard");
   return NextResponse.json(trip);
 }
