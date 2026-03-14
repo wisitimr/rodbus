@@ -320,10 +320,9 @@ function SummaryCard({
   locale: string;
   t: HistoryContentProps["t"];
 }) {
-  const entry = group.entries[0];
-  const totalDebt = entry?.totalDebt ?? 0;
-  const totalPaid = entry?.totalPaid ?? 0;
-  const pendingDebt = entry?.pendingDebt ?? 0;
+  const totalDebt = group.entries.reduce((sum, e) => sum + e.totalDebt, 0);
+  const totalPaid = group.entries.reduce((sum, e) => sum + e.totalPaid, 0);
+  const pendingDebt = group.entries.reduce((sum, e) => sum + e.pendingDebt, 0);
 
   // Compute grand total (total trip costs before splitting) for this period
   const grandTotal = useMemo(() => {
@@ -736,10 +735,13 @@ export default function HistoryContent({
     const dayGroups = groupByPeriod(allDebts, allPayments, "day", locale);
     const settled = new Set<string>();
     for (const g of dayGroups) {
-      const e = isAdmin
-        ? g.entries[0]
-        : g.entries.find((e) => e.userId === currentUserId);
-      if (e && e.pendingDebt <= 0) settled.add(g.key);
+      if (isAdmin) {
+        const allSettled = g.entries.length > 0 && g.entries.every((e) => e.pendingDebt <= 0);
+        if (allSettled) settled.add(g.key);
+      } else {
+        const e = g.entries.find((e) => e.userId === currentUserId);
+        if (e && e.pendingDebt <= 0) settled.add(g.key);
+      }
     }
     return settled;
   }, [allDebts, allPayments, locale, currentUserId, isAdmin]);
