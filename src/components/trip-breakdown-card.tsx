@@ -151,7 +151,7 @@ export default function TripBreakdownCard({
                 </span>
               </div>
             )}
-            {entry.parkingShare > 0 && (
+            {(entry.parkingShare > 0 || hasSharedParking) && (
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <ParkingCircle className="h-4 w-4 text-primary" />

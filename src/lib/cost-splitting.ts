@@ -134,7 +134,7 @@ export async function calculateDebts(
 
     // Calculate parking headcount: if shared with other trips, pool all unique people
     let parkingHeadcount = headcount;
-    if (trip.sharedParkingTripIds.length > 0 && trip.parkingCost > 0) {
+    if (trip.sharedParkingTripIds.length > 0) {
       const allParkingUserIds = new Set(passengerIds);
       const allDriverIds = new Set<string>();
       allDriverIds.add(trip.car.ownerId);
@@ -197,7 +197,7 @@ export async function calculateDebts(
 
       // Build consolidated shared parking info
       let sharedParking: SharedParkingInfo | null = null;
-      if (trip.sharedParkingTripIds.length > 0 && trip.parkingCost > 0) {
+      if (trip.sharedParkingTripIds.length > 0) {
         const parkingNameSet = new Map<string, string>();
         const parkingTrips: SharedParkingInfo["trips"] = [];
 
@@ -354,7 +354,7 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
 
     // Handle shared parking
     let parkingPerPerson = trip.parkingCost / headcount;
-    if (trip.sharedParkingTripIds.length > 0 && trip.parkingCost > 0) {
+    if (trip.sharedParkingTripIds.length > 0) {
       const allParkingUserIds = new Set(passengerIds);
       const allDriverIds = new Set<string>();
       allDriverIds.add(trip.car.ownerId);

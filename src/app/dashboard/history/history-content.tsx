@@ -359,8 +359,8 @@ function SummaryCard({
         }
       }
     }
-    // Sort by date descending
-    entries.sort((a, b) => b.date.localeCompare(a.date));
+    // Sort by date descending, then by trip number descending
+    entries.sort((a, b) => b.date.localeCompare(a.date) || b.tripNumber - a.tripNumber);
     return entries;
   }, [isExpanded, group.key, dayBreakdownMap]);
 
