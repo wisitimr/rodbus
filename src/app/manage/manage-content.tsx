@@ -50,6 +50,7 @@ interface RecentTrip {
   gasCost: number;
   parkingCost: number;
   headcount: number;
+  tripNumber: number;
 }
 
 interface ManageContentProps {
@@ -301,6 +302,9 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="font-medium text-foreground truncate">{trip.carName}</span>
+                              <span className="text-[10px] font-medium text-primary whitespace-nowrap">
+                                {t.tripNumber} #{trip.tripNumber}
+                              </span>
                               <span className="text-xs text-muted-foreground whitespace-nowrap">
                                 {trip.date}
                               </span>
