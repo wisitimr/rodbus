@@ -288,62 +288,63 @@ export async function calculateDebts(
       });
     }
 
-    // Charge parking to people in linked trips who are NOT in this trip
-    if (trip.sharedParkingTripIds.length > 0 && parkingPerPerson > 0) {
-      for (const uid of allParkingUserIds) {
-        // Skip if already charged above (in this trip's passengers)
-        if (passengerIds.has(uid)) continue;
-        // Skip all drivers (they don't owe debt)
-        if (allDriverIds.has(uid)) continue;
+  }
 
-        // Find this user's name from linked trips' check-ins
-        let userName: string | null = null;
-        for (const linkedTripId of trip.sharedParkingTripIds) {
-          const linkedTrip = allTripsMap.get(linkedTripId);
-          if (!linkedTrip) continue;
-          const ci = allCheckIns.find(
-            (c) => c.userId === uid && (
-              c.tripId === linkedTripId ||
-              (c.tripId === null && c.carId === linkedTrip.carId && c.date.getTime() === linkedTrip.date.getTime())
-            )
-          );
-          if (ci?.user.name) { userName = ci.user.name; break; }
-        }
+  // Post-processing: redistribute shared parking so each person's total parking
+  // share (totalParking / parkingHeadcount) is added to their OWN trip entries,
+  // not as separate entries from trips they're not in.
+  const processedGroups = new Set<string>();
+  for (const trip of trips) {
+    if (trip.sharedParkingTripIds.length === 0) continue;
 
-        let entry = debtMap.get(uid);
-        if (!entry) {
-          entry = {
-            userId: uid,
-            userName,
-            totalDebt: 0,
-            totalPaid: 0,
-            pendingDebt: 0,
-            breakdown: [],
-          };
-          debtMap.set(uid, entry);
-        }
+    // Canonical group key to avoid processing the same group twice
+    const groupIds = [trip.id, ...trip.sharedParkingTripIds].sort();
+    const groupKey = groupIds.join(",");
+    if (processedGroups.has(groupKey)) continue;
+    processedGroups.add(groupKey);
 
-        entry.totalDebt += parkingPerPerson;
-        entry.breakdown.push({
-          tripId: trip.id,
-          carId: trip.carId,
-          carName: trip.car.name,
-          licensePlate: trip.car.licensePlate,
-          date: trip.date,
-          share: Math.round(parkingPerPerson * 100) / 100,
-          gasShare: 0,
-          parkingShare: Math.round(parkingPerPerson * 100) / 100,
-          gasCost: 0,
-          parkingCost: trip.parkingCost,
-          totalCost: trip.parkingCost,
-          headcount: parkingHeadcount,
-          parkingHeadcount,
-          tripNumber: tripNumberMap.get(trip.id) ?? 1,
-          passengerNames: Array.from(nameSet.values()),
-          driverName: trip.car.owner.name ?? null,
-          createdAt: trip.createdAt,
-          sharedParking,
-        });
+    // Get all trips in this group
+    const groupTrips = groupIds.map((id) => allTripsMap.get(id)).filter(Boolean) as typeof trips;
+    const totalParking = groupTrips.reduce((sum, t) => sum + t.parkingCost, 0);
+    if (totalParking === 0) continue;
+
+    // Compute parking headcount for this group
+    const groupParkingUserIds = new Set<string>();
+    const groupDriverIds = new Set<string>();
+    for (const gt of groupTrips) {
+      groupDriverIds.add(gt.car.ownerId);
+      const gtCheckIns = allCheckIns.filter(
+        (c) =>
+          c.tripId === gt.id ||
+          (c.tripId === null && c.carId === gt.carId && c.date.getTime() === gt.date.getTime())
+      );
+      for (const ci of gtCheckIns) groupParkingUserIds.add(ci.userId);
+    }
+    for (const driverId of groupDriverIds) groupParkingUserIds.add(driverId);
+    const groupParkingHeadcount = groupParkingUserIds.size;
+    const targetPerPerson = totalParking / groupParkingHeadcount;
+
+    // For each person in the debt map, adjust their parking for this group
+    for (const entry of debtMap.values()) {
+      // Skip drivers
+      if (groupDriverIds.has(entry.userId)) continue;
+      // Skip people not in this parking pool
+      if (!groupParkingUserIds.has(entry.userId)) continue;
+
+      // Find their breakdown entries that belong to trips in this group
+      const groupBreakdowns = entry.breakdown.filter((b) => groupIds.includes(b.tripId));
+      if (groupBreakdowns.length === 0) continue;
+
+      // Sum their current parking share from trips in this group
+      const currentParkingSum = groupBreakdowns.reduce((sum, b) => sum + b.parkingShare, 0);
+      const deficit = Math.round((targetPerPerson - currentParkingSum) * 100) / 100;
+
+      if (deficit > 0) {
+        // Add deficit to their first breakdown entry in the group
+        const target = groupBreakdowns[0];
+        target.parkingShare = Math.round((target.parkingShare + deficit) * 100) / 100;
+        target.share = Math.round((target.share + deficit) * 100) / 100;
+        entry.totalDebt += deficit;
       }
     }
   }
@@ -391,7 +392,7 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
 
   const allTripsMapForUser = new Map(allTripsForUser.map((t) => [t.id, t]));
 
-  const dateShares: { date: Date; amount: number }[] = [];
+  const dateShares: { date: Date; amount: number; tripId: string }[] = [];
 
   for (const trip of allTripsForUser) {
     if (trip.gasCost === 0 && trip.parkingCost === 0) continue;
@@ -432,25 +433,97 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
       parkingHeadcount = allParkingUserIds.size;
     }
 
-    const isPassenger = passengerIds.has(userId);
-    const isInParkingPool = allParkingUserIds.has(userId);
+    // Only charge if user is a direct passenger of this trip
+    if (!passengerIds.has(userId)) continue;
 
-    // User is a direct passenger of this trip
-    if (isPassenger) {
-      const gasPerPerson = trip.gasCost / headcount;
-      const parkingPerPerson = trip.parkingCost > 0 ? trip.parkingCost / parkingHeadcount : 0;
-      const share = Math.round((gasPerPerson + parkingPerPerson) * 100) / 100;
-      if (share > 0) {
-        dateShares.push({ date: trip.date, amount: share });
+    const gasPerPerson = trip.gasCost / headcount;
+    const parkingPerPerson = trip.parkingCost > 0 ? trip.parkingCost / parkingHeadcount : 0;
+    const share = Math.round((gasPerPerson + parkingPerPerson) * 100) / 100;
+    if (share > 0) {
+      dateShares.push({ date: trip.date, amount: share, tripId: trip.id });
+    }
+  }
+
+  // Post-processing: redistribute shared parking deficit to user's own trip entries
+  const processedGroups = new Set<string>();
+  for (const trip of allTripsForUser) {
+    if (trip.sharedParkingTripIds.length === 0) continue;
+
+    const groupIds = [trip.id, ...trip.sharedParkingTripIds].sort();
+    const groupKey = groupIds.join(",");
+    if (processedGroups.has(groupKey)) continue;
+    processedGroups.add(groupKey);
+
+    // Check if user is in the parking pool for this group
+    const groupParkingUserIds = new Set<string>();
+    const groupDriverIds = new Set<string>();
+    const groupTrips = groupIds.map((id) => allTripsMapForUser.get(id)).filter(Boolean) as typeof allTripsForUser;
+    const totalParking = groupTrips.reduce((sum, t) => sum + t.parkingCost, 0);
+    if (totalParking === 0) continue;
+
+    for (const gt of groupTrips) {
+      groupDriverIds.add(gt.car.ownerId);
+      const gtCheckIns = allCheckInsForUser.filter(
+        (c) =>
+          c.tripId === gt.id ||
+          (c.tripId === null && c.carId === gt.carId && c.date.getTime() === gt.date.getTime())
+      );
+      for (const ci of gtCheckIns) groupParkingUserIds.add(ci.userId);
+    }
+    for (const driverId of groupDriverIds) groupParkingUserIds.add(driverId);
+
+    if (!groupParkingUserIds.has(userId)) continue;
+    if (groupDriverIds.has(userId)) continue;
+
+    const groupParkingHeadcount = groupParkingUserIds.size;
+    const targetPerPerson = totalParking / groupParkingHeadcount;
+
+    // Find user's dateShares entries belonging to trips in this group
+    const groupEntries = dateShares.filter((ds) => groupIds.includes(ds.tripId));
+    if (groupEntries.length === 0) continue;
+
+    // Sum current parking contribution from these entries
+    // We need to recalculate what parking was already included
+    let currentParkingSum = 0;
+    for (const ds of groupEntries) {
+      const dsTrip = allTripsMapForUser.get(ds.tripId);
+      if (!dsTrip) continue;
+      const dsCIs = allCheckInsForUser.filter(
+        (c) =>
+          c.tripId === dsTrip.id ||
+          (c.tripId === null && c.carId === dsTrip.carId && c.date.getTime() === dsTrip.date.getTime())
+      );
+      const dsPassengerIds = new Set(dsCIs.map((c) => c.userId));
+      const dsHeadcount = dsPassengerIds.size + (dsPassengerIds.has(dsTrip.car.ownerId) ? 0 : 1);
+
+      let dsParkingHC = dsHeadcount;
+      if (dsTrip.sharedParkingTripIds.length > 0) {
+        const dsParkingUsers = new Set(dsPassengerIds);
+        const dsDrivers = new Set<string>();
+        dsDrivers.add(dsTrip.car.ownerId);
+        for (const ltId of dsTrip.sharedParkingTripIds) {
+          const lt = allTripsMapForUser.get(ltId);
+          if (!lt) continue;
+          dsDrivers.add(lt.car.ownerId);
+          const ltCIs = allCheckInsForUser.filter(
+            (c) =>
+              c.tripId === ltId ||
+              (c.tripId === null && c.carId === lt.carId && c.date.getTime() === lt.date.getTime())
+          );
+          for (const ci of ltCIs) dsParkingUsers.add(ci.userId);
+        }
+        for (const did of dsDrivers) dsParkingUsers.add(did);
+        dsParkingHC = dsParkingUsers.size;
+      }
+
+      if (dsTrip.parkingCost > 0) {
+        currentParkingSum += dsTrip.parkingCost / dsParkingHC;
       }
     }
-    // User is NOT in this trip but IS in the shared parking pool (via a linked trip)
-    else if (isInParkingPool && !allDriverIds.has(userId) && trip.parkingCost > 0) {
-      const parkingPerPerson = trip.parkingCost / parkingHeadcount;
-      const share = Math.round(parkingPerPerson * 100) / 100;
-      if (share > 0) {
-        dateShares.push({ date: trip.date, amount: share });
-      }
+
+    const deficit = Math.round((targetPerPerson - currentParkingSum) * 100) / 100;
+    if (deficit > 0) {
+      groupEntries[0].amount = Math.round((groupEntries[0].amount + deficit) * 100) / 100;
     }
   }
 
