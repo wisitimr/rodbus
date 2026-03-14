@@ -1,12 +1,13 @@
+import { cache } from "react";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import type { User } from "@prisma/client";
 
 /**
  * Get the current authenticated user from the database.
- * If the user doesn't exist in the DB yet, create them (with PENDING role).
+ * Cached per request — safe to call multiple times (layout + page).
  */
-export async function getCurrentUser(): Promise<User | null> {
+export const getCurrentUser = cache(async (): Promise<User | null> => {
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
 
@@ -31,7 +32,7 @@ export async function getCurrentUser(): Promise<User | null> {
     console.error("[getCurrentUser] DB error:", error);
     return null;
   }
-}
+});
 
 /**
  * Require an authenticated user or throw/redirect.
