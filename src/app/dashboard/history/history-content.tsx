@@ -717,11 +717,11 @@ export default function HistoryContent({
     });
   }, []);
 
-  // Map<dateISO, BreakdownEntry[]> — raw per-car entries for current user
+  // Map<dateISO, BreakdownEntry[]> — raw per-car entries (admin sees all, user sees own)
   const dayBreakdownMap = useMemo(() => {
     const map = new Map<string, BreakdownEntry[]>();
     for (const debt of allDebts) {
-      if (debt.userId !== currentUserId) continue;
+      if (!isAdmin && debt.userId !== currentUserId) continue;
       for (const b of debt.breakdown) {
         const list = map.get(b.date) ?? [];
         list.push(b);
@@ -729,18 +729,20 @@ export default function HistoryContent({
       }
     }
     return map;
-  }, [allDebts, currentUserId]);
+  }, [allDebts, currentUserId, isAdmin]);
 
   // Set of settled day keys — days where pendingDebt <= 0
   const settledDays = useMemo(() => {
     const dayGroups = groupByPeriod(allDebts, allPayments, "day", locale);
     const settled = new Set<string>();
     for (const g of dayGroups) {
-      const e = g.entries.find((e) => e.userId === currentUserId);
+      const e = isAdmin
+        ? g.entries[0]
+        : g.entries.find((e) => e.userId === currentUserId);
       if (e && e.pendingDebt <= 0) settled.add(g.key);
     }
     return settled;
-  }, [allDebts, allPayments, locale, currentUserId]);
+  }, [allDebts, allPayments, locale, currentUserId, isAdmin]);
   const togglePayment = (id: string) => {
     setExpandedPayments((prev) => {
       const next = new Set(prev);
@@ -835,16 +837,19 @@ export default function HistoryContent({
   }, [tripScroll.visible, locale]);
   const paymentScroll = useInfiniteScroll(filteredPayments);
 
-  // Group summary data by period, filtered to current user only (admins see all unless onlyMe)
+  // Group summary data by period (admin sees all users, user sees own only)
   const summaryGroups = useMemo(() => {
     const groups = groupByPeriod(allDebts, allPayments, summaryPeriod, locale);
+    if (isAdmin) {
+      return groups.filter((g) => g.entries.length > 0);
+    }
     return groups
       .map((g) => ({
         ...g,
         entries: g.entries.filter((e) => e.userId === currentUserId),
       }))
       .filter((g) => g.entries.length > 0);
-  }, [allDebts, allPayments, summaryPeriod, locale, currentUserId]);
+  }, [allDebts, allPayments, summaryPeriod, locale, currentUserId, isAdmin]);
 
   const summaryScroll = useInfiniteScroll(summaryGroups);
 
