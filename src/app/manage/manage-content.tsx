@@ -88,8 +88,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
   async function handleCreateTrip(e: React.FormEvent) {
     e.preventDefault();
     setFormStatus("saving");
-    const today = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }))
-      .toISOString().split("T")[0];
+    const bkk = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+    const today = `${bkk.getFullYear()}-${String(bkk.getMonth() + 1).padStart(2, "0")}-${String(bkk.getDate()).padStart(2, "0")}`;
     try {
       const res = await fetch("/api/costs", {
         method: "POST",
