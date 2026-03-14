@@ -175,12 +175,16 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
-      // Collect unique passenger names (include all, even those without names)
+      // Collect all people in the trip (passengers + driver)
       const nameSet = new Map<string, string>();
       for (const ci of linkedCheckIns) {
-        if (!nameSet.has(ci.userId)) {
-          nameSet.set(ci.userId, ci.user.name || "");
+        if (ci.user.name && !nameSet.has(ci.userId)) {
+          nameSet.set(ci.userId, ci.user.name);
         }
+      }
+      // Always include the driver
+      if (trip.car.owner.name && !nameSet.has(trip.car.ownerId)) {
+        nameSet.set(trip.car.ownerId, trip.car.owner.name);
       }
 
       // Collect shared parking participant names across all linked trips
@@ -189,20 +193,20 @@ export async function calculateDebts(
         const parkingNameSet = new Map<string, string>();
         // Add current trip's passengers
         for (const ci of linkedCheckIns) {
-          if (!parkingNameSet.has(ci.userId)) {
-            parkingNameSet.set(ci.userId, ci.user.name || "");
+          if (ci.user.name && !parkingNameSet.has(ci.userId)) {
+            parkingNameSet.set(ci.userId, ci.user.name);
           }
         }
         // Add driver of current trip
-        if (!parkingNameSet.has(trip.car.ownerId)) {
-          parkingNameSet.set(trip.car.ownerId, trip.car.owner.name || "");
+        if (trip.car.owner.name && !parkingNameSet.has(trip.car.ownerId)) {
+          parkingNameSet.set(trip.car.ownerId, trip.car.owner.name);
         }
         // Add passengers and drivers from linked trips
         for (const linkedTripId of trip.sharedParkingTripIds) {
           const linkedTrip = allTripsMap.get(linkedTripId);
           if (!linkedTrip) continue;
-          if (!parkingNameSet.has(linkedTrip.car.ownerId)) {
-            parkingNameSet.set(linkedTrip.car.ownerId, linkedTrip.car.owner?.name || "");
+          if (linkedTrip.car.owner?.name && !parkingNameSet.has(linkedTrip.car.ownerId)) {
+            parkingNameSet.set(linkedTrip.car.ownerId, linkedTrip.car.owner.name);
           }
           const linkedCIs = allCheckIns.filter(
             (c) =>
@@ -210,8 +214,8 @@ export async function calculateDebts(
               (c.tripId === null && c.carId === linkedTrip.carId && c.date.getTime() === linkedTrip.date.getTime())
           );
           for (const ci of linkedCIs) {
-            if (!parkingNameSet.has(ci.userId)) {
-              parkingNameSet.set(ci.userId, ci.user.name || "");
+            if (ci.user.name && !parkingNameSet.has(ci.userId)) {
+              parkingNameSet.set(ci.userId, ci.user.name);
             }
           }
         }

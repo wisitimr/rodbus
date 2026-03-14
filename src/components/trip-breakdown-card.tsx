@@ -37,7 +37,6 @@ interface TripBreakdownCardProps {
     total: string;
     driver?: string;
     sharedParking?: string;
-    noName?: string;
   };
 }
 
@@ -51,16 +50,9 @@ export default function TripBreakdownCard({
   const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
   const isPending = status === "pending";
 
-  const noName = t.noName ?? "No name";
-  const allNames = entry.passengerNames.map((n) => n || noName);
-  if (entry.driverName && !allNames.includes(entry.driverName)) {
-    allNames.push(entry.driverName);
-  } else if (!entry.driverName && !entry.passengerNames.some((n) => n === "")) {
-    // Driver has no name and isn't already counted as a nameless passenger
-    allNames.push(noName);
-  }
-  const nameList = allNames
-    .map((n) => (n === entry.driverName && entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n))
+  // passengerNames already includes driver from cost-splitting
+  const nameList = entry.passengerNames
+    .map((n) => (n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n))
     .join(", ");
 
   return (
@@ -115,10 +107,10 @@ export default function TripBreakdownCard({
             <span className="font-medium">{entry.headcount} {t.people}</span>
           </div>
           <div className="ml-6 space-y-0.5 text-xs text-muted-foreground">
-            {allNames.map((n, i) => (
+            {entry.passengerNames.map((n, i) => (
               <span key={i}>
-                {n === entry.driverName && entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n}
-                {i < allNames.length - 1 ? ", " : ""}
+                {n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n}
+                {i < entry.passengerNames.length - 1 ? ", " : ""}
               </span>
             ))}
           </div>
@@ -150,7 +142,7 @@ export default function TripBreakdownCard({
                 </div>
                 {(entry.sharedParkingTripIds?.length ?? 0) > 0 && entry.sharedParkingNames && entry.sharedParkingNames.length > 0 && (
                   <div className="ml-6 text-xs text-muted-foreground">
-                    {entry.sharedParkingNames.map((n) => n || noName).join(", ")}
+                    {entry.sharedParkingNames.join(", ")}
                   </div>
                 )}
               </div>

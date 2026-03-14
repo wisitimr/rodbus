@@ -110,7 +110,6 @@ interface HistoryContentProps {
     confirmDeleteCheckIn?: string;
     save?: string;
     cancel?: string;
-    noName?: string;
   };
 }
 
@@ -282,7 +281,6 @@ function SummaryEntryCard({
         gas: t.gas,
         parking: t.parking,
         total: "Total",
-        noName: t.noName,
       }}
     />
   );

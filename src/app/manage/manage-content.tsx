@@ -444,7 +444,6 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
                                 total: t.total,
                                 driver: t.driver,
                                 sharedParking: t.sharedParking,
-                                noName: t.noName,
                               }}
                             />
                           );

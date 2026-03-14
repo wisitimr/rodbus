@@ -185,7 +185,6 @@ export default async function HistoryPage() {
           confirmDeleteCheckIn: t.confirmDeleteCheckIn,
           save: t.save,
           cancel: t.cancel,
-          noName: t.noName,
         }}
       />
       </main>
