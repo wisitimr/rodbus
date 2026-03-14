@@ -88,6 +88,7 @@ export default async function DashboardPage() {
     passengerNames: b.passengerNames,
     driverName: b.driverName,
     sharedParkingTripIds: b.sharedParkingTripIds,
+    sharedParkingNames: b.sharedParkingNames,
   }));
 
   // Compute trip numbers for each trip within same car+date

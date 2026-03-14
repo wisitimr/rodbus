@@ -25,6 +25,7 @@ export interface UserDebt {
     driverName: string | null;
     createdAt: Date;
     sharedParkingTripIds: string[];
+    sharedParkingNames: string[];
   }[];
 }
 
@@ -174,12 +175,47 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
-      // Collect unique passenger names
+      // Collect unique passenger names (include all, even those without names)
       const nameSet = new Map<string, string>();
       for (const ci of linkedCheckIns) {
-        if (ci.user.name && !nameSet.has(ci.userId)) {
-          nameSet.set(ci.userId, ci.user.name);
+        if (!nameSet.has(ci.userId)) {
+          nameSet.set(ci.userId, ci.user.name || "");
         }
+      }
+
+      // Collect shared parking participant names across all linked trips
+      let sharedParkingNames: string[] = [];
+      if (trip.sharedParkingTripIds.length > 0 && trip.parkingCost > 0) {
+        const parkingNameSet = new Map<string, string>();
+        // Add current trip's passengers
+        for (const ci of linkedCheckIns) {
+          if (!parkingNameSet.has(ci.userId)) {
+            parkingNameSet.set(ci.userId, ci.user.name || "");
+          }
+        }
+        // Add driver of current trip
+        if (!parkingNameSet.has(trip.car.ownerId)) {
+          parkingNameSet.set(trip.car.ownerId, trip.car.owner.name || "");
+        }
+        // Add passengers and drivers from linked trips
+        for (const linkedTripId of trip.sharedParkingTripIds) {
+          const linkedTrip = allTripsMap.get(linkedTripId);
+          if (!linkedTrip) continue;
+          if (!parkingNameSet.has(linkedTrip.car.ownerId)) {
+            parkingNameSet.set(linkedTrip.car.ownerId, linkedTrip.car.owner?.name || "");
+          }
+          const linkedCIs = allCheckIns.filter(
+            (c) =>
+              c.tripId === linkedTripId ||
+              (c.tripId === null && c.carId === linkedTrip.carId && c.date.getTime() === linkedTrip.date.getTime())
+          );
+          for (const ci of linkedCIs) {
+            if (!parkingNameSet.has(ci.userId)) {
+              parkingNameSet.set(ci.userId, ci.user.name || "");
+            }
+          }
+        }
+        sharedParkingNames = Array.from(parkingNameSet.values());
       }
 
       entry.totalDebt += perPerson;
@@ -202,6 +238,7 @@ export async function calculateDebts(
         driverName: trip.car.owner.name ?? null,
         createdAt: trip.createdAt,
         sharedParkingTripIds: trip.sharedParkingTripIds,
+        sharedParkingNames,
       });
     }
   }

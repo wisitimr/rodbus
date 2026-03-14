@@ -106,6 +106,7 @@ export default async function HistoryPage() {
       passengerNames: b.passengerNames,
       driverName: b.driverName,
       sharedParkingTripIds: b.sharedParkingTripIds,
+      sharedParkingNames: b.sharedParkingNames,
       time: b.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
         hour: "2-digit",
         minute: "2-digit",
@@ -184,6 +185,7 @@ export default async function HistoryPage() {
           confirmDeleteCheckIn: t.confirmDeleteCheckIn,
           save: t.save,
           cancel: t.cancel,
+          noName: t.noName,
         }}
       />
       </main>

@@ -75,6 +75,7 @@ export default async function ManagePage() {
           passengerNames: b.passengerNames,
           driverName: b.driverName,
           sharedParkingTripIds: b.sharedParkingTripIds,
+          sharedParkingNames: b.sharedParkingNames,
         })),
       };
     })

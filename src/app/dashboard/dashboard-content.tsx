@@ -117,6 +117,7 @@ export default function DashboardContent({
                     total: t.total,
                     driver: t.driver,
                     sharedParking: t.sharedParking,
+                    noName: t.noName,
                   }}
                 />
               ))}

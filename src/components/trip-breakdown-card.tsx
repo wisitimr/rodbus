@@ -19,6 +19,7 @@ export interface BreakdownCardEntry {
   driverName: string | null;
   time?: string;
   sharedParkingTripIds?: string[];
+  sharedParkingNames?: string[];
 }
 
 interface TripBreakdownCardProps {
@@ -36,6 +37,7 @@ interface TripBreakdownCardProps {
     total: string;
     driver?: string;
     sharedParking?: string;
+    noName?: string;
   };
 }
 
@@ -49,12 +51,16 @@ export default function TripBreakdownCard({
   const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
   const isPending = status === "pending";
 
-  const allNames = [...entry.passengerNames];
+  const noName = t.noName ?? "No name";
+  const allNames = entry.passengerNames.map((n) => n || noName);
   if (entry.driverName && !allNames.includes(entry.driverName)) {
     allNames.push(entry.driverName);
+  } else if (!entry.driverName && !entry.passengerNames.some((n) => n === "")) {
+    // Driver has no name and isn't already counted as a nameless passenger
+    allNames.push(noName);
   }
   const nameList = allNames
-    .map((n) => (n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n))
+    .map((n) => (n === entry.driverName && entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n))
     .join(", ");
 
   return (
@@ -111,7 +117,7 @@ export default function TripBreakdownCard({
           <div className="ml-6 space-y-0.5 text-xs text-muted-foreground">
             {allNames.map((n, i) => (
               <span key={i}>
-                {n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n}
+                {n === entry.driverName && entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n}
                 {i < allNames.length - 1 ? ", " : ""}
               </span>
             ))}
@@ -129,17 +135,24 @@ export default function TripBreakdownCard({
               </div>
             )}
             {entry.parkingShare > 0 && (
-              <div className="flex items-center gap-2 text-sm">
-                <ParkingCircle className="h-4 w-4 text-primary" />
-                <span className="text-muted-foreground">
-                  {t.parking}
-                  {(entry.sharedParkingTripIds?.length ?? 0) > 0 && entry.parkingHeadcount && entry.parkingHeadcount !== entry.headcount && (
-                    <span className="ml-1 text-xs text-primary">({t.sharedParking ?? "Shared"})</span>
-                  )}
-                </span>
-                <span className="ml-auto font-mono text-foreground">
-                  &#3647;{entry.parkingCost.toFixed(2)} / {entry.parkingHeadcount ?? entry.headcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
-                </span>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <ParkingCircle className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">
+                    {t.parking}
+                    {(entry.sharedParkingTripIds?.length ?? 0) > 0 && entry.parkingHeadcount && entry.parkingHeadcount !== entry.headcount && (
+                      <span className="ml-1 text-xs text-primary">({t.sharedParking ?? "Shared"})</span>
+                    )}
+                  </span>
+                  <span className="ml-auto font-mono text-foreground">
+                    &#3647;{entry.parkingCost.toFixed(2)} / {entry.parkingHeadcount ?? entry.headcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
+                  </span>
+                </div>
+                {(entry.sharedParkingTripIds?.length ?? 0) > 0 && entry.sharedParkingNames && entry.sharedParkingNames.length > 0 && (
+                  <div className="ml-6 text-xs text-muted-foreground">
+                    {entry.sharedParkingNames.map((n) => n || noName).join(", ")}
+                  </div>
+                )}
               </div>
             )}
           </div>
