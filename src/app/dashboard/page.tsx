@@ -87,14 +87,17 @@ export default async function DashboardPage() {
     tripNumber: b.tripNumber,
     passengerNames: b.passengerNames,
     driverName: b.driverName,
-    sharedParkingTripIds: b.sharedParkingTripIds,
-    sharedParkingNames: b.sharedParkingNames,
-    sharedParkingDetails: b.sharedParkingDetails.map((d) => ({
-      carName: d.carName,
-      date: formatDateMedium(d.date, locale as Locale),
-      parkingCost: d.parkingCost,
-      headcount: d.headcount,
-    })),
+    sharedParking: b.sharedParking ? {
+      trips: b.sharedParking.trips.map((d) => ({
+        carName: d.carName,
+        date: formatDateMedium(d.date, locale as Locale),
+        parkingCost: d.parkingCost,
+        headcount: d.headcount,
+      })),
+      uniqueNames: b.sharedParking.uniqueNames,
+      totalParking: b.sharedParking.totalParking,
+      parkingHeadcount: b.sharedParking.parkingHeadcount,
+    } : null,
   }));
 
   // Compute trip numbers for each trip within same car+date

@@ -2,11 +2,18 @@
 
 import { ChevronDown, ChevronUp, Users, Fuel, ParkingCircle, Link2 } from "lucide-react";
 
-export interface SharedParkingDetailEntry {
+export interface SharedParkingEntry {
   carName: string;
   date: string;
   parkingCost: number;
   headcount: number;
+}
+
+export interface SharedParkingInfo {
+  trips: SharedParkingEntry[];
+  uniqueNames: string[];
+  totalParking: number;
+  parkingHeadcount: number;
 }
 
 export interface BreakdownCardEntry {
@@ -25,9 +32,7 @@ export interface BreakdownCardEntry {
   passengerNames: string[];
   driverName: string | null;
   time?: string;
-  sharedParkingTripIds?: string[];
-  sharedParkingNames?: string[];
-  sharedParkingDetails?: SharedParkingDetailEntry[];
+  sharedParking?: SharedParkingInfo | null;
 }
 
 interface TripBreakdownCardProps {
@@ -60,14 +65,8 @@ export default function TripBreakdownCard({
   const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
   const isPending = status === "pending";
 
-  const hasSharedParking =
-    (entry.sharedParkingTripIds?.length ?? 0) > 0 &&
-    entry.parkingCost > 0;
-
-  const sharedParkingDetails = entry.sharedParkingDetails ?? [];
-  const totalSharedParking = hasSharedParking && sharedParkingDetails.length > 0
-    ? sharedParkingDetails.reduce((sum, d) => sum + d.parkingCost, 0)
-    : 0;
+  const sp = entry.sharedParking;
+  const hasSharedParking = sp != null && sp.trips.length > 0;
 
   // Build display list: passengers + driver
   const allNames = [...entry.passengerNames];
@@ -157,9 +156,9 @@ export default function TripBreakdownCard({
                 <div className="flex items-center gap-2 text-sm">
                   <ParkingCircle className="h-4 w-4 text-primary" />
                   <span className="text-muted-foreground">{t.parking}</span>
-                  {hasSharedParking && totalSharedParking > 0 ? (
+                  {hasSharedParking ? (
                     <span className="ml-auto font-mono text-foreground">
-                      &#3647;{totalSharedParking.toFixed(2)} / {entry.parkingHeadcount ?? entry.headcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
+                      &#3647;{sp!.totalParking.toFixed(2)} / {sp!.parkingHeadcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
                     </span>
                   ) : (
                     <span className="ml-auto font-mono text-foreground">
@@ -167,24 +166,24 @@ export default function TripBreakdownCard({
                     </span>
                   )}
                 </div>
-                {hasSharedParking && sharedParkingDetails.length > 0 && (
+                {hasSharedParking && (
                   <div className="ml-6 space-y-1 rounded-lg bg-primary/5 p-2">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
                       <Link2 className="h-3 w-3" />
-                      {t.sharedParkingAcross ?? "Shared parking across"} {sharedParkingDetails.length} {t.tripNumber?.toLowerCase() ?? "trips"}
+                      {t.sharedParkingAcross ?? "Shared parking across"} {sp!.trips.length} {t.tripNumber?.toLowerCase() ?? "trips"}
                     </div>
-                    {sharedParkingDetails.map((detail, i) => (
+                    {sp!.trips.map((detail, i) => (
                       <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{detail.carName} · {detail.date}</span>
                         <span className="font-mono">&#3647;{detail.parkingCost.toFixed(2)} · {detail.headcount} {t.people}</span>
                       </div>
                     ))}
-                    {entry.sharedParkingNames && entry.sharedParkingNames.length > 0 && (
+                    {sp!.uniqueNames.length > 0 && (
                       <div className="mt-1 border-t border-border/30 pt-1 text-xs text-muted-foreground">
                         <span className="font-medium text-foreground">
-                          {entry.sharedParkingNames.length} {t.uniquePeople ?? "unique people"}:
+                          {sp!.uniqueNames.length} {t.uniquePeople ?? "unique people"}:
                         </span>{" "}
-                        {entry.sharedParkingNames.join(", ")}
+                        {sp!.uniqueNames.join(", ")}
                       </div>
                     )}
                   </div>
