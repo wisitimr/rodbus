@@ -172,8 +172,8 @@ export async function calculateDebts(
     // Collect unique passenger names (from check-ins only, not driver)
     const nameSet = new Map<string, string>();
     for (const ci of linkedCheckIns) {
-      if (ci.user.name && !nameSet.has(ci.userId)) {
-        nameSet.set(ci.userId, ci.user.name);
+      if (!nameSet.has(ci.userId)) {
+        nameSet.set(ci.userId, ci.user.name || "Passenger");
       }
     }
 
