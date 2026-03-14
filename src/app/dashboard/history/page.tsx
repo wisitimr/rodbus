@@ -124,17 +124,38 @@ export default async function HistoryPage() {
     })),
   }));
 
-  const serializedPayments = allPayments.map((p) => ({
-    id: p.id,
-    userId: p.userId,
-    userName: p.user.name,
-    carName: p.car.name,
-    date: formatDateShort(p.date, locale),
-    dateISO: p.date.toISOString().split("T")[0],
-    paidAt: formatDateShort(p.createdAt, locale),
-    amount: p.amount,
-    note: p.note,
-  }));
+  // Look up trip numbers for each payment by matching carId + date
+  const paymentTripCache = new Map<string, { tripNumber: number; tripCount: number }>();
+  for (const p of allPayments) {
+    const cacheKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
+    if (!paymentTripCache.has(cacheKey)) {
+      const matchingTrips = await prisma.trip.findMany({
+        where: { carId: p.carId, date: p.date },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      paymentTripCache.set(cacheKey, { tripNumber: 1, tripCount: matchingTrips.length });
+    }
+  }
+
+  const serializedPayments = allPayments.map((p) => {
+    const cacheKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
+    const tripInfo = paymentTripCache.get(cacheKey);
+    return {
+      id: p.id,
+      userId: p.userId,
+      userName: p.user.name,
+      carName: p.car.name,
+      licensePlate: p.car.licensePlate ?? null,
+      date: formatDateShort(p.date, locale),
+      dateISO: p.date.toISOString().split("T")[0],
+      paidAt: formatDateShort(p.createdAt, locale),
+      amount: p.amount,
+      note: p.note,
+      tripNumber: tripInfo?.tripNumber ?? null,
+      tripCount: tripInfo?.tripCount ?? 0,
+    };
+  });
 
   return (
     <div className="min-h-screen pb-24">

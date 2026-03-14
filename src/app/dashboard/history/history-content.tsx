@@ -26,11 +26,14 @@ interface PaymentRecord {
   userId: string;
   userName: string | null;
   carName: string;
+  licensePlate: string | null;
   date: string;
   dateISO: string;
   paidAt: string;
   amount: number;
   note: string | null;
+  tripNumber: number | null;
+  tripCount: number;
 }
 
 interface BreakdownEntry {
@@ -324,24 +327,6 @@ function SummaryCard({
   const totalPaid = group.entries.reduce((sum, e) => sum + e.totalPaid, 0);
   const pendingDebt = group.entries.reduce((sum, e) => sum + e.pendingDebt, 0);
 
-  // Compute grand total (total trip costs before splitting) for this period
-  const grandTotal = useMemo(() => {
-    const seen = new Set<string>();
-    let total = 0;
-    const prefix = group.key;
-    for (const [dateISO, entries] of dayBreakdownMap) {
-      if (!dateISO.startsWith(prefix)) continue;
-      for (const e of entries) {
-        const key = `${e.carId}-${e.date}-${e.tripNumber}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          total += e.totalCost;
-        }
-      }
-    }
-    return Math.round(total * 100) / 100;
-  }, [group.key, dayBreakdownMap]);
-
   // Collect all breakdown entries for expanded view (deduplicated by trip)
   const allEntries = useMemo(() => {
     if (!isExpanded) return [];
@@ -374,14 +359,28 @@ function SummaryCard({
       >
         <div className="flex-1">
           <p className="font-semibold text-foreground">{group.label}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Grand Total: <span className="font-bold text-foreground">฿{grandTotal.toFixed(2)}</span>
-          </p>
-          <div className="mt-0.5 flex items-center gap-3 text-xs">
-            <span className="text-debt">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
-            <span className="text-settled">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
-            <span className="ml-auto text-muted-foreground">Total: <span className="font-bold text-foreground">฿{totalDebt.toFixed(2)}</span></span>
-          </div>
+          {group.entries.length > 1 ? (
+            <div className="mt-1 space-y-0.5">
+              {group.entries.map((e) => (
+                <div key={e.userId} className="flex items-center gap-3 text-xs">
+                  <span className="truncate text-muted-foreground">{e.userName ?? "—"}</span>
+                  {e.pendingDebt > 0 && (
+                    <span className="text-debt">{t.pending}: <span className="font-medium">฿{e.pendingDebt.toFixed(2)}</span></span>
+                  )}
+                  {e.totalPaid > 0 && (
+                    <span className="text-settled">{t.paid}: <span className="font-medium">฿{e.totalPaid.toFixed(2)}</span></span>
+                  )}
+                  <span className="ml-auto text-muted-foreground">฿{e.totalDebt.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-1 flex items-center gap-3 text-xs">
+              <span className="text-debt">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
+              <span className="text-settled">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
+              <span className="ml-auto text-muted-foreground">Total: <span className="font-bold text-foreground">฿{totalDebt.toFixed(2)}</span></span>
+            </div>
+          )}
         </div>
         {isExpanded ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -980,9 +979,16 @@ export default function HistoryContent({
                         ฿{p.amount.toFixed(2)}
                       </span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {p.carName} &middot; {t.paid} {p.paidAt}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-muted-foreground">
+                        {p.carName} &middot; {p.date}
+                        {p.tripCount === 1 && <> &middot; {t.tripNumber} #1</>}
+                        {p.tripCount > 1 && <> &middot; {p.tripCount} {t.trip}</>}
+                      </p>
+                      <p className="shrink-0 text-[11px] text-muted-foreground">
+                        {t.paid} {p.paidAt}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
