@@ -40,8 +40,7 @@ export default async function ManagePage() {
         car: { select: { name: true, licensePlate: true } },
         checkIns: { select: { id: true } },
       },
-      orderBy: { createdAt: "desc" },
-      take: 5,
+      orderBy: { createdAt: "asc" },
     }),
   ]);
 
@@ -90,15 +89,31 @@ export default async function ManagePage() {
     })
     .filter((d) => d.breakdown.length > 0);
 
-  const recentTripsForSharing = recentTripsRaw.map((trip) => ({
-    id: trip.id,
-    carName: trip.car.name,
-    licensePlate: trip.car.licensePlate,
-    date: formatDateMedium(trip.date, locale),
-    gasCost: trip.gasCost,
-    parkingCost: trip.parkingCost,
-    headcount: trip.checkIns.length + 1,
-  }));
+  // Compute trip numbers per car+date
+  const carDateGroups = new Map<string, string[]>();
+  for (const trip of recentTripsRaw) {
+    const key = `${trip.carId}-${trip.date.toISOString()}`;
+    if (!carDateGroups.has(key)) carDateGroups.set(key, []);
+    carDateGroups.get(key)!.push(trip.id);
+  }
+  const tripNumberMap = new Map<string, number>();
+  for (const [, ids] of carDateGroups) {
+    ids.forEach((id, i) => tripNumberMap.set(id, i + 1));
+  }
+
+  const recentTripsForSharing = recentTripsRaw
+    .slice(-5)
+    .reverse()
+    .map((trip) => ({
+      id: trip.id,
+      carName: trip.car.name,
+      licensePlate: trip.car.licensePlate,
+      date: formatDateMedium(trip.date, locale),
+      gasCost: trip.gasCost,
+      parkingCost: trip.parkingCost,
+      headcount: trip.checkIns.length + 1,
+      tripNumber: tripNumberMap.get(trip.id) ?? 1,
+    }));
 
   return (
     <div className="min-h-screen pb-24">

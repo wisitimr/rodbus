@@ -349,6 +349,16 @@ export async function calculateDebts(
     }
   }
 
+  // Hide shared parking info on entries where parkingShare is 0
+  // (e.g. person in both trips already gets charged on the other trip)
+  for (const entry of debtMap.values()) {
+    for (const b of entry.breakdown) {
+      if (b.sharedParking && b.parkingShare === 0) {
+        b.sharedParking = null;
+      }
+    }
+  }
+
   // Fetch all payments within the date range and subtract from debt
   const payments = await prisma.payment.findMany({
     where: {

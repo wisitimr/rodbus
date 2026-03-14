@@ -77,17 +77,48 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // Update linked trips to include the new trip ID (bidirectional linking)
+  // Update linked trips to include the new trip ID (bidirectional + transitive linking)
+  // Collect the full group: all trips reachable through existing links
   if (linkedIds.length > 0) {
+    const allGroupIds = new Set<string>(linkedIds);
     const linkedTrips = await prisma.trip.findMany({
       where: { id: { in: linkedIds } },
       select: { id: true, sharedParkingTripIds: true },
     });
+    // Gather all transitively linked trip IDs
     for (const lt of linkedTrips) {
-      const updatedIds = Array.from(new Set([...lt.sharedParkingTripIds, trip.id, ...linkedIds.filter(id => id !== lt.id)]));
+      for (const id of lt.sharedParkingTripIds) {
+        allGroupIds.add(id);
+      }
+    }
+    allGroupIds.add(trip.id);
+
+    // Fetch any additional trips discovered through transitive links
+    const extraIds = Array.from(allGroupIds).filter((id) => id !== trip.id && !linkedIds.includes(id));
+    const extraTrips = extraIds.length > 0
+      ? await prisma.trip.findMany({
+          where: { id: { in: extraIds } },
+          select: { id: true, sharedParkingTripIds: true },
+        })
+      : [];
+
+    const allLinkedTrips = [...linkedTrips, ...extraTrips];
+
+    // Update every trip in the group to know about all other members
+    for (const lt of allLinkedTrips) {
+      const updatedIds = Array.from(allGroupIds).filter((id) => id !== lt.id);
       await prisma.trip.update({
         where: { id: lt.id },
         data: { sharedParkingTripIds: updatedIds },
+      });
+    }
+
+    // Update the newly created trip to include all group members
+    const newTripLinks = Array.from(allGroupIds).filter((id) => id !== trip.id);
+    if (newTripLinks.length > linkedIds.length) {
+      await prisma.trip.update({
+        where: { id: trip.id },
+        data: { sharedParkingTripIds: newTripLinks },
       });
     }
   }
