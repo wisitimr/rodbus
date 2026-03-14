@@ -238,6 +238,7 @@ export default async function HistoryPage() {
           cancel: t.cancel,
           editTrip: t.editTrip,
           edit: t.edit,
+          editing: t.editing,
           confirmDeleteTrip: t.confirmDeleteTrip,
           gasCost: t.gasCost,
           parkingCost: t.parkingCost,

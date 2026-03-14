@@ -123,6 +123,7 @@ interface HistoryContentProps {
     cancel?: string;
     editTrip?: string;
     edit?: string;
+    editing?: string;
     confirmDeleteTrip?: string;
     gasCost?: string;
     parkingCost?: string;
