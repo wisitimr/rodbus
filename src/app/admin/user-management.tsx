@@ -166,7 +166,7 @@ export default function UserManagement({ users, currentUserId }: UserManagementP
                         onClick={() => handleRoleChange(user.id, "ADMIN" as Role)}
                         className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent ${user.role === "ADMIN" ? "text-primary" : "text-foreground"}`}
                       >
-                        ADMIN
+                        {t.admin.toUpperCase()}
                       </button>
                     </div>
                   )}

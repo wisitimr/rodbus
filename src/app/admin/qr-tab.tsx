@@ -12,7 +12,7 @@ interface QRTabProps {
 export default function QRTab({ cars }: QRTabProps) {
   const { t } = useT();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(cars[0]?.id ?? null);
 
   const baseUrl =
     typeof window !== "undefined" ? window.location.origin : "";
