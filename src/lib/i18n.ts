@@ -158,6 +158,7 @@ const translations = {
     // Tap Confirm
     confirmCheckIn: "Confirm Check-In",
     confirmCheckInDesc: "You are about to check in for:",
+    selectTrip: "Select a trip",
     confirm: "Confirm",
 
     // Tap Success
@@ -351,6 +352,7 @@ const translations = {
     // Tap Confirm
     confirmCheckIn: "ยืนยันการเช็คอิน",
     confirmCheckInDesc: "คุณกำลังจะเช็คอินสำหรับ:",
+    selectTrip: "เลือกเที่ยว",
     confirm: "ยืนยัน",
 
     // Tap Success

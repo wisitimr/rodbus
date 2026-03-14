@@ -11,7 +11,9 @@ type ValidateError =
   | { error: "already_recorded"; car: string }
   | { error: "no_open_trip"; car: string };
 
-type ValidateSuccess = { ok: true; tripId: string; car: string; today: Date };
+type AvailableTrip = { id: string; tripNumber: number; checkInCount: number; gasCost: number; parkingCost: number };
+
+type ValidateSuccess = { ok: true; trips: AvailableTrip[]; car: string; today: Date };
 
 async function validateTap(
   user: { id: string; role: string },
@@ -37,20 +39,34 @@ async function validateTap(
   const todaysTrips = await prisma.trip.findMany({
     where: { carId, date: today },
     orderBy: { createdAt: "asc" },
-    include: { checkIns: { where: { userId: user.id } } },
+    include: {
+      checkIns: true,
+    },
   });
 
-  for (const trip of todaysTrips) {
-    if (trip.checkIns.length === 0) {
-      return { ok: true, tripId: trip.id, car: car.name, today };
+  const availableTrips: AvailableTrip[] = [];
+  for (let i = 0; i < todaysTrips.length; i++) {
+    const trip = todaysTrips[i];
+    const alreadyCheckedIn = trip.checkIns.some((ci) => ci.userId === user.id);
+    if (!alreadyCheckedIn) {
+      availableTrips.push({
+        id: trip.id,
+        tripNumber: i + 1,
+        checkInCount: trip.checkIns.length,
+        gasCost: trip.gasCost,
+        parkingCost: trip.parkingCost,
+      });
     }
   }
 
-  // All trips already checked in or no trips exist
-  if (todaysTrips.length === 0) {
-    return { error: "no_open_trip", car: car.name };
+  if (availableTrips.length === 0) {
+    if (todaysTrips.length === 0) {
+      return { error: "no_open_trip", car: car.name };
+    }
+    return { error: "already_recorded", car: car.name };
   }
-  return { error: "already_recorded", car: car.name };
+
+  return { ok: true, trips: availableTrips, car: car.name, today };
 }
 
 export async function GET(request: NextRequest) {
@@ -84,7 +100,7 @@ export async function GET(request: NextRequest) {
   const confirmUrl = new URL("/tap-confirm", request.url);
   confirmUrl.searchParams.set("carId", carId);
   confirmUrl.searchParams.set("car", result.car);
-  confirmUrl.searchParams.set("tripId", result.tripId);
+  confirmUrl.searchParams.set("trips", JSON.stringify(result.trips));
   return NextResponse.redirect(confirmUrl);
 }
 
@@ -112,8 +128,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error, car: "car" in result ? result.car : undefined }, { status: 400 });
   }
 
-  // Use the tripId from validation (most accurate) or from request body
-  const finalTripId = result.tripId || tripId;
+  // Use tripId from request body; verify it's still available
+  const finalTripId = tripId && result.trips.some((t) => t.id === tripId)
+    ? tripId
+    : result.trips[0]?.id;
+
+  if (!finalTripId) {
+    return NextResponse.json({ error: "no_open_trip", car: result.car }, { status: 400 });
+  }
 
   await prisma.checkIn.create({
     data: {
