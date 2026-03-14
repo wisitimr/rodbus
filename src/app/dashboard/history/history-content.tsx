@@ -1153,7 +1153,7 @@ export default function HistoryContent({
                         >
                           {/* Action buttons behind the card */}
                           {trip.isOwner && (
-                            <div className="absolute inset-y-0 right-0 flex items-center gap-3 pr-3">
+                            <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-evenly">
                               <button
                                 onClick={() => handleTripEditStart(trip)}
                                 className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
