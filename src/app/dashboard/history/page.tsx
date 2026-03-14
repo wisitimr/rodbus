@@ -101,9 +101,11 @@ export default async function HistoryPage() {
       parkingCost: b.parkingCost,
       totalCost: b.totalCost,
       headcount: b.headcount,
+      parkingHeadcount: b.parkingHeadcount,
       tripNumber: b.tripNumber,
       passengerNames: b.passengerNames,
       driverName: b.driverName,
+      sharedParkingTripIds: b.sharedParkingTripIds,
       time: b.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
         hour: "2-digit",
         minute: "2-digit",

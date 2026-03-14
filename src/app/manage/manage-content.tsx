@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp, Link2, Check, Loader2 } from "lucide-react";
 import { markAsSettled } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
@@ -21,9 +21,11 @@ interface BreakdownItem {
   parkingCost: number;
   totalCost: number;
   headcount: number;
+  parkingHeadcount: number;
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
+  sharedParkingTripIds: string[];
 }
 
 interface DebtEntry {
@@ -35,14 +37,27 @@ interface DebtEntry {
   breakdown: BreakdownItem[];
 }
 
+interface RecentTrip {
+  id: string;
+  carName: string;
+  licensePlate: string | null;
+  date: string;
+  gasCost: number;
+  parkingCost: number;
+  headcount: number;
+}
+
 interface ManageContentProps {
   cars: { id: string; name: string; licensePlate: string | null; defaultGasCost: number }[];
   debts: DebtEntry[];
   carId: string;
   locale: string;
+  recentTrips: RecentTrip[];
 }
 
-export default function ManageContent({ cars, debts, carId, locale }: ManageContentProps) {
+const VISIBLE_TRIPS = 2;
+
+export default function ManageContent({ cars, debts, carId, locale, recentTrips }: ManageContentProps) {
   const { t } = useT();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("newTrip");
@@ -53,6 +68,16 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
   const [gasCost, setGasCost] = useState(() => car?.defaultGasCost ? car.defaultGasCost.toString() : "");
   const [parkingCost, setParkingCost] = useState("0");
   const [formStatus, setFormStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [selectedTripIds, setSelectedTripIds] = useState<string[]>(
+    recentTrips.length > 0 ? [recentTrips[0].id] : []
+  );
+  const [tripsExpanded, setTripsExpanded] = useState(false);
+
+  const toggleTripSelection = (tripId: string) => {
+    setSelectedTripIds((prev) =>
+      prev.includes(tripId) ? prev.filter((id) => id !== tripId) : [...prev, tripId]
+    );
+  };
 
   async function handleCreateTrip(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +93,7 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
           date: today,
           gasCost: parseFloat(gasCost) || 0,
           parkingCost: parseFloat(parkingCost) || 0,
+          sharedParkingTripIds: (parseFloat(parkingCost) || 0) > 0 ? selectedTripIds : [],
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -234,10 +260,73 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                 </div>
               </div>
 
+              {/* Share Parking with Previous Trips */}
+              {(parseFloat(parkingCost) || 0) > 0 && recentTrips.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Link2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t.shareParkingWithTrips}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 rounded-xl border border-border bg-accent/30 p-2.5">
+                    {(tripsExpanded ? recentTrips : recentTrips.slice(0, VISIBLE_TRIPS)).map((trip) => {
+                      const isSelected = selectedTripIds.includes(trip.id);
+                      return (
+                        <button
+                          key={trip.id}
+                          type="button"
+                          onClick={() => toggleTripSelection(trip.id)}
+                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                            isSelected
+                              ? "bg-primary/10 text-foreground"
+                              : "text-muted-foreground hover:bg-accent"
+                          }`}
+                        >
+                          <div
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-input bg-background"
+                            }`}
+                          >
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium text-foreground truncate">{trip.carName}</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {trip.date}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {trip.headcount} {t.people} · {t.gas} ฿{trip.gasCost.toFixed(2)}
+                              {trip.parkingCost > 0 && ` · ${t.parking} ฿${trip.parkingCost.toFixed(2)}`}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                    {recentTrips.length > VISIBLE_TRIPS && (
+                      <button
+                        type="button"
+                        onClick={() => setTripsExpanded(!tripsExpanded)}
+                        className="flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {tripsExpanded ? t.showLessTrips : `+${recentTrips.length - VISIBLE_TRIPS} ${t.moreTrips}`}
+                        <ChevronDown className={`h-3 w-3 transition-transform ${tripsExpanded ? "rotate-180" : ""}`} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Total */}
               {totalCost > 0 && (
                 <div className="rounded-lg bg-accent/50 p-2 text-xs text-muted-foreground">
-                  Total: <strong className="text-foreground">฿{totalCost.toFixed(2)}</strong>
+                  {t.total}: <strong className="text-foreground">฿{totalCost.toFixed(2)}</strong>
                 </div>
               )}
 
@@ -247,8 +336,15 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                 disabled={formStatus === "saving"}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
               >
-                <Plus className="h-4 w-4" />
-                Create{formStatus === "saving" && "..."}
+                {formStatus === "saving" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> {t.creating}
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" /> {t.create}
+                  </>
+                )}
               </button>
               {formStatus === "error" && (
                 <p className="text-sm font-medium text-debt">{t.failedToSave}</p>
@@ -328,9 +424,11 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                                 parkingCost: b.parkingCost,
                                 totalCost: b.totalCost,
                                 headcount: b.headcount,
+                                parkingHeadcount: b.parkingHeadcount,
                                 tripNumber: b.tripNumber,
                                 passengerNames: b.passengerNames,
                                 driverName: b.driverName,
+                                sharedParkingTripIds: b.sharedParkingTripIds,
                               }}
                               isExpanded={isEntryExpanded}
                               onToggle={() => setExpandedEntries((prev) => toggleSet(prev, entryKey))}
@@ -343,6 +441,7 @@ export default function ManageContent({ cars, debts, carId, locale }: ManageCont
                                 parking: t.parking,
                                 total: t.total,
                                 driver: t.driver,
+                                sharedParking: t.sharedParking,
                               }}
                             />
                           );

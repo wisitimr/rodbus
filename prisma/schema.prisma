@@ -59,16 +59,17 @@ model CheckIn {
 }
 
 model Trip {
-  id          String    @id @default(cuid())
-  carId       String
-  date        DateTime  @db.Date
-  gasCost     Float     @default(0)
-  parkingCost Float     @default(0)
-  label       String?
-  car         Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
-  checkIns    CheckIn[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  carId                 String
+  date                  DateTime  @db.Date
+  gasCost               Float     @default(0)
+  parkingCost           Float     @default(0)
+  label                 String?
+  sharedParkingTripIds  String[]  @default([])
+  car                   Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  checkIns              CheckIn[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([carId, date])
   @@map("Trip")

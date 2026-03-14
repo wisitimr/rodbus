@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { carId, date, gasCost, parkingCost, label } = body;
+  const { carId, date, gasCost, parkingCost, label, sharedParkingTripIds } = body;
 
   if (!carId || !date) {
     return NextResponse.json({ error: "carId and date are required" }, { status: 400 });
@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
   const parsedDate = new Date(date);
   parsedDate.setHours(0, 0, 0, 0);
 
+  const linkedIds: string[] = Array.isArray(sharedParkingTripIds) ? sharedParkingTripIds : [];
+
   const trip = await prisma.trip.create({
     data: {
       carId,
@@ -71,8 +73,24 @@ export async function POST(request: NextRequest) {
       gasCost: gasCost ?? 0,
       parkingCost: parkingCost ?? 0,
       label: label || null,
+      sharedParkingTripIds: linkedIds,
     },
   });
+
+  // Update linked trips to include the new trip ID (bidirectional linking)
+  if (linkedIds.length > 0) {
+    const linkedTrips = await prisma.trip.findMany({
+      where: { id: { in: linkedIds } },
+      select: { id: true, sharedParkingTripIds: true },
+    });
+    for (const lt of linkedTrips) {
+      const updatedIds = Array.from(new Set([...lt.sharedParkingTripIds, trip.id, ...linkedIds.filter(id => id !== lt.id)]));
+      await prisma.trip.update({
+        where: { id: lt.id },
+        data: { sharedParkingTripIds: updatedIds },
+      });
+    }
+  }
 
   return NextResponse.json(trip);
 }

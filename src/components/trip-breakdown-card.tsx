@@ -13,10 +13,12 @@ export interface BreakdownCardEntry {
   parkingCost: number;
   totalCost: number;
   headcount: number;
+  parkingHeadcount?: number;
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
   time?: string;
+  sharedParkingTripIds?: string[];
 }
 
 interface TripBreakdownCardProps {
@@ -33,6 +35,7 @@ interface TripBreakdownCardProps {
     parking: string;
     total: string;
     driver?: string;
+    sharedParking?: string;
   };
 }
 
@@ -128,9 +131,14 @@ export default function TripBreakdownCard({
             {entry.parkingShare > 0 && (
               <div className="flex items-center gap-2 text-sm">
                 <ParkingCircle className="h-4 w-4 text-primary" />
-                <span className="text-muted-foreground">{t.parking}</span>
+                <span className="text-muted-foreground">
+                  {t.parking}
+                  {(entry.sharedParkingTripIds?.length ?? 0) > 0 && entry.parkingHeadcount && entry.parkingHeadcount !== entry.headcount && (
+                    <span className="ml-1 text-xs text-primary">({t.sharedParking ?? "Shared"})</span>
+                  )}
+                </span>
                 <span className="ml-auto font-mono text-foreground">
-                  &#3647;{entry.parkingCost.toFixed(2)} / {entry.headcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
+                  &#3647;{entry.parkingCost.toFixed(2)} / {entry.parkingHeadcount ?? entry.headcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
                 </span>
               </div>
             )}
@@ -141,7 +149,7 @@ export default function TripBreakdownCard({
             <div className="flex items-center justify-between text-sm font-bold">
               <span className="text-foreground">{t.total}</span>
               <span className="font-mono text-foreground">
-                &#3647;{entry.totalCost.toFixed(2)} / {entry.headcount} = &#3647;{entry.share.toFixed(2)}
+                &#3647;{entry.share.toFixed(2)}
               </span>
             </div>
           </div>

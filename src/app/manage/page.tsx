@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { Role } from "@prisma/client";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations, formatDateShort } from "@/lib/i18n";
+import { detectLocale, getTranslations, formatDateShort, formatDateMedium } from "@/lib/i18n";
 import { ClipboardList } from "lucide-react";
 import ManageContent from "./manage-content";
 import BottomNav from "@/app/dashboard/bottom-nav";
@@ -24,13 +24,25 @@ export default async function ManagePage() {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
-  const [allCars, debts] = await Promise.all([
+  const [allCars, debts, recentTripsRaw] = await Promise.all([
     prisma.car.findMany({
       where: { ownerId: userId },
       select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
       orderBy: { name: "asc" },
     }),
     calculateDebts(startOfMonth, endOfMonth),
+    prisma.trip.findMany({
+      where: {
+        car: { ownerId: userId },
+        date: { gte: startOfMonth, lte: endOfMonth },
+      },
+      include: {
+        car: { select: { name: true, licensePlate: true } },
+        checkIns: { select: { id: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
   ]);
 
   const carIds = allCars.map((c) => c.id);
@@ -58,13 +70,25 @@ export default async function ManagePage() {
           parkingCost: b.parkingCost,
           totalCost: b.totalCost,
           headcount: b.headcount,
+          parkingHeadcount: b.parkingHeadcount,
           tripNumber: b.tripNumber,
           passengerNames: b.passengerNames,
           driverName: b.driverName,
+          sharedParkingTripIds: b.sharedParkingTripIds,
         })),
       };
     })
     .filter((d) => d.breakdown.length > 0);
+
+  const recentTripsForSharing = recentTripsRaw.map((trip) => ({
+    id: trip.id,
+    carName: trip.car.name,
+    licensePlate: trip.car.licensePlate,
+    date: formatDateMedium(trip.date, locale),
+    gasCost: trip.gasCost,
+    parkingCost: trip.parkingCost,
+    headcount: trip.checkIns.length + 1,
+  }));
 
   return (
     <div className="min-h-screen pb-24">
@@ -93,6 +117,7 @@ export default async function ManagePage() {
         debts={serializedDebts}
         carId={ownedCarId}
         locale={locale}
+        recentTrips={recentTripsForSharing}
       />
       </main>
 

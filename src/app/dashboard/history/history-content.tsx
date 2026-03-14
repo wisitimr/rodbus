@@ -45,10 +45,12 @@ interface BreakdownEntry {
   parkingCost: number;
   totalCost: number;
   headcount: number;
+  parkingHeadcount?: number;
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
   time?: string;
+  sharedParkingTripIds?: string[];
 }
 
 interface DebtWithBreakdown {
