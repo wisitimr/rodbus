@@ -1,35 +1,31 @@
 export default function DashboardLoading() {
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
-      <header className="mb-6 sm:mb-8">
-        <div className="flex items-start justify-between gap-3">
+    <div className="min-h-screen pb-24">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-lg items-center gap-2 px-4 py-3">
+          <div className="h-9 w-9 animate-pulse rounded-xl bg-muted" />
           <div>
-            <div className="h-6 w-28 animate-pulse rounded-lg bg-gray-200 sm:h-7 sm:w-36" />
-            <div className="mt-2 h-4 w-40 animate-pulse rounded bg-gray-100 sm:w-52" />
-          </div>
-          <div className="flex gap-2">
-            <div className="h-9 w-16 animate-pulse rounded-xl bg-gray-200 sm:w-20" />
+            <div className="h-5 w-28 animate-pulse rounded-lg bg-muted" />
+            <div className="mt-1 h-3 w-40 animate-pulse rounded bg-muted/60" />
           </div>
         </div>
       </header>
 
-      <div className="space-y-4 sm:space-y-6">
+      <main className="mx-auto max-w-lg space-y-4 p-4">
         {[1, 2, 3].map((i) => (
-          <section
+          <div
             key={i}
-            className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100"
+            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
           >
-            <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
-              <div className="h-3 w-24 animate-pulse rounded bg-gray-200 sm:h-3.5 sm:w-32" />
+            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+            <div className="mt-3 space-y-2">
+              <div className="h-4 w-full animate-pulse rounded bg-muted/60" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-muted/60" />
+              <div className="h-4 w-1/2 animate-pulse rounded bg-muted/40" />
             </div>
-            <div className="space-y-3 px-5 py-4 sm:px-6 sm:py-5">
-              <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
-              <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100" />
-              <div className="h-4 w-1/2 animate-pulse rounded bg-gray-50" />
-            </div>
-          </section>
+          </div>
         ))}
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

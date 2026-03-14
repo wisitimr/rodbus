@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { updateCheckInDate, deleteCheckIn } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 
@@ -161,18 +162,18 @@ function Calendar({
   return (
     <div className="w-full">
       <div className="mb-2 flex items-center justify-between">
-        <button type="button" onClick={prevMonth} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
+        <button type="button" onClick={prevMonth} className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
         </button>
-        <span className="text-sm font-semibold text-gray-700">
+        <span className="text-sm font-semibold text-foreground">
           {viewDate.toLocaleDateString(locale === "th" ? "th-TH-u-ca-buddhist" : "en-US", { month: "long", year: "numeric" })}
         </span>
-        <button type="button" onClick={nextMonth} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
+        <button type="button" onClick={nextMonth} className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
         </button>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-xs font-medium text-gray-400">
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground">
         {dayNames.map((d) => (
           <div key={d} className="py-1">{d}</div>
         ))}
@@ -194,10 +195,10 @@ function Calendar({
               onClick={() => onSelect(iso)}
               className={`py-1.5 text-sm transition ${
                 isEndpoint
-                  ? "rounded-lg bg-blue-600 font-semibold text-white"
+                  ? "rounded-lg bg-primary font-semibold text-primary-foreground"
                   : inRange
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-100 rounded-lg"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground hover:bg-accent rounded-lg"
               }`}
             >
               {day}
@@ -351,38 +352,34 @@ function SummaryCard({
   }, [isExpanded, group.key, dayBreakdownMap]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       {/* Card header */}
       <button
         type="button"
         onClick={onToggle}
-        className="w-full px-4 py-4 text-left"
+        className="flex w-full items-center justify-between text-left"
       >
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-gray-900">{group.label}</h3>
-          <svg
-            className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
+        <div className="flex-1">
+          <p className="font-semibold text-foreground">{group.label}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Grand Total: <span className="font-bold text-foreground">฿{grandTotal.toFixed(2)}</span>
+          </p>
+          <div className="mt-0.5 flex items-center gap-3 text-xs">
+            <span className="text-debt">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
+            <span className="text-settled">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
+            <span className="ml-auto text-muted-foreground">Total: <span className="font-bold text-foreground">฿{totalDebt.toFixed(2)}</span></span>
+          </div>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
-          Grand Total: <span className="font-bold text-gray-900">฿{grandTotal.toFixed(2)}</span>
-        </p>
-        <div className="mt-1 flex items-center gap-3 text-sm">
-          <span className="text-red-500">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
-          <span className="text-green-600">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
-          <span className="ml-auto text-gray-700">Total: <span className="font-bold">฿{totalDebt.toFixed(2)}</span></span>
-        </div>
+        {isExpanded ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
       </button>
 
       {/* Expanded: individual entry cards */}
       {isExpanded && allEntries.length > 0 && (
-        <div className="space-y-2 border-t border-gray-100 px-4 py-3">
+        <div className="mt-3 space-y-2 animate-fade-in">
           {allEntries.map((entry, i) => {
             const entryKey = `${group.key}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
             const entrySettled = settledDays.has(entry.date);
@@ -430,14 +427,14 @@ function DateFilterBar({
   locale: string;
 }) {
   return (
-    <div className="border-b border-gray-100 px-5 py-3 sm:px-6 sm:py-4">
+    <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex items-center gap-2">
         <button
           onClick={onToggle}
           className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
             hasFilter
-              ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-primary/10 text-primary ring-1 ring-primary/20"
+              : "bg-muted text-muted-foreground hover:bg-accent"
           }`}
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -446,14 +443,14 @@ function DateFilterBar({
           {dateLabel}
         </button>
         {hasFilter && (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             {fmtDate(dateFrom, locale)}{dateTo && dateTo !== dateFrom ? ` — ${fmtDate(dateTo, locale)}` : ""}
           </span>
         )}
         {hasFilter && (
           <button
             onClick={onClear}
-            className="rounded-lg px-2 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-600"
+            className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             &times;
           </button>
@@ -464,7 +461,7 @@ function DateFilterBar({
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Start</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Start</label>
               <div className="relative">
                 <input
                   type="date"
@@ -472,13 +469,13 @@ function DateFilterBar({
                   onChange={(e) => onFromChange(e.target.value)}
                   className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
                 />
-                <div className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700">
+                <div className="w-full rounded-lg border border-input bg-card px-3 py-1.5 text-sm text-foreground">
                   {dateFrom ? fmtDate(dateFrom, locale) : "\u00A0"}
                 </div>
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">End</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">End</label>
               <div className="relative">
                 <input
                   type="date"
@@ -487,7 +484,7 @@ function DateFilterBar({
                   onChange={(e) => onToChange(e.target.value)}
                   className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
                 />
-                <div className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700">
+                <div className="w-full rounded-lg border border-input bg-card px-3 py-1.5 text-sm text-foreground">
                   {dateTo ? fmtDate(dateTo, locale) : "\u00A0"}
                 </div>
               </div>
@@ -841,45 +838,33 @@ export default function HistoryContent({
     {
       key: "trips",
       label: t.trips,
-      icon: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-        </svg>
-      ),
+      icon: <Bus className="h-4 w-4" />,
     },
     {
       key: "payments",
       label: t.payments,
-      icon: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-        </svg>
-      ),
+      icon: <CreditCard className="h-4 w-4" />,
     },
     {
       key: "summary",
       label: t.summary,
-      icon: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-        </svg>
-      ),
+      icon: <BarChart3 className="h-4 w-4" />,
     },
   ];
 
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-3">
       {/* Tab bar */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-border">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 pb-2.5 pt-1 text-sm font-medium transition-colors ${
               activeTab === tab.key
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-400 hover:text-gray-600"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab.icon}
@@ -890,139 +875,114 @@ export default function HistoryContent({
 
       {/* Trips tab */}
       {activeTab === "trips" && (
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {filteredTrips.length === 0 ? (
-              <p className="text-sm text-gray-400">{t.noCheckInHistory}</p>
-            ) : (
-              <>
-                <div className="space-y-6">
-                  {visibleGroupedTrips.map((group) => (
-                    <div key={group.dateISO}>
-                      {/* Date header */}
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{group.dateLabel}</span>
-                        <span className="text-xs text-gray-300">&middot; {group.trips.length} {group.trips.length === 1 ? t.trip : t.trips}</span>
-                        <div className="h-px flex-1 bg-gray-100" />
-                      </div>
+        <div className="space-y-4">
+          {filteredTrips.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t.noCheckInHistory}</p>
+          ) : (
+            <>
+              {visibleGroupedTrips.map((group) => (
+                <div key={group.dateISO}>
+                  {/* Date header */}
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {group.dateLabel}
+                  </h3>
 
-                      {/* Trip cards */}
-                      <div className="space-y-2">
-                        {group.trips.map((trip) => {
-                          const totalCost = trip.gasCost + trip.parkingCost;
-                          return (
-                            <div
-                              key={trip.id}
-                              className="group flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 transition hover:border-gray-200 hover:shadow-sm"
-                            >
-                              {/* Bus icon */}
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                                <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                                </svg>
-                              </div>
-
-                              {/* Trip info */}
-                              <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-gray-800">
-                                  {trip.carName}
-                                  {trip.licensePlate && <span className="ml-1 font-normal text-gray-400">({trip.licensePlate})</span>}
-                                </p>
-                                <p className="mt-0.5 text-xs text-gray-400">
-                                  {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(0)}
-                                </p>
-                              </div>
-
-                              {/* Time & trip number */}
-                              <div className="shrink-0 text-right">
-                                <div className="flex items-center gap-1 text-xs text-gray-400">
-                                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  {trip.time}
-                                </div>
-                                <p className="mt-0.5 text-xs font-medium text-blue-600">
-                                  {t.tripNumber} #{trip.tripNumber}
-                                </p>
-                              </div>
-
+                  {/* Trip cards */}
+                  <div className="space-y-2">
+                    {group.trips.map((trip) => {
+                      const totalCost = trip.gasCost + trip.parkingCost;
+                      return (
+                        <div
+                          key={trip.id}
+                          className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 animate-fade-in"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                            <Bus className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-foreground">
+                              {trip.carName}
+                              {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(0)}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {trip.time}
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {tripScroll.hasMore && (
-                  <div ref={tripScroll.sentinelRef} className="py-4 text-center text-sm text-gray-400">
-                    Loading...
+                            <p className="text-xs font-medium text-primary">
+                              {t.tripNumber} #{trip.tripNumber}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
+                </div>
+              ))}
+
+              {tripScroll.hasMore && (
+                <div ref={tripScroll.sentinelRef} className="py-4 text-center text-sm text-muted-foreground">
+                  Loading...
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* Payments tab */}
       {activeTab === "payments" && (
-        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-          <div className="px-5 py-4 sm:px-6 sm:py-5">
-            {filteredPayments.length === 0 ? (
-              <p className="text-sm text-gray-400">{t.noPayments}</p>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  {paymentScroll.visible.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 transition hover:border-gray-200 hover:shadow-sm"
-                    >
-                      {/* Payment icon */}
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-500">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                        </svg>
-                      </div>
-
-                      {/* Payment info */}
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-800">
-                          {p.userName}
-                          {isAdmin && p.userId === currentUserId && <span className="font-normal text-gray-400"> ({t.you})</span>}
-                        </p>
-                        <p className="mt-0.5 text-xs text-gray-400">
-                          {p.carName} &middot; {t.paid} {p.paidAt}
-                        </p>
-                      </div>
-
-                      {/* Amount */}
-                      <span className="shrink-0 text-sm font-semibold text-green-600">
+        <div className="space-y-2">
+          {filteredPayments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t.noPayments}</p>
+          ) : (
+            <>
+              {paymentScroll.visible.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-3 animate-fade-in"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-settled/10">
+                    <CreditCard className="h-4 w-4 text-settled" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {p.userName}
+                        {isAdmin && p.userId === currentUserId && <span className="font-normal text-muted-foreground"> ({t.you})</span>}
+                      </p>
+                      <span className="shrink-0 text-sm font-bold text-settled">
                         ฿{p.amount.toFixed(2)}
                       </span>
                     </div>
-                  ))}
-                </div>
-
-                {paymentScroll.hasMore && (
-                  <div ref={paymentScroll.sentinelRef} className="py-4 text-center text-sm text-gray-400">
-                    Loading...
+                    <p className="text-[11px] text-muted-foreground">
+                      {p.carName} &middot; {t.paid} {p.paidAt}
+                    </p>
                   </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
+                </div>
+              ))}
+
+              {paymentScroll.hasMore && (
+                <div ref={paymentScroll.sentinelRef} className="py-4 text-center text-sm text-muted-foreground">
+                  Loading...
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* Summary tab */}
       {activeTab === "summary" && (
-        <section>
+        <div>
           {summaryGroups.length === 0 ? (
-            <p className="text-sm text-gray-400">{t.noData}</p>
+            <p className="text-sm text-muted-foreground">{t.noData}</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {summaryScroll.visible.map((group) => (
                 <SummaryCard
                   key={group.key}
@@ -1039,13 +999,13 @@ export default function HistoryContent({
                 />
               ))}
               {summaryScroll.hasMore && (
-                <div ref={summaryScroll.sentinelRef} className="py-4 text-center text-sm text-gray-400">
+                <div ref={summaryScroll.sentinelRef} className="py-4 text-center text-sm text-muted-foreground">
                   Loading...
                 </div>
               )}
             </div>
           )}
-        </section>
+        </div>
       )}
     </div>
   );

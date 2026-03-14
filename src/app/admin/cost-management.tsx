@@ -39,14 +39,14 @@ export default function CostManagement({ cars }: CostManagementProps) {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none sm:py-2.5";
+    "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {cars.length > 1 && (
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t.car}
             </label>
             <select
@@ -63,7 +63,7 @@ export default function CostManagement({ cars }: CostManagementProps) {
           </div>
         )}
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t.defaultGasCost}
           </label>
           <input
@@ -81,13 +81,13 @@ export default function CostManagement({ cars }: CostManagementProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2.5"
+        className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 sm:w-auto"
       >
         {status === "saved" ? t.saved : t.saveCosts}{loading && "..."}
       </button>
 
       {status === "error" && (
-        <p className="text-sm font-medium text-red-600">{t.failedToSave}</p>
+        <p className="text-sm font-medium text-debt">{t.failedToSave}</p>
       )}
     </form>
   );

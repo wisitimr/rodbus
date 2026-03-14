@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import { CheckCircle2, AlertTriangle, XCircle, ShieldOff, AlertCircle } from "lucide-react";
 import { useT } from "@/lib/i18n-context";
 
 function TapResult() {
@@ -14,100 +15,79 @@ function TapResult() {
 
   const messages: Record<
     string,
-    { title: string; description: string; color: string; icon: React.ReactNode }
+    { title: string; description: string; icon: React.ReactNode; iconBg: string; iconBorder: string; titleColor: string }
   > = {
     recorded: {
       title: t.checkedIn,
       description: `${t.checkInRecorded} ${car ?? "the car"} ${t.checkInRecordedSuffix}`,
-      color: "green",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: <CheckCircle2 className="h-14 w-14 text-settled" />,
+      iconBg: "bg-settled/10",
+      iconBorder: "border-settled/30",
+      titleColor: "text-settled",
     },
     already_recorded: {
       title: t.alreadyRecorded,
       description: `${car ?? "the car"} ${t.alreadyRecordedDesc}`,
-      color: "blue",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: <AlertTriangle className="h-14 w-14 text-warning" />,
+      iconBg: "bg-warning/10",
+      iconBorder: "border-warning/30",
+      titleColor: "text-warning",
     },
     no_open_trip: {
       title: t.noOpenTrip,
       description: t.noOpenTripDesc,
-      color: "amber",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
-      ),
+      icon: <XCircle className="h-14 w-14 text-muted-foreground" />,
+      iconBg: "bg-muted",
+      iconBorder: "border-border",
+      titleColor: "text-muted-foreground",
     },
     owner: {
       title: t.ownerCannotCheckIn,
       description: t.ownerCannotCheckInDesc,
-      color: "amber",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
-      ),
+      icon: <AlertTriangle className="h-14 w-14 text-primary" />,
+      iconBg: "bg-primary/10",
+      iconBorder: "border-primary/30",
+      titleColor: "text-primary",
     },
     disabled: {
       title: t.systemDisabled,
       description: reason ?? t.systemDisabledDesc,
-      color: "red",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-        </svg>
-      ),
+      icon: <ShieldOff className="h-14 w-14 text-debt" />,
+      iconBg: "bg-debt/10",
+      iconBorder: "border-debt/30",
+      titleColor: "text-debt",
     },
   };
 
   const msg = messages[status ?? ""] ?? {
     title: t.tapReceived,
     description: t.tapProcessed,
-    color: "blue",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  };
-
-  const bgMap: Record<string, string> = {
-    green: "bg-green-50",
-    blue: "bg-blue-50",
-    amber: "bg-amber-50",
-    red: "bg-red-50",
+    icon: <AlertCircle className="h-14 w-14 text-primary" />,
+    iconBg: "bg-primary/10",
+    iconBorder: "border-primary/30",
+    titleColor: "text-primary",
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12 sm:px-6 sm:py-16">
-      <div className="animate-scale-in w-full max-w-sm overflow-hidden rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-100 sm:p-10">
-        <div
-          className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full ${bgMap[msg.color] ?? "bg-blue-50"}`}
-        >
+    <div className="flex min-h-screen flex-col items-center justify-center p-6 pb-24">
+      <div className="w-full max-w-sm animate-scale-in text-center">
+        <div className={`mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full ${msg.iconBg} border-2 ${msg.iconBorder}`}>
           {msg.icon}
         </div>
-        <h1 className="mt-5 text-2xl font-bold tracking-tight text-gray-900">
+        <h1 className={`text-2xl font-bold ${msg.titleColor}`}>
           {msg.title}
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-gray-500">
+        <p className="mt-2 text-muted-foreground">
           {msg.description}
         </p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md active:scale-[0.98] sm:w-auto sm:py-2.5"
+          className="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent active:scale-[0.98]"
         >
           {t.goToDashboard}
         </Link>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -115,9 +95,9 @@ export default function TapSuccessPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
-        </main>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+        </div>
       }
     >
       <TapResult />

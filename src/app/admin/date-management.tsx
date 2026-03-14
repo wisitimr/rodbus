@@ -46,14 +46,14 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm shadow-sm transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none sm:py-2.5";
+    "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <form onSubmit={handleDisable} className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t.date}
             </label>
             <div className="relative">
@@ -65,12 +65,12 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
                 required
               />
               <div className={inputClass}>
-                {date ? fmtDate(date, locale) : <span className="text-gray-400">{t.selectDate}</span>}
+                {date ? fmtDate(date, locale) : <span className="text-muted-foreground">{t.selectDate}</span>}
               </div>
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t.reason}
             </label>
             <input
@@ -85,7 +85,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
         <button
           type="submit"
           disabled={isAnyLoading || !date}
-          className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:py-2"
+          className="w-full rounded-xl bg-debt px-4 py-3 text-sm font-medium text-white transition hover:bg-debt/90 active:scale-[0.98] disabled:opacity-50 sm:w-auto"
         >
           {t.disableDate}{loadingAction === "disable" && "..."}
         </button>
@@ -93,19 +93,19 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
 
       {disabledDates.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold text-gray-600">
+          <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
             {t.disabledDatesUpcoming}
           </h3>
           <ul className="space-y-2">
             {disabledDates.map((d) => (
               <li
                 key={d.id}
-                className="flex items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-3"
+                className="flex items-center justify-between gap-3 rounded-xl bg-debt/5 border border-debt/20 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <span className="font-medium">{fmtDate(d.date, locale)}</span>
+                  <span className="font-medium text-foreground">{fmtDate(d.date, locale)}</span>
                   {d.reason && (
-                    <span className="ml-2 text-sm text-gray-500">
+                    <span className="ml-2 text-sm text-muted-foreground">
                       — {d.reason}
                     </span>
                   )}
@@ -113,7 +113,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
                 <button
                   onClick={() => handleEnable(d.date)}
                   disabled={isAnyLoading}
-                  className="shrink-0 rounded-lg border border-green-600 px-3 py-1.5 text-sm text-green-700 transition hover:bg-green-50 active:scale-[0.98] disabled:opacity-50"
+                  className="shrink-0 rounded-lg border border-settled px-3 py-1.5 text-sm text-settled transition hover:bg-settled/10 active:scale-[0.98] disabled:opacity-50"
                 >
                   {t.reEnable}{loadingAction === `enable-${d.date}` && "..."}
                 </button>
@@ -124,7 +124,7 @@ export default function DateManagement({ disabledDates }: DateManagementProps) {
       )}
 
       {disabledDates.length === 0 && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           {t.noDisabledDates}
         </p>
       )}

@@ -15,42 +15,51 @@ export default async function PendingApprovalPage() {
   const t = getTranslations(locale);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12 sm:px-6 sm:py-16">
-      <div className="animate-scale-in w-full max-w-md overflow-hidden rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-100 sm:p-10">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-50">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-10 w-10 text-amber-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
+    <div className="flex min-h-screen flex-col items-center justify-center p-6 pb-24">
+      <div className="w-full max-w-sm animate-scale-in text-center">
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-warning/10 border-2 border-warning/30">
+          <svg className="h-12 w-12 text-warning" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h1 className="mt-5 text-2xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-2xl font-bold text-foreground">
           {t.pendingApprovalTitle}
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-gray-500">
+        <p className="mt-3 text-muted-foreground">
           {t.pendingApprovalDesc}
         </p>
-        <div className="mt-6 rounded-xl bg-gray-50 px-4 py-3">
-          <p className="text-xs text-gray-400">{t.signedInAs}</p>
-          <p className="mt-0.5 text-sm font-medium text-gray-700">
+
+        <div className="mt-8 rounded-2xl border border-border bg-card p-4 text-left">
+          <h3 className="mb-3 text-sm font-semibold text-foreground">How it works:</h3>
+          <ol className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span>
+              <span>You&apos;ve signed up — that&apos;s done!</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning text-xs font-bold text-white">2</span>
+              <span>Wait for the driver/admin to approve your account</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">3</span>
+              <span>Once approved, tap NFC or scan QR to check in</span>
+            </li>
+          </ol>
+        </div>
+
+        <div className="mt-6 rounded-xl bg-muted px-4 py-3">
+          <p className="text-xs text-muted-foreground">{t.signedInAs}</p>
+          <p className="mt-0.5 text-sm font-medium text-foreground">
             {user.email}
           </p>
         </div>
+
         <SignOutButton>
-          <button className="mt-5 text-sm font-medium text-blue-600 transition hover:text-blue-700">
+          <button className="mt-5 text-sm font-medium text-primary transition hover:text-primary/80">
             {t.signOut}
           </button>
         </SignOutButton>
       </div>
-    </main>
+    </div>
   );
 }

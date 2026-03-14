@@ -120,23 +120,24 @@ export default async function HistoryPage() {
   }));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
-      <header className="animate-fade-in sticky top-0 z-40 -mx-4 mb-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-3 sm:-mx-6 sm:px-6">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-            <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <div className="min-h-screen pb-24">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-lg items-center gap-2 px-4 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+            <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-gray-900">
+            <h1 className="text-lg font-bold text-foreground">
               {t.history}
             </h1>
-            <p className="text-xs text-gray-500">{t.trips}, {t.payments} &amp; {t.summary}</p>
+            <p className="text-xs text-muted-foreground">{t.trips}, {t.payments} &amp; {t.summary}</p>
           </div>
         </div>
       </header>
 
+      <main className="mx-auto max-w-lg space-y-3 p-4">
       <HistoryContent
         checkIns={trips}
         allDebts={serializedDebts}
@@ -180,8 +181,9 @@ export default async function HistoryPage() {
           cancel: t.cancel,
         }}
       />
+      </main>
 
       <BottomNav isAdmin={isAdmin} />
-    </main>
+    </div>
   );
 }
