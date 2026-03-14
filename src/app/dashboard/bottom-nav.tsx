@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, ClipboardList, Clock, Settings } from "lucide-react";
 import { useT } from "@/lib/i18n-context";
@@ -53,7 +54,7 @@ export default function BottomNav({ isAdmin }: BottomNavProps) {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
-            <a
+            <Link
               key={tab.href + tab.label}
               href={tab.href}
               className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -67,7 +68,7 @@ export default function BottomNav({ isAdmin }: BottomNavProps) {
               {tab.active && (
                 <div className="mt-0.5 h-1 w-5 rounded-full bg-primary" />
               )}
-            </a>
+            </Link>
           );
         })}
       </div>
