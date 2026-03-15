@@ -62,7 +62,7 @@ export async function updateDefaultGasCost(carId: string, gasCost: number) {
 // ---------------------------------------------------------------------------
 
 /** Add a new car owned by the logged-in user */
-export async function addCar(name: string, licensePlate: string | null) {
+export async function addCar(name: string, licensePlate: string | null, defaultGasCost: number = 0) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
 
@@ -74,6 +74,7 @@ export async function addCar(name: string, licensePlate: string | null) {
     data: {
       name: name.trim(),
       licensePlate: licensePlate?.trim() || null,
+      defaultGasCost,
       ownerId: user.id,
     },
   });

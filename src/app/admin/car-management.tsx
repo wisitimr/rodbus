@@ -30,10 +30,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
 
     setLoadingAction("add");
     try {
-      await addCar(name, licensePlate || null);
-      const gasVal = parseFloat(defaultGas) || 0;
-      // After adding, we need to update gas cost if non-zero
-      // The car will be created with default 0, we'll update after
+      await addCar(name, licensePlate || null, parseFloat(defaultGas) || 0);
       setName("");
       setLicensePlate("");
       setDefaultGas("0");
