@@ -459,7 +459,10 @@ function SummaryCard({
                       {initial}
                     </div>
                     <span className="flex-1 truncate text-sm font-medium text-foreground">{e.userName ?? "—"}</span>
-                    <span className="shrink-0 text-sm font-bold text-foreground">฿{e.totalDebt.toFixed(2)}</span>
+                    <span className="flex shrink-0 items-center gap-1.5 text-sm font-bold">
+                      {e.totalPaid > 0 && <span className="text-settled">฿{e.totalPaid.toFixed(2)}</span>}
+                      {e.pendingDebt > 0 && <span className="text-debt">฿{e.pendingDebt.toFixed(2)}</span>}
+                    </span>
                     {isUserOpen ? (
                       <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
                     ) : (

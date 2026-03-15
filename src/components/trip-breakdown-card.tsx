@@ -122,9 +122,17 @@ export default function TripBreakdownCard({
             </span>
           </p>
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className={`font-bold ${isPending ? "text-debt" : "text-settled"} ${compact ? "text-base" : "text-lg"}`}>
-              &#3647;{entry.share.toFixed(2)}
-            </span>
+            {entry.paidAmount != null && entry.paidAmount > 0 && isPending ? (
+              <span className={`font-bold ${compact ? "text-base" : "text-lg"}`}>
+                <span className="text-settled">&#3647;{entry.paidAmount.toFixed(2)}</span>
+                {" "}
+                <span className="text-debt">&#3647;{entry.share.toFixed(2)}</span>
+              </span>
+            ) : (
+              <span className={`font-bold ${isPending ? "text-debt" : "text-settled"} ${compact ? "text-base" : "text-lg"}`}>
+                &#3647;{entry.share.toFixed(2)}
+              </span>
+            )}
             {isExpanded ? (
               <ChevronUp className={`text-muted-foreground ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
             ) : (
