@@ -503,7 +503,11 @@ function SummaryCard({
             /* Single user: show entries directly */
             allEntries.map((entry, i) => {
               const entryKey = `${group.key}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
-              const entrySettled = paidTripKeys.has(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
+              const tripKey = `${entry.carId}-${entry.date}-${entry.tripNumber}`;
+              // If only one user entry, use that user's paid keys; otherwise fall back to current user's
+              const singleUserId = group.entries.length === 1 ? group.entries[0].userId : null;
+              const userPaid = singleUserId ? perUserPaidKeys.get(singleUserId) : paidTripKeys;
+              const entrySettled = userPaid ? userPaid.has(tripKey) : false;
               return (
                 <SummaryEntryCard
                   key={entryKey}
