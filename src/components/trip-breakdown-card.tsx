@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Users, Fuel, ParkingCircle, Link2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Users, Fuel, ParkingCircle, Link2, CircleCheck, CircleAlert } from "lucide-react";
 
 export interface SharedParkingEntry {
   carName: string;
@@ -93,12 +93,13 @@ export default function TripBreakdownCard({
             {entry.date}{entry.time ? ` · ${entry.time}` : ""}
           </span>
           <span
-            className={`inline-flex items-center rounded-full px-1.5 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${
+            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold ${compact ? "text-[10px]" : "text-xs"} ${
               isPending
                 ? "bg-debt/10 text-debt"
                 : "bg-settled/10 text-settled"
             }`}
           >
+            {isPending ? <CircleAlert className="h-3 w-3" /> : <CircleCheck className="h-3 w-3" />}
             {isPending ? t.pending : (t.paid ?? "Paid")}
           </span>
           {hasSharedParking && (
