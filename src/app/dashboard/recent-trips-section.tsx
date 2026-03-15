@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Bus, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert } from "lucide-react";
+import { Bus, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateTrip, deleteTrip } from "@/lib/trip-actions";
 
 interface RecentTrip {
@@ -14,6 +14,7 @@ interface RecentTrip {
   parkingCost: number;
   riderCount: number;
   tripNumber: number;
+  sharedParkingTripIds: string[];
   isOwner: boolean;
   paymentStatus: "paid" | "pending";
 }
@@ -33,6 +34,9 @@ interface RecentTripsSectionProps {
     gasCost: string;
     parkingCost: string;
     total: string;
+    gas: string;
+    parking: string;
+    shareParkingWithTrips: string;
     confirmDeleteTrip: string;
   };
 }
@@ -50,6 +54,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
   const [editModalTrip, setEditModalTrip] = useState<RecentTrip | null>(null);
   const [editGasCost, setEditGasCost] = useState("");
   const [editParkingCost, setEditParkingCost] = useState("");
+  const [editSharedParkingIds, setEditSharedParkingIds] = useState<string[]>([]);
   const [editStatus, setEditStatus] = useState<"idle" | "saving">("idle");
 
   const SWIPE_THRESHOLD = 40;
@@ -93,6 +98,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
     setEditModalTrip(trip);
     setEditGasCost(trip.gasCost.toString());
     setEditParkingCost(trip.parkingCost.toString());
+    setEditSharedParkingIds(trip.sharedParkingTripIds);
     setEditStatus("idle");
     closeSwipe();
   }
@@ -109,6 +115,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
         await updateTrip(editModalTrip.id, {
           gasCost: parseFloat(editGasCost) || 0,
           parkingCost: parseFloat(editParkingCost) || 0,
+          sharedParkingTripIds: editSharedParkingIds,
         });
         setEditModalTrip(null);
       } catch { /* ignore */ }
@@ -285,6 +292,68 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                   />
                 </div>
               </div>
+
+              {/* Share Parking with Other Trips */}
+              {(parseFloat(editParkingCost) || 0) > 0 && (() => {
+                const otherTrips = recentTrips.filter((tr) => tr.id !== editModalTrip.id && tr.isOwner);
+                if (otherTrips.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Link2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t.shareParkingWithTrips}
+                      </span>
+                    </div>
+                    <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-border bg-accent/30 p-2.5">
+                      {otherTrips.map((tr) => {
+                        const isSelected = editSharedParkingIds.includes(tr.id);
+                        return (
+                          <button
+                            key={tr.id}
+                            type="button"
+                            onClick={() => {
+                              setEditSharedParkingIds((prev) =>
+                                isSelected ? prev.filter((id) => id !== tr.id) : [...prev, tr.id]
+                              );
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                              isSelected
+                                ? "bg-primary/10 text-foreground"
+                                : "text-muted-foreground hover:bg-accent"
+                            }`}
+                          >
+                            <div
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                                isSelected
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-input bg-background"
+                              }`}
+                            >
+                              {isSelected && <Check className="h-3 w-3" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium text-foreground truncate">{tr.carName}</span>
+                                <span className="text-[10px] font-medium text-primary whitespace-nowrap">
+                                  {t.tripNumber} #{tr.tripNumber}
+                                </span>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {tr.date}
+                                </span>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {tr.riderCount} {t.people} · {t.gas} ฿{tr.gasCost.toFixed(2)}
+                                {tr.parkingCost > 0 && ` · ${t.parking} ฿${tr.parkingCost.toFixed(2)}`}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Total */}
               {((parseFloat(editGasCost) || 0) + (parseFloat(editParkingCost) || 0)) > 0 && (

@@ -189,6 +189,7 @@ export default async function DashboardPage() {
       parkingCost: trip.parkingCost,
       riderCount: trip.checkIns.length + 1,
       tripNumber: tn,
+      sharedParkingTripIds: trip.sharedParkingTripIds,
       isOwner: trip.car.ownerId === userId,
       paymentStatus: trip.car.ownerId === userId
         ? ((!tripDebtors.has(`${trip.carId}-${dateISO}-${tn}`) || fullySettledTripKeys.has(`${trip.carId}-${dateISO}-${tn}`)) ? "paid" as const : "pending" as const)

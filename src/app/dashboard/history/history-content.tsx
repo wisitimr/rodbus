@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert } from "lucide-react";
+import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateCheckInDate, deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 
@@ -20,6 +20,7 @@ interface Trip {
   parkingCost: number;
   riderCount: number;
   tripNumber: number;
+  sharedParkingTripIds: string[];
   isOwner: boolean;
 }
 
@@ -129,6 +130,7 @@ interface HistoryContentProps {
     gasCost?: string;
     parkingCost?: string;
     total?: string;
+    shareParkingWithTrips?: string;
   };
 }
 
@@ -821,6 +823,7 @@ export default function HistoryContent({
   const [editModalTrip, setEditModalTrip] = useState<Trip | null>(null);
   const [editGasCost, setEditGasCost] = useState("");
   const [editParkingCost, setEditParkingCost] = useState("");
+  const [editSharedParkingIds, setEditSharedParkingIds] = useState<string[]>([]);
   const [editStatus, setEditStatus] = useState<"idle" | "saving">("idle");
 
   const SWIPE_THRESHOLD = 40;
@@ -865,6 +868,7 @@ export default function HistoryContent({
     setEditModalTrip(trip);
     setEditGasCost(trip.gasCost.toString());
     setEditParkingCost(trip.parkingCost.toString());
+    setEditSharedParkingIds(trip.sharedParkingTripIds);
     setEditStatus("idle");
     closeSwipe();
   }
@@ -881,6 +885,7 @@ export default function HistoryContent({
         await updateTrip(editModalTrip.id, {
           gasCost: parseFloat(editGasCost) || 0,
           parkingCost: parseFloat(editParkingCost) || 0,
+          sharedParkingTripIds: editSharedParkingIds,
         });
         setEditModalTrip(null);
       } catch { /* ignore */ }
@@ -1423,6 +1428,68 @@ export default function HistoryContent({
                   />
                 </div>
               </div>
+
+              {/* Share Parking with Other Trips */}
+              {(parseFloat(editParkingCost) || 0) > 0 && (() => {
+                const otherTrips = trips.filter((tr) => tr.id !== editModalTrip.id && tr.isOwner);
+                if (otherTrips.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Link2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t.shareParkingWithTrips || "Share parking with other trips"}
+                      </span>
+                    </div>
+                    <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-border bg-accent/30 p-2.5">
+                      {otherTrips.map((tr) => {
+                        const isSelected = editSharedParkingIds.includes(tr.id);
+                        return (
+                          <button
+                            key={tr.id}
+                            type="button"
+                            onClick={() => {
+                              setEditSharedParkingIds((prev) =>
+                                isSelected ? prev.filter((id) => id !== tr.id) : [...prev, tr.id]
+                              );
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                              isSelected
+                                ? "bg-primary/10 text-foreground"
+                                : "text-muted-foreground hover:bg-accent"
+                            }`}
+                          >
+                            <div
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                                isSelected
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-input bg-background"
+                              }`}
+                            >
+                              {isSelected && <Check className="h-3 w-3" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium text-foreground truncate">{tr.carName}</span>
+                                <span className="text-[10px] font-medium text-primary whitespace-nowrap">
+                                  {t.tripNumber} #{tr.tripNumber}
+                                </span>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {tr.date}
+                                </span>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {tr.riderCount} {t.people} · {t.gas || "Gas"} ฿{tr.gasCost.toFixed(2)}
+                                {tr.parkingCost > 0 && ` · ${t.parking || "Parking"} ฿${tr.parkingCost.toFixed(2)}`}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Total */}
               {((parseFloat(editGasCost) || 0) + (parseFloat(editParkingCost) || 0)) > 0 && (

@@ -82,6 +82,7 @@ export default async function HistoryPage() {
       parkingCost: trip.parkingCost,
       riderCount: trip.checkIns.length + 1,
       tripNumber: idx >= 0 ? idx + 1 : 1,
+      sharedParkingTripIds: trip.sharedParkingTripIds,
       isOwner: trip.car.ownerId === userId,
     };
   });
@@ -244,6 +245,7 @@ export default async function HistoryPage() {
           gasCost: t.gasCost,
           parkingCost: t.parkingCost,
           total: t.total,
+          shareParkingWithTrips: t.shareParkingWithTrips,
         }}
       />
       </main>

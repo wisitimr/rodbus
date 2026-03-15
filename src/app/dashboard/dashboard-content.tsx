@@ -16,6 +16,7 @@ interface RecentTrip {
   parkingCost: number;
   riderCount: number;
   tripNumber: number;
+  sharedParkingTripIds: string[];
   isOwner: boolean;
   paymentStatus: "paid" | "pending";
 }
@@ -187,6 +188,9 @@ export default function DashboardContent({
                   gasCost: t.gasCost,
                   parkingCost: t.parkingCost,
                   total: t.total,
+                  gas: t.gas,
+                  parking: t.parking,
+                  shareParkingWithTrips: t.shareParkingWithTrips,
                   confirmDeleteTrip: t.confirmDeleteTrip,
                 }}
               />
