@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { joinViaGroupId } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n-context";
 
 interface JoinFormProps {
   groupId: string;
   groupName: string;
-  th: boolean;
 }
 
-export default function JoinForm({ groupId, groupName, th }: JoinFormProps) {
+export default function JoinForm({ groupId, groupName }: JoinFormProps) {
+  const { t } = useT();
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "joining" | "pending" | "already" | "error">("idle");
 
@@ -36,14 +37,12 @@ export default function JoinForm({ groupId, groupName, th }: JoinFormProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold text-foreground">{th ? "รอการอนุมัติ" : "Awaiting Approval"}</h1>
+        <h1 className="text-xl font-bold text-foreground">{t.awaitingApproval}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {th
-            ? `คำขอเข้าร่วม "${groupName}" ถูกส่งแล้ว รอแอดมินอนุมัติ`
-            : `Your request to join "${groupName}" has been sent. Waiting for admin approval.`}
+          {t.joinRequestSentPrefix} &ldquo;{groupName}&rdquo; {t.joinRequestSentSuffix}
         </p>
         <a href="/join" className="mt-4 inline-block text-sm font-medium text-primary hover:text-primary/80">
-          {th ? "กลับ" : "Go back"}
+          {t.goBack}
         </a>
       </div>
     );
@@ -57,14 +56,14 @@ export default function JoinForm({ groupId, groupName, th }: JoinFormProps) {
         </svg>
       </div>
       <h1 className="text-xl font-bold text-foreground">
-        {th ? `เข้าร่วม "${groupName}"` : `Join "${groupName}"`}
+        {t.join} &ldquo;{groupName}&rdquo;
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        {th ? "คุณได้รับเชิญให้เข้าร่วมปาร์ตี้นี้" : "You've been invited to join this party."}
+        {t.invitedToJoinParty}
       </p>
 
       {status === "error" && (
-        <p className="mt-2 text-sm text-debt">{th ? "เกิดข้อผิดพลาด ลองอีกครั้ง" : "Something went wrong. Please try again."}</p>
+        <p className="mt-2 text-sm text-debt">{t.somethingWentWrong}</p>
       )}
 
       <button
@@ -72,12 +71,10 @@ export default function JoinForm({ groupId, groupName, th }: JoinFormProps) {
         disabled={status === "joining"}
         className="mt-4 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
       >
-        {status === "joining"
-          ? (th ? "กำลังเข้าร่วม..." : "Joining...")
-          : (th ? "ขอเข้าร่วม" : "Request to Join")}
+        {status === "joining" ? t.joining : t.requestToJoin}
       </button>
       <a href="/join" className="mt-3 inline-block text-sm font-medium text-muted-foreground hover:text-foreground">
-        {th ? "ยกเลิก" : "Cancel"}
+        {t.cancel}
       </a>
     </div>
   );

@@ -11,15 +11,13 @@ interface SettingsTabsProps {
 }
 
 export default function SettingsTabs({ usersTab, carsTab, inviteTab }: SettingsTabsProps) {
-  const { t, locale } = useT();
+  const { t } = useT();
   const [activeTab, setActiveTab] = useState<"users" | "cars" | "invite">("users");
-
-  const th = locale === "th";
 
   const tabs = [
     { key: "users" as const, label: t.users, icon: Users },
     { key: "cars" as const, label: t.cars, icon: Car },
-    { key: "invite" as const, label: th ? "ปาร์ตี้" : "Party", icon: Settings },
+    { key: "invite" as const, label: t.party, icon: Settings },
   ];
 
   return (
