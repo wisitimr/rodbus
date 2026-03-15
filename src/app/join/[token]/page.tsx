@@ -12,7 +12,7 @@ export default async function JoinTokenPage({
 }) {
   const { token } = await params;
   const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect(`/sign-in?redirect_url=/join/${token}`);
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
