@@ -44,6 +44,7 @@ export default async function AdminPage() {
             users={users}
             currentUserId={userId}
             groupId={activeGroupId}
+            ownerId={partyGroup?.ownerId ?? ""}
           />
         }
         carsTab={

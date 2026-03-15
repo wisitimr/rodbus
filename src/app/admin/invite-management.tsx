@@ -48,23 +48,33 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
 
   return (
     <div className="space-y-4">
-      {/* Invite Link */}
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        {th ? "ลิงก์เชิญ" : "Invite Link"}
-      </h3>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <UsersIcon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground">{groupName}</p>
+          <p className="text-xs text-muted-foreground">
+            {th
+              ? `แชร์ลิงก์เชิญเพื่อให้คนอื่นขอเข้าร่วมกลุ่ม`
+              : `Share this link so others can request to join`}
+          </p>
+        </div>
+      </div>
 
-      <p className="text-xs text-muted-foreground">
-        {th
-          ? `แชร์ลิงก์เชิญเพื่อให้คนอื่นขอเข้าร่วมกลุ่ม "${groupName}"`
-          : `Share this link so others can request to join "${groupName}".`}
-      </p>
-
-      <div className="rounded-xl border border-border bg-card px-4 pb-4 pt-3 text-center">
-        <div className="mx-auto inline-block rounded-xl bg-white p-3">
-          <QRCodeSVG value={joinUrl} size={180} />
+      {/* QR Code */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4 text-center">
+        <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
+          <QRCodeSVG
+            value={joinUrl}
+            size={200}
+            level="H"
+            className="mx-auto h-auto w-full max-w-[200px]"
+          />
         </div>
 
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2">
+        <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2">
           <code className="text-xs text-muted-foreground select-all break-all">
             {joinUrl}
           </code>
