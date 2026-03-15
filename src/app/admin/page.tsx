@@ -4,7 +4,6 @@ import { getActiveGroupOrRedirect } from "@/lib/party-group";
 import { MemberStatus } from "@prisma/client";
 import UserManagement from "./user-management";
 import CarManagement from "./car-management";
-import QRTab from "./qr-tab";
 import InviteManagement from "./invite-management";
 import SettingsTabs from "./settings-tabs";
 
@@ -67,15 +66,6 @@ export default async function AdminPage() {
               name: c.name,
               licensePlate: c.licensePlate,
               defaultGasCost: c.defaultGasCost,
-            }))}
-          />
-        }
-        qrTab={
-          <QRTab
-            cars={myCars.map((c) => ({
-              id: c.id,
-              name: c.name,
-              licensePlate: c.licensePlate,
             }))}
           />
         }
