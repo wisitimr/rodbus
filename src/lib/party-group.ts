@@ -75,7 +75,11 @@ export async function getActiveGroupOrRedirect(): Promise<string> {
   const groups = await getUserActiveGroups(user.id);
 
   if (groups.length === 0) {
-    redirect("/join");
+    // Check if user has pending memberships
+    const pendingCount = await prisma.partyGroupMember.count({
+      where: { userId: user.id, status: MemberStatus.PENDING },
+    });
+    redirect(pendingCount > 0 ? "/pending-approval" : "/join");
   }
 
   const cookieGroupId = await getActiveGroupId();
