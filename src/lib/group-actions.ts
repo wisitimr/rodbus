@@ -206,6 +206,19 @@ export async function leaveGroup(groupId: string) {
   revalidatePath("/");
 }
 
+/** Delete a party group and all its data (admin only). */
+export async function deleteGroup(groupId: string) {
+  await requireGroupAdmin(groupId);
+
+  // Delete trips (and their checkIns via cascade) belonging to this group
+  await prisma.trip.deleteMany({ where: { partyGroupId: groupId } });
+
+  // PartyGroupMember and InviteToken cascade from PartyGroup
+  await prisma.partyGroup.delete({ where: { id: groupId } });
+
+  revalidatePath("/");
+}
+
 /** Switch the active group (sets cookie). */
 export async function switchActiveGroup(groupId: string) {
   const user = await getCurrentUser();

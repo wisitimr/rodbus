@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Copy, Trash2, Plus, Check } from "lucide-react";
-import { generateInviteLink, revokeInviteLink } from "@/lib/group-actions";
+import { generateInviteLink, revokeInviteLink, deleteGroup } from "@/lib/group-actions";
+import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
 
 interface InviteManagementProps {
@@ -19,8 +20,12 @@ interface InviteManagementProps {
 
 export default function InviteManagement({ tokens, groupId, groupName }: InviteManagementProps) {
   const { t, locale } = useT();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const th = locale === "th";
 
@@ -148,6 +153,64 @@ export default function InviteManagement({ tokens, groupId, groupName }: InviteM
           ))}
         </div>
       )}
+
+      {/* Danger Zone */}
+      <div className="mt-6 rounded-xl border-2 border-debt/30 p-4">
+        <h3 className="text-sm font-semibold text-debt">
+          {th ? "ลบปาร์ตี้" : "Delete Party"}
+        </h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {th
+            ? "ลบปาร์ตี้นี้และข้อมูลทั้งหมด รวมถึงสมาชิก ทริป และลิงก์เชิญ"
+            : "Permanently delete this party and all its data, including members, trips, and invite links."}
+        </p>
+
+        {deleteError && <p className="mt-2 text-sm text-debt">{deleteError}</p>}
+
+        {!confirmDelete ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-debt/30 py-2.5 text-sm font-medium text-debt transition hover:bg-debt/10"
+          >
+            <Trash2 className="h-4 w-4" />
+            {th ? `ลบ "${groupName}"` : `Delete "${groupName}"`}
+          </button>
+        ) : (
+          <div className="mt-3 space-y-2">
+            <p className="text-sm font-medium text-debt">
+              {th ? "คุณแน่ใจหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้" : "Are you sure? This action cannot be undone."}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+              >
+                {th ? "ยกเลิก" : "Cancel"}
+              </button>
+              <button
+                onClick={async () => {
+                  setDeleting(true);
+                  setDeleteError(null);
+                  try {
+                    await deleteGroup(groupId);
+                    router.push("/join");
+                  } catch (e) {
+                    setDeleteError(e instanceof Error ? e.message : "Failed to delete");
+                    setConfirmDelete(false);
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleting}
+                className="flex-1 rounded-xl bg-debt py-2.5 text-sm font-semibold text-white transition hover:bg-debt/90 disabled:opacity-50"
+              >
+                {deleting ? (th ? "กำลังลบ..." : "Deleting...") : (th ? "ยืนยันลบ" : "Confirm Delete")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
