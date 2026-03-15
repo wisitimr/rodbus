@@ -21,6 +21,7 @@ export default async function OverviewLayout({
   const role = await getGroupRole(user.id, activeGroupId);
   const isAdmin = role === GroupRole.ADMIN;
   const groups = await getUserActiveGroups(user.id);
+  const activeGroupName = groups.find((g) => g.id === activeGroupId)?.name;
 
   return (
     <>
@@ -33,6 +34,11 @@ export default async function OverviewLayout({
             <div>
               <h1 className="text-lg font-bold text-foreground">
                 RodBus
+                {activeGroupName && (
+                  <span className="ml-1.5 text-sm font-medium text-muted-foreground">
+                    · {activeGroupName}
+                  </span>
+                )}
               </h1>
               <p className="text-xs text-muted-foreground">
                 {t.welcome}, {user.name ?? user.email}
