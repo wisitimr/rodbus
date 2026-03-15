@@ -239,12 +239,13 @@ export default function CarManagement({ cars }: CarManagementProps) {
         const isQrOpen = expandedQrId === car.id;
         const isEditing = editingCarId === car.id;
         const isSwiped = swipedCarId === car.id;
+        const isLoading = loadingAction === `delete-${car.id}` || loadingAction === `edit-${car.id}`;
 
         return (
           <div
             key={car.id}
             data-swipe-id={car.id}
-            className="relative overflow-hidden rounded-2xl bg-secondary animate-fade-in"
+            className={`relative overflow-hidden rounded-2xl bg-secondary animate-fade-in transition-opacity ${isLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
           >
             {/* Action buttons behind the card */}
             <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-evenly">

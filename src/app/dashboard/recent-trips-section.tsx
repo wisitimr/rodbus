@@ -51,6 +51,9 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
   const swipeOffsetRef = useRef<number>(0);
   const swipeCardRef = useRef<HTMLDivElement | null>(null);
 
+  // Delete loading state
+  const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
+
   // Edit modal state
   const [editModalTrip, setEditModalTrip] = useState<RecentTrip | null>(null);
   const [editGasCost, setEditGasCost] = useState("");
@@ -127,10 +130,12 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
   function handleTripDelete(trip: RecentTrip) {
     if (!confirm(t.confirmDeleteTrip)) return;
     closeSwipe();
+    setDeletingTripId(trip.id);
     startTransition(async () => {
       try {
         await deleteTrip(trip.id);
       } catch { /* ignore */ }
+      setDeletingTripId(null);
     });
   }
 
@@ -152,11 +157,12 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
       <div className="mt-2 space-y-2">
         {recentTrips.map((trip) => {
           const isSwiped = swipedTripId === trip.id;
+          const isDeleting = deletingTripId === trip.id;
           return (
             <div
               key={trip.id}
               data-swipe-id={trip.id}
-              className="relative overflow-hidden rounded-xl bg-secondary animate-fade-in"
+              className={`relative overflow-hidden rounded-xl bg-secondary animate-fade-in transition-opacity ${isDeleting ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
             >
               {/* Action buttons behind the card */}
               {trip.isOwner && (
