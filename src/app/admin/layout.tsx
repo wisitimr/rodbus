@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import { Settings } from "lucide-react";
@@ -16,7 +17,10 @@ export default async function AdminLayout({
   if (!user) redirect("/sign-in");
 
   const activeGroupId = await getActiveGroupOrRedirect();
-  const role = await getGroupRole(user.id, activeGroupId);
+  const [role, carCount] = await Promise.all([
+    getGroupRole(user.id, activeGroupId),
+    prisma.car.count({ where: { ownerId: user.id } }),
+  ]);
   if (role !== GroupRole.ADMIN) redirect("/dashboard");
 
   const headersList = await headers();
@@ -40,7 +44,7 @@ export default async function AdminLayout({
       </header>
 
       {children}
-      <BottomNav isAdmin={true} />
+      <BottomNav isAdmin={true} hasCars={carCount > 0} />
     </div>
   );
 }

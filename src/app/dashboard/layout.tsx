@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import BottomNav from "./bottom-nav";
 
 export default async function DashboardLayout({
@@ -13,7 +14,10 @@ export default async function DashboardLayout({
   if (!user) redirect("/sign-in");
 
   const activeGroupId = await getActiveGroupOrRedirect();
-  const role = await getGroupRole(user.id, activeGroupId);
+  const [role, carCount] = await Promise.all([
+    getGroupRole(user.id, activeGroupId),
+    prisma.car.count({ where: { ownerId: user.id } }),
+  ]);
 
   if (!role) redirect("/join");
 
@@ -22,7 +26,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen pb-24">
       {children}
-      <BottomNav isAdmin={isAdmin} />
+      <BottomNav isAdmin={isAdmin} hasCars={carCount > 0} />
     </div>
   );
 }
