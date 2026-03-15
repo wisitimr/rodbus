@@ -33,7 +33,8 @@ export interface BreakdownCardEntry {
   driverName: string | null;
   time?: string;
   sharedParking?: SharedParkingInfo | null;
-  paidAmount?: number;
+  gasPaid?: number;
+  parkingPaid?: number;
 }
 
 interface TripBreakdownCardProps {
@@ -157,7 +158,11 @@ export default function TripBreakdownCard({
                 <Fuel className={`text-primary ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
                 <span className="text-muted-foreground">{t.gas}</span>
                 <span className="ml-auto font-mono text-foreground">
-                  &#3647;{entry.gasCost.toFixed(2)} / {entry.headcount} = <strong>&#3647;{entry.gasShare.toFixed(2)}</strong>
+                  {entry.gasPaid != null && entry.gasPaid > 0 ? (
+                    <>(&#3647;{entry.gasCost.toFixed(2)} / {entry.headcount}) - &#3647;{entry.gasPaid.toFixed(2)} = <strong>&#3647;{entry.gasShare.toFixed(2)}</strong></>
+                  ) : (
+                    <>&#3647;{entry.gasCost.toFixed(2)} / {entry.headcount} = <strong>&#3647;{entry.gasShare.toFixed(2)}</strong></>
+                  )}
                 </span>
               </div>
             )}
@@ -168,11 +173,19 @@ export default function TripBreakdownCard({
                   <span className="text-muted-foreground">{t.parking}</span>
                   {hasSharedParking ? (
                     <span className="ml-auto font-mono text-foreground">
-                      &#3647;{sp!.totalParking.toFixed(2)} / {sp!.parkingHeadcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
+                      {entry.parkingPaid != null && entry.parkingPaid > 0 ? (
+                        <>(&#3647;{sp!.totalParking.toFixed(2)} / {sp!.parkingHeadcount}) - &#3647;{entry.parkingPaid.toFixed(2)} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong></>
+                      ) : (
+                        <>&#3647;{sp!.totalParking.toFixed(2)} / {sp!.parkingHeadcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong></>
+                      )}
                     </span>
                   ) : (
                     <span className="ml-auto font-mono text-foreground">
-                      &#3647;{entry.parkingCost.toFixed(2)} / {entry.parkingHeadcount ?? entry.headcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong>
+                      {entry.parkingPaid != null && entry.parkingPaid > 0 ? (
+                        <>(&#3647;{entry.parkingCost.toFixed(2)} / {entry.parkingHeadcount ?? entry.headcount}) - &#3647;{entry.parkingPaid.toFixed(2)} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong></>
+                      ) : (
+                        <>&#3647;{entry.parkingCost.toFixed(2)} / {entry.parkingHeadcount ?? entry.headcount} = <strong>&#3647;{entry.parkingShare.toFixed(2)}</strong></>
+                      )}
                     </span>
                   )}
                 </div>
@@ -206,14 +219,7 @@ export default function TripBreakdownCard({
           <div className={`border-t border-border/50 ${compact ? "pt-1.5" : "pt-2"}`}>
             <div className={`flex items-center justify-between font-bold ${compact ? "text-xs" : "text-sm"}`}>
               <span className="text-foreground">{t.total}</span>
-              {entry.paidAmount != null && entry.paidAmount > 0 ? (
-                <span className="font-mono text-foreground">
-                  <span className="line-through text-muted-foreground font-normal">&#3647;{(entry.share + entry.paidAmount).toFixed(2)}</span>
-                  {" "}-&#3647;{entry.paidAmount.toFixed(2)} = <strong>&#3647;{entry.share.toFixed(2)}</strong>
-                </span>
-              ) : (
-                <span className="font-mono text-foreground">&#3647;{entry.share.toFixed(2)}</span>
-              )}
+              <span className="font-mono text-foreground">&#3647;{entry.share.toFixed(2)}</span>
             </div>
           </div>
         </div>

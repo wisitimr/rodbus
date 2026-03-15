@@ -25,7 +25,8 @@ interface BreakdownItem {
   tripNumber: number;
   passengerNames: string[];
   driverName: string | null;
-  paidAmount?: number;
+  gasPaid?: number;
+  parkingPaid?: number;
   sharedParking?: {
     trips: { carName: string; date: string; parkingCost: number; headcount: number }[];
     uniqueNames: string[];
@@ -136,11 +137,16 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
       if (remaining >= entry.share) {
         remaining = Math.round((remaining - entry.share) * 100) / 100;
       } else if (remaining > 0) {
-        const paidAmount = remaining;
+        const ratio = (entry.share - remaining) / entry.share;
+        const reducedGas = Math.round(entry.gasShare * ratio * 100) / 100;
+        const reducedParking = Math.round(entry.parkingShare * ratio * 100) / 100;
         pending.push({
           ...entry,
           share: Math.round((entry.share - remaining) * 100) / 100,
-          paidAmount,
+          gasShare: reducedGas,
+          parkingShare: reducedParking,
+          gasPaid: Math.round((entry.gasShare - reducedGas) * 100) / 100,
+          parkingPaid: Math.round((entry.parkingShare - reducedParking) * 100) / 100,
         });
         remaining = 0;
       } else {
@@ -438,14 +444,14 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
                                 passengerNames: b.passengerNames,
                                 driverName: b.driverName,
                                 sharedParking: b.sharedParking ?? null,
-                                paidAmount: b.paidAmount,
+                                gasPaid: b.gasPaid,
+                                parkingPaid: b.parkingPaid,
                               }}
                               isExpanded={isEntryExpanded}
                               onToggle={() => setExpandedEntries((prev) => toggleSet(prev, entryKey))}
                               status="pending"
                               t={{
                                 pending: t.pending,
-                                paid: t.paid,
                                 tripNumber: t.tripNumber,
                                 people: t.people,
                                 gas: t.gas,
