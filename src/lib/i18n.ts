@@ -153,6 +153,13 @@ const translations = {
     invalidInviteLink: "This invite link is invalid or expired.",
     noGroupYet: "You are not in any party yet.",
     createOrJoin: "Create a new party or join with an invite link.",
+    shareInviteMessage: "Share this link so others can request to join",
+    deleteParty: "Delete Party",
+    deletePartyDesc: "Permanently delete this party and all its data, including members and trips.",
+    choosePartyToSwitch: "Choose a party to switch to",
+    areYouSure: "Are you sure? This action cannot be undone.",
+    confirmDeleteAction: "Confirm Delete",
+    failedToDelete: "Failed to delete",
 
     // Car Management
     carManagement: "Car Management",
@@ -369,6 +376,13 @@ const translations = {
     invalidInviteLink: "ลิงก์เชิญไม่ถูกต้องหรือหมดอายุ",
     noGroupYet: "คุณยังไม่ได้อยู่ในปาร์ตี้ใด",
     createOrJoin: "สร้างปาร์ตี้ใหม่หรือเข้าร่วมด้วยลิงก์เชิญ",
+    shareInviteMessage: "แชร์ลิงก์เชิญเพื่อให้คนอื่นขอเข้าร่วม",
+    deleteParty: "ลบปาร์ตี้",
+    deletePartyDesc: "ลบปาร์ตี้นี้และข้อมูลทั้งหมด รวมถึงสมาชิกและทริป",
+    choosePartyToSwitch: "เลือกปาร์ตี้ที่จะไปต่อ",
+    areYouSure: "คุณแน่ใจหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้",
+    confirmDeleteAction: "ยืนยันลบ",
+    failedToDelete: "ลบไม่สำเร็จ",
 
     // Car Management
     carManagement: "จัดการรถ",
