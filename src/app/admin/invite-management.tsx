@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert } from "lucide-react";
-import { deleteGroup, switchActiveGroup } from "@/lib/group-actions";
+import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert, Pencil } from "lucide-react";
+import { deleteGroup, switchActiveGroup, updateGroupName } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
 import { Users as UsersIcon } from "lucide-react";
@@ -22,6 +22,9 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pickGroups, setPickGroups] = useState<{ id: string; name: string }[] | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(groupName);
+  const [savingName, setSavingName] = useState(false);
 
   const joinUrl = typeof window !== "undefined"
     ? `${window.location.origin}/join/${groupId}`
@@ -46,6 +49,66 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
 
   return (
     <div className="space-y-4">
+      {/* Party Name */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm p-4">
+        <label className="mb-2 block text-xs font-medium text-muted-foreground">{t.partyName}</label>
+        {!editingName ? (
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-lg font-semibold text-foreground">{groupName}</p>
+            <button
+              type="button"
+              onClick={() => { setNameValue(groupName); setEditingName(true); }}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {t.editPartyName}
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!nameValue.trim() || nameValue.trim() === groupName) {
+                setEditingName(false);
+                return;
+              }
+              setSavingName(true);
+              try {
+                await updateGroupName(groupId, nameValue.trim());
+                setEditingName(false);
+                router.refresh();
+              } finally {
+                setSavingName(false);
+              }
+            }}
+            className="flex items-center gap-2"
+          >
+            <input
+              type="text"
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              autoFocus
+              className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm font-medium"
+            />
+            <button
+              type="button"
+              onClick={() => setEditingName(false)}
+              disabled={savingName}
+              className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent"
+            >
+              {t.cancel}
+            </button>
+            <button
+              type="submit"
+              disabled={savingName || !nameValue.trim()}
+              className="rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              {savingName ? "..." : t.savePartyName}
+            </button>
+          </form>
+        )}
+      </div>
+
       {/* QR Code Card */}
       <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4">
         {/* Header */}

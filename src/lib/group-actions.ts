@@ -36,6 +36,21 @@ export async function createGroup(name: string) {
   return group;
 }
 
+/** Update the name of a party group. Only admins can do this. */
+export async function updateGroupName(groupId: string, name: string) {
+  await requireGroupAdmin(groupId);
+
+  if (!name.trim()) throw new Error("Group name is required");
+
+  await prisma.partyGroup.update({
+    where: { id: groupId },
+    data: { name: name.trim() },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+}
+
 // ---------------------------------------------------------------------------
 // Join via Group ID
 // ---------------------------------------------------------------------------
