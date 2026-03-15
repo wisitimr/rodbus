@@ -208,7 +208,7 @@ export default function TripBreakdownCard({
               <span className="text-foreground">{t.total}</span>
               {entry.paidAmount != null && entry.paidAmount > 0 ? (
                 <span className="font-mono text-foreground">
-                  (&#3647;{(entry.share + entry.paidAmount).toFixed(2)}) - &#3647;{entry.paidAmount.toFixed(2)} = <strong>&#3647;{entry.share.toFixed(2)}</strong>
+                  &#3647;{(entry.share + entry.paidAmount).toFixed(2)} - <span className="text-settled">&#3647;{entry.paidAmount.toFixed(2)}</span> = <strong>&#3647;{entry.share.toFixed(2)}</strong>
                 </span>
               ) : (
                 <span className="font-mono text-foreground">&#3647;{entry.share.toFixed(2)}</span>
