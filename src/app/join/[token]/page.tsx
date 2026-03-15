@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { detectLocale } from "@/lib/i18n";
-import { joinViaInvite } from "@/lib/group-actions";
+import JoinForm from "./join-form";
 
 export default async function JoinTokenPage({
   params,
@@ -61,13 +61,22 @@ export default async function JoinTokenPage({
     );
   }
 
-  // Auto-join: call joinViaInvite server-side, then redirect
-  const result = await joinViaInvite(token);
+  // Check if already a member
+  const existing = await prisma.partyGroupMember.findUnique({
+    where: {
+      userId_partyGroupId: { userId: user.id, partyGroupId: inviteToken.partyGroupId },
+    },
+  });
 
-  if (result.status === "already_member") {
+  if (existing?.status === "ACTIVE") {
     redirect("/dashboard");
   }
 
-  // Pending approval — redirect to /join which shows pending status
-  redirect("/join");
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center p-6">
+      <div className="w-full max-w-sm">
+        <JoinForm token={token} groupName={inviteToken.partyGroup.name} th={th} />
+      </div>
+    </div>
+  );
 }
