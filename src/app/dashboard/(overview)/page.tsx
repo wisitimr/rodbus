@@ -197,9 +197,11 @@ export default async function DashboardPage() {
       tripNumber: tn,
       sharedParkingTripIds: trip.sharedParkingTripIds,
       isOwner: trip.car.ownerId === userId,
-      paymentStatus: trip.car.ownerId === userId
-        ? ((!tripDebtors.has(`${trip.carId}-${dateISO}-${tn}`) || fullySettledTripKeys.has(`${trip.carId}-${dateISO}-${tn}`)) ? "paid" as const : "pending" as const)
-        : (paidTripKeys.has(`${trip.carId}-${dateISO}-${tn}`) ? "paid" as const : "pending" as const),
+      paymentStatus: trip.checkIns.length === 0
+        ? "no_passengers" as const
+        : trip.car.ownerId === userId
+          ? ((!tripDebtors.has(`${trip.carId}-${dateISO}-${tn}`) || fullySettledTripKeys.has(`${trip.carId}-${dateISO}-${tn}`)) ? "paid" as const : "pending" as const)
+          : (paidTripKeys.has(`${trip.carId}-${dateISO}-${tn}`) ? "paid" as const : "pending" as const),
     };
   });
 

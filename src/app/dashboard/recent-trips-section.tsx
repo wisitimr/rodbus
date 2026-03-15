@@ -16,7 +16,7 @@ interface RecentTrip {
   tripNumber: number;
   sharedParkingTripIds: string[];
   isOwner: boolean;
-  paymentStatus: "paid" | "pending";
+  paymentStatus: "paid" | "pending" | "no_passengers";
 }
 
 interface RecentTripsSectionProps {
@@ -26,6 +26,7 @@ interface RecentTripsSectionProps {
     tripNumber: string;
     paid: string;
     pending: string;
+    noPassengers: string;
     editTrip: string;
     edit: string;
     editing: string;
@@ -214,7 +215,11 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                       <span className="text-xs font-medium text-primary">
                         {t.tripNumber} #{trip.tripNumber}
                       </span>
-                      {trip.paymentStatus === "paid" ? (
+                      {trip.paymentStatus === "no_passengers" ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+                          {t.noPassengers}
+                        </span>
+                      ) : trip.paymentStatus === "paid" ? (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-settled">
                           <CircleCheck className="h-3 w-3" />
                           {t.paid}
