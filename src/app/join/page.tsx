@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MemberStatus } from "@prisma/client";
 import { headers } from "next/headers";
-import { detectLocale } from "@/lib/i18n";
+import { detectLocale, getTranslations } from "@/lib/i18n";
 import JoinContent from "./join-content";
 
 export default async function JoinPage() {
@@ -24,7 +24,7 @@ export default async function JoinPage() {
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
-  const th = locale === "th";
+  const t = getTranslations(locale);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6">
@@ -36,21 +36,21 @@ export default async function JoinPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            {th ? "เข้าร่วมปาร์ตี้" : "Join a Party"}
+            {t.joinPartyTitle}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {th ? "สร้างปาร์ตี้ใหม่และเชิญสมาชิก" : "Create a new party and invite members"}
+            {t.joinPartyDesc}
           </p>
         </div>
 
-        <JoinContent locale={locale} />
+        <JoinContent />
 
         {hasExistingGroups && (
           <a
             href="/dashboard"
             className="mt-6 block text-center text-sm font-medium text-primary hover:text-primary/80"
           >
-            {th ? "← กลับไปแดชบอร์ด" : "← Back to Dashboard"}
+            {t.backToDashboard}
           </a>
         )}
       </div>

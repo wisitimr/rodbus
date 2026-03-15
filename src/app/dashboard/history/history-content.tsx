@@ -848,6 +848,9 @@ export default function HistoryContent({
   const swipeOffsetRef = useRef<number>(0);
   const swipeCardRef = useRef<HTMLDivElement | null>(null);
 
+  // Delete loading state
+  const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
+
   // Edit trip modal state
   const [editModalTrip, setEditModalTrip] = useState<Trip | null>(null);
   const [editGasCost, setEditGasCost] = useState("");
@@ -925,10 +928,12 @@ export default function HistoryContent({
   function handleTripDelete(trip: Trip) {
     if (!confirm(t.confirmDeleteTrip || t.confirmDeleteCheckIn)) return;
     closeSwipe();
+    setDeletingTripId(trip.id);
     startTransition(async () => {
       try {
         await deleteTrip(trip.id);
       } catch { /* ignore */ }
+      setDeletingTripId(null);
     });
   }
 
@@ -1219,11 +1224,12 @@ export default function HistoryContent({
                     {group.trips.map((trip) => {
                       const totalCost = trip.gasCost + trip.parkingCost;
                       const isSwiped = swipedTripId === trip.id;
+                      const isDeleting = deletingTripId === trip.id;
                       return (
                         <div
                           key={trip.id}
                           data-swipe-id={trip.id}
-                          className="relative overflow-hidden rounded-xl bg-secondary animate-fade-in"
+                          className={`relative overflow-hidden rounded-xl bg-secondary animate-fade-in transition-opacity ${isDeleting ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
                         >
                           {/* Action buttons behind the card */}
                           {trip.isOwner && (

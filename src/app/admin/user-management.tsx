@@ -98,10 +98,11 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
           </h3>
           {pendingUsers.map((user) => {
             const initial = (user.name || "?")[0].toUpperCase();
+            const isLoading = loadingAction === `approve-${user.memberId}` || loadingAction === `reject-${user.memberId}`;
             return (
               <div
                 key={user.memberId}
-                className="flex items-center gap-3 rounded-xl border-2 border-warning/30 bg-warning/5 p-3 animate-fade-in"
+                className={`flex items-center gap-3 rounded-xl border-2 border-warning/30 bg-warning/5 p-3 animate-fade-in transition-opacity ${isLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/20 text-sm font-bold text-warning">
                   {initial}
@@ -143,10 +144,11 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
           const isMe = user.id === currentUserId;
           const initial = (user.name || "?")[0].toUpperCase();
           const badge = roleBadgeStyle[user.role] || "bg-muted text-muted-foreground";
+          const isLoading = loadingAction === `remove-${user.memberId}` || loadingAction === `role-${user.memberId}`;
           return (
             <div
               key={user.memberId}
-              className="relative flex items-center gap-3 rounded-xl border border-border bg-card p-3 animate-fade-in"
+              className={`relative flex items-center gap-3 rounded-xl border border-border bg-card p-3 animate-fade-in transition-opacity ${isLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 {initial}
@@ -160,7 +162,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                 </div>
                 <p className="truncate text-xs text-muted-foreground">{user.email}</p>
               </div>
-              {!isMe && (
+              {!isMe && user.id !== ownerId && (
                 <div className="relative shrink-0" ref={roleMenuId === user.memberId ? menuRef : undefined}>
                   <button
                     type="button"

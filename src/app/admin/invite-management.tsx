@@ -15,15 +15,13 @@ interface InviteManagementProps {
 }
 
 export default function InviteManagement({ groupId, groupName, isOwner }: InviteManagementProps) {
-  const { locale } = useT();
+  const { t } = useT();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pickGroups, setPickGroups] = useState<{ id: string; name: string }[] | null>(null);
-
-  const th = locale === "th";
 
   const joinUrl = typeof window !== "undefined"
     ? `${window.location.origin}/join/${groupId}`
@@ -48,23 +46,14 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <UsersIcon className="h-5 w-5 text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground">{groupName}</p>
-          <p className="text-xs text-muted-foreground">
-            {th
-              ? `แชร์ลิงก์เชิญเพื่อให้คนอื่นขอเข้าร่วมกลุ่ม`
-              : `Share this link so others can request to join`}
-          </p>
-        </div>
-      </div>
+      {/* QR Code Card */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4">
+        {/* Header */}
+        <p className="text-sm text-muted-foreground mb-4">
+          {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
+        </p>
 
-      {/* QR Code */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4 text-center">
+        <div className="text-center">
         <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
           <QRCodeSVG
             value={joinUrl}
@@ -90,17 +79,16 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
             )}
           </button>
         </div>
+        </div>
       </div>
 
       {/* Danger Zone — only visible to the party creator */}
       {isOwner && <div className="mt-6 rounded-xl border-2 border-debt/30 p-4">
         <h3 className="text-sm font-semibold text-debt">
-          {th ? "ลบปาร์ตี้" : "Delete Party"}
+          {t.deleteParty}
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          {th
-            ? "ลบปาร์ตี้นี้และข้อมูลทั้งหมด รวมถึงสมาชิกและทริป"
-            : "Permanently delete this party and all its data, including members and trips."}
+          {t.deletePartyDesc}
         </p>
 
         {deleteError && <p className="mt-2 text-sm text-debt">{deleteError}</p>}
@@ -108,7 +96,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
         {pickGroups ? (
           <div className="mt-3 space-y-2">
             <p className="text-sm font-medium">
-              {th ? "เลือกปาร์ตี้ที่จะไปต่อ" : "Choose a party to switch to"}
+              {t.choosePartyToSwitch}
             </p>
             {pickGroups.map((g) => (
               <button
@@ -131,12 +119,12 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-debt/30 py-2.5 text-sm font-medium text-debt transition hover:bg-debt/10"
           >
             <Trash2 className="h-4 w-4" />
-            {th ? `ลบ "${groupName}"` : `Delete "${groupName}"`}
+            {t.deleteParty} &ldquo;{groupName}&rdquo;
           </button>
         ) : (
           <div className="mt-3 space-y-2">
             <p className="text-sm font-medium text-debt">
-              {th ? "คุณแน่ใจหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้" : "Are you sure? This action cannot be undone."}
+              {t.areYouSure}
             </p>
             <div className="flex gap-2">
               <button
@@ -144,7 +132,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
                 disabled={deleting}
                 className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
               >
-                {th ? "ยกเลิก" : "Cancel"}
+                {t.cancel}
               </button>
               <button
                 onClick={async () => {
@@ -161,7 +149,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
                       setPickGroups(remainingGroups);
                     }
                   } catch (e) {
-                    setDeleteError(e instanceof Error ? e.message : "Failed to delete");
+                    setDeleteError(e instanceof Error ? e.message : t.failedToDelete);
                     setConfirmDelete(false);
                   } finally {
                     setDeleting(false);
@@ -170,7 +158,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
                 disabled={deleting}
                 className="flex-1 rounded-xl bg-debt py-2.5 text-sm font-semibold text-white transition hover:bg-debt/90 disabled:opacity-50"
               >
-                {deleting ? (th ? "กำลังลบ..." : "Deleting...") : (th ? "ยืนยันลบ" : "Confirm Delete")}
+                {deleting ? t.deleting : t.confirmDeleteAction}
               </button>
             </div>
           </div>

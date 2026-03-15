@@ -382,7 +382,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                 const initial = (d.userName ?? "?")[0].toUpperCase();
 
                 return (
-                  <div key={d.userId} className="rounded-2xl border border-border bg-card p-4 shadow-sm animate-fade-in">
+                  <div key={d.userId} className={`rounded-2xl border border-border bg-card p-4 shadow-sm animate-fade-in transition-opacity ${isSettleLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}>
                     {/* User header */}
                     <button
                       type="button"

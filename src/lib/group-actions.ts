@@ -137,11 +137,19 @@ export async function setGroupMemberRole(
 ): Promise<{ error?: string }> {
   const { user } = await requireGroupAdmin(groupId);
 
+  const group = await prisma.partyGroup.findUnique({ where: { id: groupId }, select: { ownerId: true } });
+  if (!group) return { error: "Group not found" };
+
   const member = await prisma.partyGroupMember.findUnique({
     where: { id: memberId, partyGroupId: groupId },
   });
 
   if (!member) return { error: "Member not found" };
+
+  // Prevent changing the owner's role
+  if (member.userId === group.ownerId && user.id !== group.ownerId) {
+    return { error: "Cannot change the owner's role" };
+  }
 
   // Prevent demoting yourself if you're the last admin
   if (member.userId === user.id && role !== GroupRole.ADMIN) {

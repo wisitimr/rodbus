@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MemberStatus } from "@prisma/client";
 import { headers } from "next/headers";
-import { detectLocale } from "@/lib/i18n";
+import { detectLocale, getTranslations } from "@/lib/i18n";
 import { SignOutButton } from "@clerk/nextjs";
 
 export default async function PendingApprovalPage() {
@@ -29,7 +29,7 @@ export default async function PendingApprovalPage() {
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
-  const th = locale === "th";
+  const t = getTranslations(locale);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6">
@@ -41,10 +41,10 @@ export default async function PendingApprovalPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            {th ? "รอการอนุมัติ" : "Pending Approval"}
+            {t.pendingApprovalTitle}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {th ? "คำขอเข้าร่วมของคุณกำลังรอแอดมินอนุมัติ" : "Your join request is waiting for admin approval"}
+            {t.pendingJoinApprovalDesc}
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export default async function PendingApprovalPage() {
               <div>
                 <p className="font-semibold text-foreground">{m.partyGroup.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {th ? "รอแอดมินอนุมัติ" : "Waiting for admin approval"}
+                  {t.waitingForAdminApproval}
                 </p>
               </div>
             </div>
@@ -75,12 +75,12 @@ export default async function PendingApprovalPage() {
               href="/dashboard"
               className="block w-full rounded-xl bg-primary py-3 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
             >
-              {th ? "ไปแดชบอร์ด" : "Go to Dashboard"}
+              {t.goToDashboard}
             </a>
           ) : (
             <SignOutButton>
               <button className="w-full rounded-xl border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted">
-                {th ? "ออกจากระบบ" : "Sign Out"}
+                {t.signOut}
               </button>
             </SignOutButton>
           )}

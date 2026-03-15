@@ -14,8 +14,7 @@ const SWIPE_THRESHOLD = 40;
 const ACTION_WIDTH = 92;
 
 export default function CarManagement({ cars }: CarManagementProps) {
-  const { t, locale } = useT();
-  const th = locale === "th";
+  const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState("");
@@ -77,6 +76,8 @@ export default function CarManagement({ cars }: CarManagementProps) {
     if (finalOffset < -SWIPE_THRESHOLD) {
       cardEl.style.transform = `translateX(-${ACTION_WIDTH}px)`;
       setSwipedCarId(carId);
+      // Hide QR when swiping to reveal actions
+      if (expandedQrId === carId) setExpandedQrId(null);
     } else {
       cardEl.style.transform = "translateX(0)";
       setSwipedCarId(null);
@@ -238,12 +239,13 @@ export default function CarManagement({ cars }: CarManagementProps) {
         const isQrOpen = expandedQrId === car.id;
         const isEditing = editingCarId === car.id;
         const isSwiped = swipedCarId === car.id;
+        const isLoading = loadingAction === `delete-${car.id}` || loadingAction === `edit-${car.id}`;
 
         return (
           <div
             key={car.id}
             data-swipe-id={car.id}
-            className="relative overflow-hidden rounded-2xl bg-secondary animate-fade-in"
+            className={`relative overflow-hidden rounded-2xl bg-secondary animate-fade-in transition-opacity ${isLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
           >
             {/* Action buttons behind the card */}
             <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-evenly">
@@ -278,7 +280,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                 /* Edit form */
                 <div className="p-4 space-y-3 animate-fade-in">
                   <h3 className="text-sm font-semibold text-foreground">
-                    {th ? "แก้ไขรถ" : "Edit Car"}
+                    {t.editCar}
                   </h3>
                   <form onSubmit={handleEditSave} className="space-y-3">
                     <div>
@@ -325,7 +327,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
                       >
                         <Check className="h-4 w-4" />
-                        {th ? "บันทึก" : "Save"}
+                        {t.save}
                         {loadingAction === `edit-${car.id}` && "..."}
                       </button>
                       <button
