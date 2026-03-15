@@ -14,9 +14,10 @@ export default async function DashboardLayout({
   if (!user) redirect("/sign-in");
 
   const activeGroupId = await getActiveGroupOrRedirect();
-  const [role, carCount] = await Promise.all([
+  const [role, carCount, tripCount] = await Promise.all([
     getGroupRole(user.id, activeGroupId),
     prisma.car.count({ where: { ownerId: user.id } }),
+    prisma.trip.count({ where: { partyGroupId: activeGroupId }, take: 1 }),
   ]);
 
   if (!role) redirect("/join");
@@ -26,7 +27,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen pb-24">
       {children}
-      <BottomNav isAdmin={isAdmin} hasCars={carCount > 0} />
+      <BottomNav isAdmin={isAdmin} hasCars={carCount > 0} hasTrips={tripCount > 0} />
     </div>
   );
 }
