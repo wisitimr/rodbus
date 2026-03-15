@@ -171,7 +171,7 @@ export async function recordPayment(
 }
 
 /** Clear the full pending balance for a user by creating a payment for the exact amount */
-export async function markAsSettled(userId: string, carId: string, partyGroupId: string) {
+export async function markAsSettled(userId: string, carId: string, partyGroupId: string, note?: string) {
   await requireGroupAdmin(partyGroupId);
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
@@ -187,7 +187,7 @@ export async function markAsSettled(userId: string, carId: string, partyGroupId:
       userId,
       carId,
       amount: entry.amount,
-      note: "Full balance cleared",
+      note: note || null,
       date: entry.date,
     })),
   });
