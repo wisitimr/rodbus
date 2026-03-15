@@ -160,7 +160,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                 </div>
                 <p className="truncate text-xs text-muted-foreground">{user.email}</p>
               </div>
-              {!isMe && (
+              {!isMe && user.id !== ownerId && (
                 <div className="relative shrink-0" ref={roleMenuId === user.memberId ? menuRef : undefined}>
                   <button
                     type="button"
