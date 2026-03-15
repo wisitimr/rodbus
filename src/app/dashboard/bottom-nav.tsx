@@ -9,9 +9,10 @@ import { useT } from "@/lib/i18n-context";
 interface BottomNavProps {
   isAdmin: boolean;
   hasCars: boolean;
+  hasTrips: boolean;
 }
 
-export default function BottomNav({ isAdmin, hasCars }: BottomNavProps) {
+export default function BottomNav({ isAdmin, hasCars, hasTrips }: BottomNavProps) {
   const { t } = useT();
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
@@ -32,7 +33,9 @@ export default function BottomNav({ isAdmin, hasCars }: BottomNavProps) {
     ...(isAdmin && hasCars
       ? [{ label: t.manage, href: "/manage", icon: ClipboardList }]
       : []),
-    { label: t.history, href: "/dashboard/history", icon: Clock },
+    ...(hasTrips
+      ? [{ label: t.history, href: "/dashboard/history", icon: Clock }]
+      : []),
     ...(isAdmin
       ? [{ label: t.settings, href: "/admin", icon: Settings }]
       : []),
