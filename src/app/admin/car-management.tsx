@@ -116,6 +116,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
 
   function startEdit(car: { id: string; name: string; licensePlate: string | null; defaultGasCost: number }) {
     setSwipedCarId(null);
+    setShowAddForm(false);
     setEditingCarId(car.id);
     setEditName(car.name);
     setEditLicensePlate(car.licensePlate ?? "");
@@ -159,7 +160,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
       {!showAddForm ? (
         <button
           type="button"
-          onClick={() => setShowAddForm(true)}
+          onClick={() => { setShowAddForm(true); setEditingCarId(null); }}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" />
@@ -272,9 +273,9 @@ export default function CarManagement({ cars }: CarManagementProps) {
                 transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
                 transition: "transform 0.2s ease-out",
               }}
-              onTouchStart={(e) => handleSwipeTouchStart(e, car.id)}
-              onTouchMove={(e) => handleSwipeTouchMove(e, e.currentTarget as HTMLDivElement)}
-              onTouchEnd={(e) => handleSwipeTouchEnd(e, car.id, e.currentTarget as HTMLDivElement)}
+              onTouchStart={!isEditing ? (e) => handleSwipeTouchStart(e, car.id) : undefined}
+              onTouchMove={!isEditing ? (e) => handleSwipeTouchMove(e, e.currentTarget as HTMLDivElement) : undefined}
+              onTouchEnd={!isEditing ? (e) => handleSwipeTouchEnd(e, car.id, e.currentTarget as HTMLDivElement) : undefined}
             >
               {isEditing ? (
                 /* Edit form */
