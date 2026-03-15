@@ -318,6 +318,7 @@ function SummaryCard({
   expandedSubPeriods,
   toggleSubPeriod,
   paidTripKeys,
+  perUserPaidKeys,
   locale,
   t,
   allDebts,
@@ -330,6 +331,7 @@ function SummaryCard({
   expandedSubPeriods: Set<string>;
   toggleSubPeriod: (key: string) => void;
   paidTripKeys: Set<string>;
+  perUserPaidKeys: Map<string, Set<string>>;
   locale: string;
   t: HistoryContentProps["t"];
   allDebts?: DebtWithBreakdown[];
@@ -478,7 +480,8 @@ function SummaryCard({
                       {/* User's trip breakdown entries */}
                       {userEntries.map((entry, i) => {
                         const entryKey = `${group.key}_${e.userId}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
-                        const entrySettled = paidTripKeys.has(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
+                        const userPaid = perUserPaidKeys.get(e.userId);
+                        const entrySettled = userPaid ? userPaid.has(`${entry.carId}-${entry.date}-${entry.tripNumber}`) : false;
                         return (
                           <SummaryEntryCard
                             key={entryKey}
@@ -1342,6 +1345,7 @@ export default function HistoryContent({
                   expandedSubPeriods={expandedSubPeriods}
                   toggleSubPeriod={toggleSubPeriod}
                   paidTripKeys={paidTripKeys}
+                  perUserPaidKeys={perUserPaidKeys}
                   locale={locale}
                   t={t}
                   allDebts={isAdmin && !onlyMe ? allDebts : undefined}
