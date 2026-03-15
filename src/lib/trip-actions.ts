@@ -2,20 +2,28 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { getGroupRole } from "@/lib/party-group";
+import { GroupRole } from "@prisma/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { bangkokDateToUTC } from "@/lib/timezone";
 
-/** Update a check-in's date. User can edit own check-ins; admin can edit any. */
+/** Update a check-in's date. User can edit own check-ins; group admin can edit any. */
 export async function updateCheckInDate(checkInId: string, newDate: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
 
-  const checkIn = await prisma.checkIn.findUnique({ where: { id: checkInId } });
+  const checkIn = await prisma.checkIn.findUnique({
+    where: { id: checkInId },
+    include: { trip: { select: { partyGroupId: true } } },
+  });
   if (!checkIn) throw new Error("Check-in not found");
 
-  if (checkIn.userId !== user.id && user.role !== Role.ADMIN) {
-    throw new Error("Forbidden");
+  // Check permission: own check-in OR group admin
+  if (checkIn.userId !== user.id) {
+    const groupId = checkIn.trip?.partyGroupId;
+    if (!groupId) throw new Error("Forbidden");
+    const role = await getGroupRole(user.id, groupId);
+    if (role !== GroupRole.ADMIN) throw new Error("Forbidden");
   }
 
   const parsedDate = bangkokDateToUTC(newDate);
@@ -31,16 +39,22 @@ export async function updateCheckInDate(checkInId: string, newDate: string) {
   revalidateTag("dashboard");
 }
 
-/** Delete a check-in. User can delete own check-ins; admin can delete any. */
+/** Delete a check-in. User can delete own check-ins; group admin can delete any. */
 export async function deleteCheckIn(checkInId: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
 
-  const checkIn = await prisma.checkIn.findUnique({ where: { id: checkInId } });
+  const checkIn = await prisma.checkIn.findUnique({
+    where: { id: checkInId },
+    include: { trip: { select: { partyGroupId: true } } },
+  });
   if (!checkIn) throw new Error("Check-in not found");
 
-  if (checkIn.userId !== user.id && user.role !== Role.ADMIN) {
-    throw new Error("Forbidden");
+  if (checkIn.userId !== user.id) {
+    const groupId = checkIn.trip?.partyGroupId;
+    if (!groupId) throw new Error("Forbidden");
+    const role = await getGroupRole(user.id, groupId);
+    if (role !== GroupRole.ADMIN) throw new Error("Forbidden");
   }
 
   await prisma.checkIn.delete({ where: { id: checkInId } });
@@ -96,7 +110,7 @@ export async function updateTrip(
       }
     }
 
-    // Build full group with transitive linking (same as POST /api/costs)
+    // Build full group with transitive linking
     if (newLinkedIds.length > 0) {
       const allGroupIds = new Set<string>(newLinkedIds);
       const linkedTrips = await prisma.trip.findMany({
@@ -110,7 +124,6 @@ export async function updateTrip(
       }
       allGroupIds.add(tripId);
 
-      // Fetch transitive trips
       const extraIds = Array.from(allGroupIds).filter(
         (id) => id !== tripId && !newLinkedIds.includes(id)
       );
@@ -124,7 +137,6 @@ export async function updateTrip(
 
       const allLinkedTrips = [...linkedTrips, ...extraTrips];
 
-      // Update every trip in the group to know about all other members
       for (const lt of allLinkedTrips) {
         const updatedIds = Array.from(allGroupIds).filter((id) => id !== lt.id);
         await prisma.trip.update({
@@ -133,7 +145,6 @@ export async function updateTrip(
         });
       }
 
-      // Set this trip's links to the full group
       updateData.sharedParkingTripIds = Array.from(allGroupIds).filter((id) => id !== tripId);
     } else {
       updateData.sharedParkingTripIds = [];

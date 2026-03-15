@@ -47,10 +47,12 @@ export interface UserDebt {
  */
 export async function calculateDebts(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  partyGroupId: string
 ): Promise<UserDebt[]> {
   const trips = await prisma.trip.findMany({
     where: {
+      partyGroupId,
       date: { gte: startDate, lte: endDate },
     },
     include: { car: { include: { owner: { select: { name: true } } } } },
@@ -359,10 +361,12 @@ export async function calculateDebts(
     }
   }
 
-  // Fetch all payments within the date range and subtract from debt
+  // Fetch all payments within the date range, scoped to cars used in this group
+  const groupCarIds = [...new Set(trips.map((t) => t.carId))];
   const payments = await prisma.payment.findMany({
     where: {
       date: { gte: startDate, lte: endDate },
+      carId: { in: groupCarIds },
     },
   });
 
@@ -387,16 +391,28 @@ export async function calculateDebts(
  * Calculate pending debt for a single user (all-time), broken down by date.
  * Returns per-date shares sorted oldest-first, with already-paid amounts subtracted.
  */
-export async function calculateUserPendingBreakdown(userId: string): Promise<{
+export async function calculateUserPendingBreakdown(userId: string, partyGroupId: string): Promise<{
   totalPending: number;
   perDate: { date: Date; amount: number }[];
 }> {
   const allTripsForUser = await prisma.trip.findMany({
+    where: { partyGroupId },
     include: { car: true },
     orderBy: { date: "asc" },
   });
 
+  const tripIds = allTripsForUser.map((t) => t.id);
   const allCheckInsForUser = await prisma.checkIn.findMany({
+    where: {
+      OR: [
+        { tripId: { in: tripIds } },
+        ...allTripsForUser.map((t) => ({
+          tripId: null as string | null,
+          carId: t.carId,
+          date: t.date,
+        })),
+      ],
+    },
     include: { user: true },
   });
 
@@ -538,8 +554,10 @@ export async function calculateUserPendingBreakdown(userId: string): Promise<{
   }
 
   // Subtract payments from oldest dates first
+  // Scope payments to cars that have trips in this group
+  const groupCarIds = [...new Set(allTripsForUser.map((t) => t.carId))];
   const paymentsAgg = await prisma.payment.aggregate({
-    where: { userId },
+    where: { userId, carId: { in: groupCarIds } },
     _sum: { amount: true },
   });
 

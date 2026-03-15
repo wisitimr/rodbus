@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import { Home } from "lucide-react";
 import ProfileMenu from "../profile-menu";
+import { getActiveGroupOrRedirect, getGroupRole, getUserActiveGroups } from "@/lib/party-group";
+import { GroupRole } from "@prisma/client";
 
 export default async function OverviewLayout({
   children,
@@ -14,6 +16,11 @@ export default async function OverviewLayout({
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
   const t = getTranslations(locale);
+
+  const activeGroupId = await getActiveGroupOrRedirect();
+  const role = await getGroupRole(user.id, activeGroupId);
+  const isAdmin = role === GroupRole.ADMIN;
+  const groups = await getUserActiveGroups(user.id);
 
   return (
     <>
@@ -36,8 +43,10 @@ export default async function OverviewLayout({
             image={user.image}
             name={user.name}
             email={user.email}
-            role={user.role}
-            isAdmin={user.role === "ADMIN"}
+            role={isAdmin ? "ADMIN" : "MEMBER"}
+            isAdmin={isAdmin}
+            groups={groups}
+            activeGroupId={activeGroupId}
           />
         </div>
       </header>

@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateShort, formatDateMedium, type Locale } from "@/lib/i18n";
 import ManageContent from "./manage-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
+import { getActiveGroupOrRedirect } from "@/lib/party-group";
 
 export default async function ManagePage() {
   const user = (await getCurrentUser())!;
@@ -14,6 +15,7 @@ export default async function ManagePage() {
   const t = getTranslations(locale);
 
   const userId = user.id;
+  const activeGroupId = await getActiveGroupOrRedirect();
 
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
@@ -24,10 +26,11 @@ export default async function ManagePage() {
       select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
       orderBy: { name: "asc" },
     }),
-    calculateDebts(startOfMonth, endOfMonth),
+    calculateDebts(startOfMonth, endOfMonth, activeGroupId),
     prisma.trip.findMany({
       where: {
         car: { ownerId: userId },
+        partyGroupId: activeGroupId,
         date: { gte: startOfMonth, lte: endOfMonth },
       },
       include: {
@@ -110,7 +113,7 @@ export default async function ManagePage() {
     }));
 
   return (
-      <main className="mx-auto max-w-lg space-y-4 p-4">
+    <main className="mx-auto max-w-lg space-y-4 p-4">
       <ManageContent
         cars={allCars.map((c) => ({
           id: c.id,
@@ -122,7 +125,8 @@ export default async function ManagePage() {
         carId={ownedCarId}
         locale={locale}
         recentTrips={recentTripsForSharing}
+        partyGroupId={activeGroupId}
       />
-      </main>
+    </main>
   );
 }

@@ -2,103 +2,34 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { requireGroupAdmin } from "@/lib/party-group";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { bangkokDateToUTC, todayBangkokUTC } from "@/lib/timezone";
 
 // ---------------------------------------------------------------------------
-// Reusable authorization guard — ensures only ADMIN (Car Owners) can proceed
-// ---------------------------------------------------------------------------
-export async function requireAdmin() {
-  const user = await getCurrentUser();
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
-  if (user.role !== Role.ADMIN) {
-    throw new Error("Forbidden: admin access required");
-  }
-  return user;
-}
-
-// ---------------------------------------------------------------------------
-// User Management
-// ---------------------------------------------------------------------------
-
-/** Approve a PENDING user → USER */
-export async function approveUser(userId: string) {
-  await requireAdmin();
-  await prisma.user.update({
-    where: { id: userId },
-    data: { role: Role.USER },
-  });
-  revalidatePath("/admin");
-}
-
-/** Delete a user and all associated data (trips, payments, owned cars) */
-export async function deleteUser(userId: string) {
-  const admin = await requireAdmin();
-  if (userId === admin.id) {
-    throw new Error("Cannot delete yourself");
-  }
-  await prisma.user.delete({ where: { id: userId } });
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidateTag("dashboard");
-}
-
-/** Revoke a USER → back to PENDING */
-export async function revokeUser(userId: string) {
-  const admin = await requireAdmin();
-  if (userId === admin.id) {
-    throw new Error("Cannot revoke your own access");
-  }
-  await prisma.user.update({
-    where: { id: userId },
-    data: { role: Role.PENDING },
-  });
-  revalidatePath("/admin");
-}
-
-/** Set any user's role (with safeguards) */
-export async function setUserRole(userId: string, role: Role): Promise<{ error?: string }> {
-  const admin = await requireAdmin();
-
-  // Prevent admin from demoting themselves
-  if (userId === admin.id && role !== Role.ADMIN) {
-    return { error: "Cannot change your own role" };
-  }
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { role },
-  });
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidateTag("dashboard");
-  return {};
-}
-
-// ---------------------------------------------------------------------------
-// Cost Management — Admin can update gas/parking for their owned cars
+// Cost Management — Admin can create trips for their owned cars
 // ---------------------------------------------------------------------------
 
 export async function createTrip(
   carId: string,
   date: string,
   gasCost: number,
-  parkingCost: number
+  parkingCost: number,
+  partyGroupId: string
 ) {
-  await requireAdmin();
+  await requireGroupAdmin(partyGroupId);
+
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
 
   const car = await prisma.car.findUnique({ where: { id: carId } });
-  if (!car) {
-    throw new Error("Car not found");
-  }
+  if (!car) throw new Error("Car not found");
+  if (car.ownerId !== user.id) throw new Error("You do not own this car");
 
   const parsedDate = bangkokDateToUTC(date);
 
   await prisma.trip.create({
-    data: { carId, date: parsedDate, gasCost, parkingCost },
+    data: { carId, partyGroupId, date: parsedDate, gasCost, parkingCost },
   });
 
   revalidatePath("/admin");
@@ -110,12 +41,12 @@ export async function createTrip(
 // ---------------------------------------------------------------------------
 
 export async function updateDefaultGasCost(carId: string, gasCost: number) {
-  await requireAdmin();
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
 
   const car = await prisma.car.findUnique({ where: { id: carId } });
-  if (!car) {
-    throw new Error("Car not found");
-  }
+  if (!car) throw new Error("Car not found");
+  if (car.ownerId !== user.id) throw new Error("You do not own this car");
 
   await prisma.car.update({
     where: { id: carId },
@@ -127,42 +58,13 @@ export async function updateDefaultGasCost(carId: string, gasCost: number) {
 }
 
 // ---------------------------------------------------------------------------
-// System Configuration — Disabled Dates (holidays / maintenance)
-// ---------------------------------------------------------------------------
-
-/** Disable the system for a specific date */
-export async function disableDate(date: string, reason?: string) {
-  await requireAdmin();
-  const parsedDate = bangkokDateToUTC(date);
-
-  await prisma.disabledDate.upsert({
-    where: { date: parsedDate },
-    update: { reason: reason || null },
-    create: { date: parsedDate, reason: reason || null },
-  });
-  revalidatePath("/admin");
-}
-
-/** Re-enable the system for a specific date */
-export async function enableDate(date: string) {
-  await requireAdmin();
-  const parsedDate = bangkokDateToUTC(date);
-
-  await prisma.disabledDate
-    .delete({ where: { date: parsedDate } })
-    .catch(() => {
-      // Silently ignore if date wasn't disabled
-    });
-  revalidatePath("/admin");
-}
-
-// ---------------------------------------------------------------------------
 // Car Management
 // ---------------------------------------------------------------------------
 
 /** Add a new car owned by the logged-in user */
 export async function addCar(name: string, licensePlate: string | null) {
-  const user = await requireAdmin();
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
 
   if (!name.trim()) {
     throw new Error("Car name is required");
@@ -183,12 +85,12 @@ export async function addCar(name: string, licensePlate: string | null) {
 
 /** Delete a car and all associated data */
 export async function deleteCar(carId: string) {
-  await requireAdmin();
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
 
   const car = await prisma.car.findUnique({ where: { id: carId } });
-  if (!car) {
-    throw new Error("Car not found");
-  }
+  if (!car) throw new Error("Car not found");
+  if (car.ownerId !== user.id) throw new Error("You do not own this car");
 
   await prisma.car.delete({ where: { id: carId } });
 
@@ -204,16 +106,17 @@ export async function recordPayment(
   userId: string,
   carId: string,
   amount: number,
+  partyGroupId: string,
   note?: string
 ) {
-  await requireAdmin();
+  await requireGroupAdmin(partyGroupId);
 
   if (amount <= 0) {
     throw new Error("Payment amount must be positive");
   }
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
-  const result = await calculateUserPendingBreakdown(userId);
+  const result = await calculateUserPendingBreakdown(userId, partyGroupId);
 
   // Distribute payment across dates oldest-first
   let remaining = amount;
@@ -254,11 +157,11 @@ export async function recordPayment(
 }
 
 /** Clear the full pending balance for a user by creating a payment for the exact amount */
-export async function markAsSettled(userId: string, carId: string) {
-  await requireAdmin();
+export async function markAsSettled(userId: string, carId: string, partyGroupId: string) {
+  await requireGroupAdmin(partyGroupId);
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
-  const result = await calculateUserPendingBreakdown(userId);
+  const result = await calculateUserPendingBreakdown(userId, partyGroupId);
 
   if (result.totalPending <= 0) {
     throw new Error("User has no pending debt");

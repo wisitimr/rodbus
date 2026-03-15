@@ -60,11 +60,12 @@ interface ManageContentProps {
   carId: string;
   locale: string;
   recentTrips: RecentTrip[];
+  partyGroupId: string;
 }
 
 const VISIBLE_TRIPS = 2;
 
-export default function ManageContent({ cars, debts, carId, locale, recentTrips }: ManageContentProps) {
+export default function ManageContent({ cars, debts, carId, locale, recentTrips, partyGroupId }: ManageContentProps) {
   const { t } = useT();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("newTrip");
@@ -101,6 +102,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
           gasCost: parseFloat(gasCost) || 0,
           parkingCost: parseFloat(parkingCost) || 0,
           sharedParkingTripIds: (parseFloat(parkingCost) || 0) > 0 ? selectedTripIds : [],
+          partyGroupId,
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -153,7 +155,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips 
   async function handleSettle(userId: string) {
     setLoadingAction(`settle-${userId}`);
     try {
-      await markAsSettled(userId, carId);
+      await markAsSettled(userId, carId, partyGroupId);
       setConfirmingUserId(null);
       router.refresh();
     } finally {

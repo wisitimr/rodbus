@@ -1,23 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Car, QrCode } from "lucide-react";
+import { Users, Car, QrCode, Link } from "lucide-react";
 import { useT } from "@/lib/i18n-context";
 
 interface SettingsTabsProps {
   usersTab: React.ReactNode;
   carsTab: React.ReactNode;
   qrTab: React.ReactNode;
+  inviteTab: React.ReactNode;
 }
 
-export default function SettingsTabs({ usersTab, carsTab, qrTab }: SettingsTabsProps) {
-  const { t } = useT();
-  const [activeTab, setActiveTab] = useState<"users" | "cars" | "qr">("users");
+export default function SettingsTabs({ usersTab, carsTab, qrTab, inviteTab }: SettingsTabsProps) {
+  const { t, locale } = useT();
+  const [activeTab, setActiveTab] = useState<"users" | "cars" | "qr" | "invite">("users");
+
+  const th = locale === "th";
 
   const tabs = [
     { key: "users" as const, label: t.users, icon: Users },
     { key: "cars" as const, label: t.cars, icon: Car },
     { key: "qr" as const, label: t.qr, icon: QrCode },
+    { key: "invite" as const, label: th ? "เชิญ" : "Invite", icon: Link },
   ];
 
   return (
@@ -49,6 +53,7 @@ export default function SettingsTabs({ usersTab, carsTab, qrTab }: SettingsTabsP
         {activeTab === "users" && usersTab}
         {activeTab === "cars" && carsTab}
         {activeTab === "qr" && qrTab}
+        {activeTab === "invite" && inviteTab}
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
+import { GroupRole } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import AdminQRCode from "./admin-qr-code";
@@ -13,7 +14,10 @@ export default async function QRPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
-  if (user.role !== Role.ADMIN) redirect("/dashboard");
+
+  const activeGroupId = await getActiveGroupOrRedirect();
+  const role = await getGroupRole(user.id, activeGroupId);
+  if (role !== GroupRole.ADMIN) redirect("/dashboard");
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));

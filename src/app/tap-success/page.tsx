@@ -49,9 +49,9 @@ function TapResult() {
       iconBorder: "border-primary/30",
       titleColor: "text-primary",
     },
-    disabled: {
-      title: t.systemDisabled,
-      description: reason ?? t.systemDisabledDesc,
+    no_group: {
+      title: t.noGroupMembership,
+      description: reason ?? t.noGroupMembershipDesc,
       icon: <ShieldOff className="h-14 w-14 text-debt" />,
       iconBg: "bg-debt/10",
       iconBorder: "border-debt/30",

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { MemberStatus } from "@prisma/client";
 import { todayBangkokUTC } from "@/lib/timezone";
 import { revalidateTag } from "next/cache";
 
 type ValidateError =
   | { error: "not_found" }
   | { error: "owner"; car: string }
-  | { error: "disabled"; reason: string }
+  | { error: "no_group" }
   | { error: "already_recorded"; car: string }
   | { error: "no_open_trip"; car: string };
 
@@ -17,7 +17,7 @@ type AvailableTrip = { id: string; tripNumber: number; checkInCount: number; gas
 type ValidateSuccess = { ok: true; trips: AvailableTrip[]; car: string; today: Date };
 
 async function validateTap(
-  user: { id: string; role: string },
+  user: { id: string },
   carId: string,
 ): Promise<ValidateError | ValidateSuccess> {
   const car = await prisma.car.findUnique({ where: { id: carId } });
@@ -27,18 +27,27 @@ async function validateTap(
     return { error: "owner", car: car.name };
   }
 
-  const today = todayBangkokUTC();
-
-  const disabledDate = await prisma.disabledDate.findUnique({
-    where: { date: today },
+  // Get user's active group IDs
+  const memberships = await prisma.partyGroupMember.findMany({
+    where: { userId: user.id, status: MemberStatus.ACTIVE },
+    select: { partyGroupId: true },
   });
-  if (disabledDate) {
-    return { error: "disabled", reason: disabledDate.reason ?? "System is disabled for today" };
+
+  if (memberships.length === 0) {
+    return { error: "no_group" };
   }
 
-  // Find active trips for this car today that user hasn't checked in yet
+  const userGroupIds = memberships.map((m) => m.partyGroupId);
+
+  const today = todayBangkokUTC();
+
+  // Find active trips for this car today that are in groups the user belongs to
   const todaysTrips = await prisma.trip.findMany({
-    where: { carId, date: today },
+    where: {
+      carId,
+      date: today,
+      partyGroupId: { in: userGroupIds },
+    },
     orderBy: { createdAt: "asc" },
     include: {
       checkIns: true,
@@ -78,9 +87,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user.role === Role.PENDING) {
-    const pendingUrl = new URL("/pending-approval", request.url);
-    return NextResponse.redirect(pendingUrl);
+  // Check user has at least one active group
+  const hasGroup = await prisma.partyGroupMember.findFirst({
+    where: { userId: user.id, status: MemberStatus.ACTIVE },
+  });
+  if (!hasGroup) {
+    const joinUrl = new URL("/join", request.url);
+    return NextResponse.redirect(joinUrl);
   }
 
   const carId = request.nextUrl.searchParams.get("carId");
@@ -94,7 +107,6 @@ export async function GET(request: NextRequest) {
     const successUrl = new URL("/tap-success", request.url);
     successUrl.searchParams.set("status", result.error);
     if ("car" in result) successUrl.searchParams.set("car", result.car);
-    if ("reason" in result) successUrl.searchParams.set("reason", result.reason);
     return NextResponse.redirect(successUrl);
   }
 
@@ -112,8 +124,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  if (user.role === Role.PENDING) {
-    return NextResponse.json({ error: "Account pending approval" }, { status: 403 });
+  // Check user has at least one active group
+  const hasGroup = await prisma.partyGroupMember.findFirst({
+    where: { userId: user.id, status: MemberStatus.ACTIVE },
+  });
+  if (!hasGroup) {
+    return NextResponse.json({ error: "No active group membership" }, { status: 403 });
   }
 
   const body = await request.json();

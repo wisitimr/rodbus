@@ -8,24 +8,63 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
-enum Role {
-  PENDING
-  USER
+enum GroupRole {
   ADMIN
+  MEMBER
+}
+
+enum MemberStatus {
+  PENDING
+  ACTIVE
 }
 
 model User {
-  id        String    @id @default(cuid())
-  clerkId   String    @unique
-  name      String?
-  email     String    @unique
-  image     String?
-  role      Role      @default(PENDING)
-  ownedCars Car[]     @relation("OwnedCars")
-  checkIns  CheckIn[]
-  payments  Payment[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String              @id @default(cuid())
+  clerkId     String              @unique
+  name        String?
+  email       String              @unique
+  image       String?
+  ownedCars   Car[]               @relation("OwnedCars")
+  checkIns    CheckIn[]
+  payments    Payment[]
+  memberships PartyGroupMember[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model PartyGroup {
+  id           String              @id @default(cuid())
+  name         String
+  members      PartyGroupMember[]
+  trips        Trip[]
+  inviteTokens InviteToken[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model PartyGroupMember {
+  id           String       @id @default(cuid())
+  userId       String
+  partyGroupId String
+  role         GroupRole    @default(MEMBER)
+  status       MemberStatus @default(PENDING)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partyGroup   PartyGroup   @relation(fields: [partyGroupId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+
+  @@unique([userId, partyGroupId])
+  @@index([partyGroupId])
+}
+
+model InviteToken {
+  id           String     @id @default(cuid())
+  token        String     @unique @default(cuid())
+  partyGroupId String
+  partyGroup   PartyGroup @relation(fields: [partyGroupId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime
+  createdAt    DateTime   @default(now())
+
+  @@index([token])
 }
 
 model Car {
@@ -59,19 +98,22 @@ model CheckIn {
 }
 
 model Trip {
-  id                    String    @id @default(cuid())
+  id                    String      @id @default(cuid())
   carId                 String
-  date                  DateTime  @db.Date
-  gasCost               Float     @default(0)
-  parkingCost           Float     @default(0)
+  partyGroupId          String
+  date                  DateTime    @db.Date
+  gasCost               Float       @default(0)
+  parkingCost           Float       @default(0)
   label                 String?
-  sharedParkingTripIds  String[]  @default([])
-  car                   Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  sharedParkingTripIds  String[]    @default([])
+  car                   Car         @relation(fields: [carId], references: [id], onDelete: Cascade)
+  partyGroup            PartyGroup  @relation(fields: [partyGroupId], references: [id])
   checkIns              CheckIn[]
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   @@index([carId, date])
+  @@index([partyGroupId])
   @@map("Trip")
 }
 
@@ -89,10 +131,4 @@ model Payment {
   @@index([userId])
   @@index([carId])
   @@index([userId, date])
-}
-
-model DisabledDate {
-  id     String   @id @default(cuid())
-  date   DateTime @unique @db.Date
-  reason String?
 }
