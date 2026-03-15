@@ -29,15 +29,15 @@ const roleBadge: Record<string, string> = {
   MEMBER: "bg-muted text-muted-foreground",
 };
 
-const roleLabel: Record<string, string> = {
-  ADMIN: "ADMIN",
-  MEMBER: "MEMBER",
-};
 
 export default function ProfileMenu({ image, name, email, role, isAdmin, groups, activeGroupId }: ProfileMenuProps) {
   const { t } = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const roleLabel: Record<string, string> = {
+    ADMIN: t.admin.toUpperCase(),
+    MEMBER: t.passenger.toUpperCase(),
+  };
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
             <>
               <div className="border-b border-border px-4 py-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Parties
+                  {t.parties}
                 </p>
               </div>
               {groups.map((group) => (
@@ -104,7 +104,7 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
                     {group.name}
                   </span>
                   <span className={`ml-auto text-xs ${group.role === "ADMIN" ? "text-debt" : "text-muted-foreground"}`}>
-                    {group.role}
+                    {roleLabel[group.role] ?? group.role}
                   </span>
                 </button>
               ))}
@@ -115,8 +115,12 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
           {/* Active group name (single group) */}
           {!hasMultipleGroups && activeGroup && (
             <>
+              <div className="border-b border-border px-4 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t.party}
+                </p>
+              </div>
               <div className="px-4 py-2.5">
-                <p className="text-xs text-muted-foreground">Party</p>
                 <p className="text-sm font-semibold text-foreground">{activeGroup.name}</p>
               </div>
               <div className="border-t border-border" />
