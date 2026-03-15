@@ -77,6 +77,8 @@ export default function CarManagement({ cars }: CarManagementProps) {
     if (finalOffset < -SWIPE_THRESHOLD) {
       cardEl.style.transform = `translateX(-${ACTION_WIDTH}px)`;
       setSwipedCarId(carId);
+      // Hide QR when swiping to reveal actions
+      if (expandedQrId === carId) setExpandedQrId(null);
     } else {
       cardEl.style.transform = "translateX(0)";
       setSwipedCarId(null);
