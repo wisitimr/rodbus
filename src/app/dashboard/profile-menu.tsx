@@ -115,8 +115,12 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
           {/* Active group name (single group) */}
           {!hasMultipleGroups && activeGroup && (
             <>
+              <div className="border-b border-border px-4 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Party
+                </p>
+              </div>
               <div className="px-4 py-2.5">
-                <p className="text-xs text-muted-foreground">Party</p>
                 <p className="text-sm font-semibold text-foreground">{activeGroup.name}</p>
               </div>
               <div className="border-t border-border" />
