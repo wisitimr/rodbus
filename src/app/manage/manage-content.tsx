@@ -37,6 +37,7 @@ interface BreakdownItem {
 interface DebtEntry {
   userId: string;
   userName: string | null;
+  userImage: string | null;
   pendingDebt: number;
   totalDebt: number;
   totalPaid: number;
@@ -391,8 +392,12 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                     >
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-debt/10 text-sm font-bold text-debt">
-                          {initial}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-debt/10 text-sm font-bold text-debt">
+                          {d.userImage ? (
+                            <img src={d.userImage} alt={d.userName ?? ""} className="h-full w-full object-cover" />
+                          ) : (
+                            initial
+                          )}
                         </div>
                         <div className="text-left">
                           <p className="font-semibold text-foreground">{d.userName ?? "Unknown"}</p>

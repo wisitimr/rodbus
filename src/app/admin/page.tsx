@@ -14,7 +14,7 @@ export default async function AdminPage() {
   const [groupMembers, myCars, partyGroup] = await Promise.all([
     prisma.partyGroupMember.findMany({
       where: { partyGroupId: activeGroupId },
-      include: { user: { select: { id: true, name: true, email: true } } },
+      include: { user: { select: { id: true, name: true, email: true, image: true } } },
       orderBy: [{ status: "asc" }, { role: "asc" }, { createdAt: "asc" }],
     }),
     prisma.car.findMany({
@@ -32,6 +32,7 @@ export default async function AdminPage() {
     id: m.user.id,
     name: m.user.name,
     email: m.user.email,
+    image: m.user.image,
     role: m.role,
     status: m.status,
   }));

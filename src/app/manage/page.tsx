@@ -51,6 +51,7 @@ export default async function ManagePage() {
       return {
         userId: d.userId,
         userName: d.userName,
+        userImage: d.userImage,
         pendingDebt: Math.round((myCarDebt - d.totalPaid) * 100) / 100,
         totalDebt: myCarDebt,
         totalPaid: d.totalPaid,

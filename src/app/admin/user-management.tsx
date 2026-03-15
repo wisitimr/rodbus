@@ -12,6 +12,7 @@ interface UserManagementProps {
     id: string;
     name: string | null;
     email: string;
+    image: string | null;
     role: GroupRole;
     status: MemberStatus;
   }[];
@@ -104,8 +105,12 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                 key={user.memberId}
                 className={`flex items-center gap-3 rounded-xl border-2 border-warning/30 bg-warning/5 p-3 animate-fade-in transition-opacity ${isLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/20 text-sm font-bold text-warning">
-                  {initial}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-warning/20 text-sm font-bold text-warning">
+                  {user.image ? (
+                    <img src={user.image} alt={user.name ?? ""} className="h-full w-full object-cover" />
+                  ) : (
+                    initial
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-foreground">{user.name ?? t.noName}</p>
@@ -150,8 +155,12 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
               key={user.memberId}
               className={`relative flex items-center gap-3 rounded-xl border border-border bg-card p-3 animate-fade-in transition-opacity ${isLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                {initial}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">
+                {user.image ? (
+                  <img src={user.image} alt={user.name ?? ""} className="h-full w-full object-cover" />
+                ) : (
+                  initial
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
