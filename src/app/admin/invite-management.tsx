@@ -51,19 +51,11 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
       {/* QR Code Card */}
       <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <UsersIcon className="h-5 w-5 text-primary" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-foreground">{groupName}</p>
-            <p className="text-xs text-muted-foreground">
-              {th
-                ? `แชร์ลิงก์เชิญเพื่อให้คนอื่นขอเข้าร่วมกลุ่ม`
-                : `Share this link so others can request to join`}
-            </p>
-          </div>
-        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          {th
+            ? `แชร์ลิงก์เชิญเพื่อให้คนอื่นขอเข้าร่วม "${groupName}"`
+            : `Share this link so others can request to join "${groupName}"`}
+        </p>
 
         <div className="text-center">
         <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
