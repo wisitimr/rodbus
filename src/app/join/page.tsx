@@ -25,7 +25,7 @@ export default async function JoinPage() {
     include: { partyGroup: { select: { name: true } } },
   });
 
-  const hasPendingOnly = pendingMemberships.length > 0 && !hasExistingGroups;
+  const hasPending = pendingMemberships.length > 0;
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
@@ -35,8 +35,8 @@ export default async function JoinPage() {
     <div className="flex min-h-screen flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm animate-scale-in">
         <div className="text-center">
-          <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 ${hasPendingOnly ? "bg-warning/10 border-warning/30" : "bg-primary/10 border-primary/30"}`}>
-            {hasPendingOnly ? (
+          <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 ${hasPending ? "bg-warning/10 border-warning/30" : "bg-primary/10 border-primary/30"}`}>
+            {hasPending ? (
               <svg className="h-12 w-12 text-warning" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -47,12 +47,12 @@ export default async function JoinPage() {
             )}
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            {hasPendingOnly
+            {hasPending
               ? (th ? "รอการอนุมัติ" : "Pending Approval")
               : (th ? "เข้าร่วมปาร์ตี้" : "Join a Party")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {hasPendingOnly
+            {hasPending
               ? (th ? "คำขอเข้าร่วมของคุณกำลังรอแอดมินอนุมัติ" : "Your join request is waiting for admin approval")
               : (th ? "สร้างปาร์ตี้ใหม่และเชิญสมาชิก" : "Create a new party and invite members")}
           </p>
@@ -60,7 +60,7 @@ export default async function JoinPage() {
 
         {pendingMemberships.length > 0 && (
           <div className="mt-6 space-y-2">
-            {!hasPendingOnly && (
+            {!hasPending && (
               <h3 className="text-sm font-semibold uppercase tracking-wider text-warning">
                 {th ? "รอการอนุมัติ" : "Pending Approval"}
               </h3>
@@ -86,19 +86,28 @@ export default async function JoinPage() {
           </div>
         )}
 
-        {!hasPendingOnly && <JoinContent locale={locale} />}
+        {!hasPending && <JoinContent locale={locale} />}
 
-        {hasPendingOnly && (
-          <div className="mt-6">
-            <SignOutButton>
-              <button className="w-full rounded-xl border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted">
-                {th ? "ออกจากระบบ" : "Sign Out"}
-              </button>
-            </SignOutButton>
+        {hasPending && (
+          <div className="mt-6 space-y-3">
+            {hasExistingGroups ? (
+              <a
+                href="/dashboard"
+                className="block w-full rounded-xl bg-primary py-3 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+              >
+                {th ? "ไปแดชบอร์ด" : "Go to Dashboard"}
+              </a>
+            ) : (
+              <SignOutButton>
+                <button className="w-full rounded-xl border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted">
+                  {th ? "ออกจากระบบ" : "Sign Out"}
+                </button>
+              </SignOutButton>
+            )}
           </div>
         )}
 
-        {hasExistingGroups && (
+        {!hasPending && hasExistingGroups && (
           <a
             href="/dashboard"
             className="mt-6 block text-center text-sm font-medium text-primary hover:text-primary/80"
