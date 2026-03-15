@@ -203,9 +203,10 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                     <p className="text-xs text-muted-foreground">
                       {trip.date} &middot; {trip.time}
                     </p>
-                    <p className="text-xs font-medium text-primary">
-                      {t.tripNumber} #{trip.tripNumber}
-                      {" "}
+                    <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                      <span className="text-xs font-medium text-primary">
+                        {t.tripNumber} #{trip.tripNumber}
+                      </span>
                       {trip.paymentStatus === "paid" ? (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-settled">
                           <CircleCheck className="h-3 w-3" />
@@ -217,7 +218,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                           {t.pending}
                         </span>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>

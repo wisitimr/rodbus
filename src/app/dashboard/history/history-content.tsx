@@ -1227,9 +1227,10 @@ export default function HistoryContent({
                                   <Clock className="h-3 w-3" />
                                   {trip.time}
                                 </div>
-                                <p className="text-xs font-medium text-primary">
-                                  {t.tripNumber} #{trip.tripNumber}
-                                  {" "}
+                                <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                                  <span className="text-xs font-medium text-primary">
+                                    {t.tripNumber} #{trip.tripNumber}
+                                  </span>
                                   {paidTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`) ? (
                                     <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-settled">
                                       <CircleCheck className="h-3 w-3" />
@@ -1241,7 +1242,7 @@ export default function HistoryContent({
                                       {t.pending}
                                     </span>
                                   )}
-                                </p>
+                                </div>
                               </div>
                             </div>
                           </div>
