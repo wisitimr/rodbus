@@ -1270,7 +1270,7 @@ export default function HistoryContent({
                                   {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(0)}
+                                  {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(2)}
                                 </p>
                               </div>
                               <div className="shrink-0 text-right">
