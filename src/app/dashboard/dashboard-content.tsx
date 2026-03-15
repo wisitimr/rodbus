@@ -16,6 +16,8 @@ interface RecentTrip {
   parkingCost: number;
   riderCount: number;
   tripNumber: number;
+  isOwner: boolean;
+  paymentStatus: "paid" | "pending";
 }
 
 interface DashboardContentProps {
@@ -170,7 +172,24 @@ export default function DashboardContent({
             {recentTrips.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">{t.noCheckInHistory}</p>
             ) : (
-              <RecentTripsSection recentTrips={recentTrips} />
+              <RecentTripsSection
+                recentTrips={recentTrips}
+                t={{
+                  people: t.people,
+                  tripNumber: t.tripNumber,
+                  paid: t.paid,
+                  pending: t.pending,
+                  editTrip: t.editTrip,
+                  edit: t.edit,
+                  editing: t.editing,
+                  cancel: t.cancel,
+                  car: t.car,
+                  gasCost: t.gasCost,
+                  parkingCost: t.parkingCost,
+                  total: t.total,
+                  confirmDeleteTrip: t.confirmDeleteTrip,
+                }}
+              />
             )}
           </>
         )}

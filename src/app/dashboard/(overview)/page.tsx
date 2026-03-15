@@ -21,7 +21,7 @@ async function fetchDashboardData(userId: string, isAdmin: boolean) {
       orderBy: { createdAt: "desc" },
       take: 5,
       include: {
-        car: { select: { name: true, licensePlate: true } },
+        car: { select: { name: true, licensePlate: true, ownerId: true } },
         checkIns: { select: { id: true } },
       },
     }),
@@ -134,22 +134,45 @@ export default async function DashboardPage() {
     } : null,
   }));
 
+  // Compute which trips are paid vs pending (oldest-first payment allocation)
+  const paidTripKeys = new Set<string>();
+  if (myDebt) {
+    const sorted = [...myDebt.breakdown].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    let remaining = myDebt.totalPaid;
+    for (const entry of sorted) {
+      if (remaining >= entry.share) {
+        remaining = Math.round((remaining - entry.share) * 100) / 100;
+        paidTripKeys.add(`${entry.carId}-${new Date(entry.date).toISOString().split("T")[0]}-${entry.tripNumber}`);
+      } else {
+        break;
+      }
+    }
+  }
+
   // Format recent trips for client component
-  const formattedRecentTrips = recentTrips.map((trip) => ({
-    id: trip.id,
-    date: formatDateMedium(new Date(trip.date), locale),
-    time: new Date(trip.createdAt).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Bangkok",
-    }),
-    carName: trip.car.name,
-    licensePlate: trip.car.licensePlate,
-    gasCost: trip.gasCost,
-    parkingCost: trip.parkingCost,
-    riderCount: trip.checkIns.length + 1,
-    tripNumber: tripNumbers[trip.id] ?? 1,
-  }));
+  const formattedRecentTrips = recentTrips.map((trip) => {
+    const dateISO = new Date(trip.date).toISOString().split("T")[0];
+    const tn = tripNumbers[trip.id] ?? 1;
+    return {
+      id: trip.id,
+      date: formatDateMedium(new Date(trip.date), locale),
+      time: new Date(trip.createdAt).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Bangkok",
+      }),
+      carName: trip.car.name,
+      licensePlate: trip.car.licensePlate,
+      gasCost: trip.gasCost,
+      parkingCost: trip.parkingCost,
+      riderCount: trip.checkIns.length + 1,
+      tripNumber: tn,
+      isOwner: trip.car.ownerId === userId,
+      paymentStatus: paidTripKeys.has(`${trip.carId}-${dateISO}-${tn}`) ? "paid" as const : "pending" as const,
+    };
+  });
 
   return (
     <main className="mx-auto max-w-lg space-y-4 p-4">

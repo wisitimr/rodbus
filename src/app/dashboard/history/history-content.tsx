@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2 } from "lucide-react";
+import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert } from "lucide-react";
 import { updateCheckInDate, deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 
@@ -10,6 +10,7 @@ type SummaryPeriod = "day" | "month" | "year";
 
 interface Trip {
   id: string;
+  carId: string;
   carName: string;
   licensePlate?: string | null;
   date: string;
@@ -737,6 +738,26 @@ export default function HistoryContent({
   const [activeTab, setActiveTab] = useState<Tab>("trips");
   const summaryPeriod: SummaryPeriod = "month";
 
+  // Compute which trips are paid vs pending (oldest-first payment allocation)
+  const paidTripKeys = useMemo(() => {
+    const keys = new Set<string>();
+    const myDebt = allDebts.find((d) => d.userId === currentUserId);
+    if (!myDebt) return keys;
+    const sorted = [...myDebt.breakdown].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    let remaining = myDebt.totalPaid;
+    for (const entry of sorted) {
+      if (remaining >= entry.share) {
+        remaining = Math.round((remaining - entry.share) * 100) / 100;
+        keys.add(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
+      } else {
+        break;
+      }
+    }
+    return keys;
+  }, [allDebts, currentUserId]);
+
   // Trip filter state
   const [showTripFilter, setShowTripFilter] = useState(false);
   const [tripDateFrom, setTripDateFrom] = useState("");
@@ -1208,6 +1229,18 @@ export default function HistoryContent({
                               <p className="text-xs font-medium text-primary">
                                 {t.tripNumber} #{trip.tripNumber}
                               </p>
+                              {/* Payment status badge */}
+                              {paidTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`) ? (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-settled">
+                                  <CircleCheck className="h-3 w-3" />
+                                  {t.paid}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-debt">
+                                  <CircleAlert className="h-3 w-3" />
+                                  {t.pending}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>

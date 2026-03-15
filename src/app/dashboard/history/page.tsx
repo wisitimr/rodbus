@@ -68,6 +68,7 @@ export default async function HistoryPage() {
     const idx = (carDateTripIds.get(cdKey) ?? []).indexOf(trip.id);
     return {
       id: trip.id,
+      carId: trip.carId,
       carName: trip.car.name,
       licensePlate: trip.car.licensePlate ?? null,
       date: formatDateShort(trip.date, locale),
