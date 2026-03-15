@@ -72,6 +72,10 @@ export default async function JoinTokenPage({
     redirect("/dashboard");
   }
 
+  if (existing?.status === "PENDING") {
+    redirect("/pending-approval");
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm">
