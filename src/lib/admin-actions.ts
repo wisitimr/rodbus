@@ -96,6 +96,9 @@ export async function deleteCar(carId: string) {
   await prisma.car.delete({ where: { id: carId } });
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/manage");
+  revalidateTag("dashboard");
 }
 
 // ---------------------------------------------------------------------------
