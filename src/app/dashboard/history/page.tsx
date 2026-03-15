@@ -1,10 +1,11 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
-import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateShort, formatDateMedium, type Locale } from "@/lib/i18n";
 import HistoryContent from "./history-content";
+import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
+import { GroupRole } from "@prisma/client";
 
 export default async function HistoryPage() {
   const user = (await getCurrentUser())!;
@@ -14,7 +15,9 @@ export default async function HistoryPage() {
   const t = getTranslations(locale);
 
   const userId = user.id;
-  const isAdmin = user.role === Role.ADMIN;
+  const activeGroupId = await getActiveGroupOrRedirect();
+  const role = await getGroupRole(user.id, activeGroupId);
+  const isAdmin = role === GroupRole.ADMIN;
 
   // Fetch data scoped to 1 year back for summary
   const oneYearAgo = new Date();
@@ -25,8 +28,8 @@ export default async function HistoryPage() {
   const [recentTrips, allDebts, allPayments] = await Promise.all([
     prisma.trip.findMany({
       where: isAdmin
-        ? {}
-        : { checkIns: { some: { userId } } },
+        ? { partyGroupId: activeGroupId }
+        : { partyGroupId: activeGroupId, checkIns: { some: { userId } } },
       include: {
         car: { select: { name: true, licensePlate: true, ownerId: true } },
         checkIns: { select: { id: true } },
@@ -34,7 +37,7 @@ export default async function HistoryPage() {
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
-    calculateDebts(oneYearAgo, farFuture),
+    calculateDebts(oneYearAgo, farFuture, activeGroupId),
     prisma.payment.findMany({
       where: isAdmin ? {} : { userId },
       include: { car: { select: { name: true, licensePlate: true } }, user: { select: { name: true } } },
@@ -130,11 +133,8 @@ export default async function HistoryPage() {
   }));
 
   // Assign a specific Trip # to each payment.
-  // Payments for the same (userId, carId, date) are created in trip order,
-  // so we match by position: 1st payment → Trip #1, 2nd → Trip #2, etc.
   const paymentTripCounters = new Map<string, number>();
 
-  // Batch: get trip counts for all payment car+date pairs not already cached
   const paymentCarDatePairs = [...new Map(
     allPayments
       .filter(p => !carDateTripIds.has(`${p.carId}-${p.date.toISOString().split("T")[0]}`))
@@ -149,17 +149,14 @@ export default async function HistoryPage() {
     : [];
 
   const paymentTripTotalCache = new Map<string, number>();
-  // Pre-fill from existing carDateTripIds
   for (const [key, ids] of carDateTripIds) {
     paymentTripTotalCache.set(key, ids.length);
   }
-  // Add counts from batch query
   for (const t of paymentTripCounts) {
     const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
     paymentTripTotalCache.set(key, (paymentTripTotalCache.get(key) ?? 0) + 1);
   }
 
-  // Sort payments by createdAt ascending to assign trip numbers in order
   const paymentsByCreated = [...allPayments].sort(
     (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
   );
@@ -192,7 +189,7 @@ export default async function HistoryPage() {
   });
 
   return (
-      <main className="mx-auto max-w-lg space-y-3 p-4">
+    <main className="mx-auto max-w-lg space-y-3 p-4">
       <HistoryContent
         checkIns={trips}
         allDebts={serializedDebts}
@@ -248,6 +245,6 @@ export default async function HistoryPage() {
           shareParkingWithTrips: t.shareParkingWithTrips,
         }}
       />
-      </main>
+    </main>
   );
 }

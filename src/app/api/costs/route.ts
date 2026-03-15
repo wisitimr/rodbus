@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidateTag } from "next/cache";
 import { bangkokDateToUTC } from "@/lib/timezone";
+import { getActiveGroupId } from "@/lib/party-group";
+import { MemberStatus } from "@prisma/client";
 
 // GET /api/costs?date=YYYY-MM-DD&carIds=id1,id2 — Fetch trips for given date and cars
 export async function GET(request: NextRequest) {
@@ -19,12 +21,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "date and carIds are required" }, { status: 400 });
   }
 
+  const activeGroupId = await getActiveGroupId();
+  if (!activeGroupId) {
+    return NextResponse.json({ error: "No active group" }, { status: 400 });
+  }
+
   const parsedDate = bangkokDateToUTC(date);
 
   const trips = await prisma.trip.findMany({
     where: {
       carId: { in: carIds.split(",") },
       date: parsedDate,
+      partyGroupId: activeGroupId,
     },
     include: { checkIns: { select: { id: true, userId: true } } },
     orderBy: { createdAt: "asc" },
@@ -50,16 +58,24 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { carId, date, gasCost, parkingCost, label, sharedParkingTripIds } = body;
+  const { carId, date, gasCost, parkingCost, label, sharedParkingTripIds, partyGroupId } = body;
 
-  if (!carId || !date) {
-    return NextResponse.json({ error: "carId and date are required" }, { status: 400 });
+  if (!carId || !date || !partyGroupId) {
+    return NextResponse.json({ error: "carId, date, and partyGroupId are required" }, { status: 400 });
   }
 
   // Verify the user owns this car
   const car = await prisma.car.findUnique({ where: { id: carId } });
   if (!car || car.ownerId !== user.id) {
     return NextResponse.json({ error: "Forbidden: you do not own this car" }, { status: 403 });
+  }
+
+  // Verify user is an active member of the group
+  const membership = await prisma.partyGroupMember.findUnique({
+    where: { userId_partyGroupId: { userId: user.id, partyGroupId } },
+  });
+  if (!membership || membership.status !== MemberStatus.ACTIVE) {
+    return NextResponse.json({ error: "Not a member of this group" }, { status: 403 });
   }
 
   const parsedDate = bangkokDateToUTC(date);
@@ -69,6 +85,7 @@ export async function POST(request: NextRequest) {
   const trip = await prisma.trip.create({
     data: {
       carId,
+      partyGroupId,
       date: parsedDate,
       gasCost: gasCost ?? 0,
       parkingCost: parkingCost ?? 0,
@@ -78,14 +95,12 @@ export async function POST(request: NextRequest) {
   });
 
   // Update linked trips to include the new trip ID (bidirectional + transitive linking)
-  // Collect the full group: all trips reachable through existing links
   if (linkedIds.length > 0) {
     const allGroupIds = new Set<string>(linkedIds);
     const linkedTrips = await prisma.trip.findMany({
       where: { id: { in: linkedIds } },
       select: { id: true, sharedParkingTripIds: true },
     });
-    // Gather all transitively linked trip IDs
     for (const lt of linkedTrips) {
       for (const id of lt.sharedParkingTripIds) {
         allGroupIds.add(id);
@@ -93,7 +108,6 @@ export async function POST(request: NextRequest) {
     }
     allGroupIds.add(trip.id);
 
-    // Fetch any additional trips discovered through transitive links
     const extraIds = Array.from(allGroupIds).filter((id) => id !== trip.id && !linkedIds.includes(id));
     const extraTrips = extraIds.length > 0
       ? await prisma.trip.findMany({
@@ -104,7 +118,6 @@ export async function POST(request: NextRequest) {
 
     const allLinkedTrips = [...linkedTrips, ...extraTrips];
 
-    // Update every trip in the group to know about all other members
     for (const lt of allLinkedTrips) {
       const updatedIds = Array.from(allGroupIds).filter((id) => id !== lt.id);
       await prisma.trip.update({
@@ -113,7 +126,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Update the newly created trip to include all group members
     const newTripLinks = Array.from(allGroupIds).filter((id) => id !== trip.id);
     if (newTripLinks.length > linkedIds.length) {
       await prisma.trip.update({

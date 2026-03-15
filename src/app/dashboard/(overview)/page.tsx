@@ -1,23 +1,24 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
-import { Role } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
 import DashboardContent from "../dashboard-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 import { unstable_cache } from "next/cache";
+import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
+import { GroupRole } from "@prisma/client";
 
-async function fetchDashboardData(userId: string, isAdmin: boolean) {
+async function fetchDashboardData(userId: string, isAdmin: boolean, partyGroupId: string) {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
   const [debts, recentTrips] = await Promise.all([
-    calculateDebts(startOfMonth, endOfMonth),
+    calculateDebts(startOfMonth, endOfMonth, partyGroupId),
     prisma.trip.findMany({
       where: isAdmin
-        ? {}
-        : { checkIns: { some: { userId } } },
+        ? { partyGroupId }
+        : { partyGroupId, checkIns: { some: { userId } } },
       orderBy: { createdAt: "desc" },
       take: 5,
       include: {
@@ -68,12 +69,13 @@ export default async function DashboardPage() {
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
-  const t = getTranslations(locale);
 
   const userId = user.id;
-  const isAdmin = user.role === Role.ADMIN;
+  const activeGroupId = await getActiveGroupOrRedirect();
+  const role = await getGroupRole(user.id, activeGroupId);
+  const isAdmin = role === GroupRole.ADMIN;
 
-  const { debts, recentTrips, tripNumbers } = await getCachedDashboardData(userId, isAdmin);
+  const { debts, recentTrips, tripNumbers } = await getCachedDashboardData(userId, isAdmin, activeGroupId);
 
   const myDebt = debts.find((d) => d.userId === userId);
 
@@ -140,7 +142,6 @@ export default async function DashboardPage() {
   }));
 
   // Compute which trips are paid vs pending (oldest-first payment allocation)
-  // Per-user: which trip keys each user has fully paid
   const perUserPaidKeys = new Map<string, Set<string>>();
   for (const debt of debts) {
     const keys = new Set<string>();
@@ -161,7 +162,7 @@ export default async function DashboardPage() {
   const paidTripKeys = perUserPaidKeys.get(userId) ?? new Set<string>();
 
   // For owner trips: a trip is "settled" if ALL users who owe debt on it have paid
-  const tripDebtors = new Map<string, string[]>(); // tripKey -> userIds who owe
+  const tripDebtors = new Map<string, string[]>();
   for (const debt of debts) {
     for (const b of debt.breakdown) {
       const key = `${b.carId}-${new Date(b.date).toISOString().split("T")[0]}-${b.tripNumber}`;
