@@ -1223,7 +1223,7 @@ export default function HistoryContent({
                                 </p>
                               </div>
                               <div className="shrink-0 text-right">
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
                                   <Clock className="h-3 w-3" />
                                   {trip.time}
                                 </div>
