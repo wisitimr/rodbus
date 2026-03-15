@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Bus, Clock, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert } from "lucide-react";
+import { Bus, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert } from "lucide-react";
 import { updateTrip, deleteTrip } from "@/lib/trip-actions";
 
 interface RecentTrip {
@@ -190,21 +190,18 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                   <Bus className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-semibold text-foreground">
-                      {trip.carName}
-                      {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
-                    </p>
-                  </div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {trip.carName}
+                    {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {trip.date} &middot; {trip.riderCount} {t.people}
+                    {trip.riderCount} {t.people} &middot; ฿{(trip.gasCost + trip.parkingCost).toFixed(0)}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {trip.time}
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {trip.date} &middot; {trip.time}
+                  </p>
                   <p className="text-xs font-medium text-primary">
                     {t.tripNumber} #{trip.tripNumber}
                   </p>
