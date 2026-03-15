@@ -107,9 +107,12 @@ export async function rejectJoinRequest(memberId: string, groupId: string) {
   revalidatePath("/admin");
 }
 
-/** Remove an active member from the group (kick). */
+/** Remove an active member from the group (kick). Admins can remove members, but not the party owner. */
 export async function removeGroupMember(memberId: string, groupId: string) {
   const { user } = await requireGroupAdmin(groupId);
+
+  const group = await prisma.partyGroup.findUnique({ where: { id: groupId }, select: { ownerId: true } });
+  if (!group) throw new Error("Group not found");
 
   const member = await prisma.partyGroupMember.findUnique({
     where: { id: memberId, partyGroupId: groupId },
@@ -117,6 +120,7 @@ export async function removeGroupMember(memberId: string, groupId: string) {
 
   if (!member) throw new Error("Member not found");
   if (member.userId === user.id) throw new Error("Cannot remove yourself");
+  if (member.userId === group.ownerId) throw new Error("Cannot remove the party owner");
 
   await prisma.partyGroupMember.delete({
     where: { id: memberId },

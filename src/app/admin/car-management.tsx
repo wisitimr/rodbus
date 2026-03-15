@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Fuel, Pencil, Check, Trash2, Car, QrCode, Copy, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, Fuel, Pencil, Check, Trash2, Car, Copy, ChevronDown, ChevronUp } from "lucide-react";
 import { addCar, deleteCar, updateCar } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 import { QRCodeSVG } from "qrcode.react";
@@ -9,6 +9,9 @@ import { QRCodeSVG } from "qrcode.react";
 interface CarManagementProps {
   cars: { id: string; name: string; licensePlate: string | null; defaultGasCost: number }[];
 }
+
+const SWIPE_THRESHOLD = 40;
+const ACTION_WIDTH = 92;
 
 export default function CarManagement({ cars }: CarManagementProps) {
   const { t, locale } = useT();
@@ -30,14 +33,60 @@ export default function CarManagement({ cars }: CarManagementProps) {
   const [expandedQrId, setExpandedQrId] = useState<string | null>(cars[0]?.id ?? null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  // Swipe state
+  const [swipedCarId, setSwipedCarId] = useState<string | null>(null);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeOffsetRef = useRef<number>(0);
 
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const isAnyLoading = loadingAction !== null;
+
+  // Close swipe when tapping outside
+  useEffect(() => {
+    if (!swipedCarId) return;
+    function handleTap(e: TouchEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest(`[data-swipe-id="${swipedCarId}"]`)) {
+        setSwipedCarId(null);
+      }
+    }
+    document.addEventListener("touchstart", handleTap);
+    return () => document.removeEventListener("touchstart", handleTap);
+  }, [swipedCarId]);
+
+  function handleSwipeTouchStart(e: React.TouchEvent, carId: string) {
+    swipeStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    swipeOffsetRef.current = swipedCarId === carId ? -ACTION_WIDTH : 0;
+  }
+
+  function handleSwipeTouchMove(e: React.TouchEvent, cardEl: HTMLDivElement | null) {
+    if (!swipeStartRef.current || !cardEl) return;
+    const dx = e.touches[0].clientX - swipeStartRef.current.x;
+    const dy = e.touches[0].clientY - swipeStartRef.current.y;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 10) return;
+    const offset = Math.min(0, Math.max(-ACTION_WIDTH, swipeOffsetRef.current + dx));
+    cardEl.style.transition = "none";
+    cardEl.style.transform = `translateX(${offset}px)`;
+  }
+
+  function handleSwipeTouchEnd(e: React.TouchEvent, carId: string, cardEl: HTMLDivElement | null) {
+    if (!swipeStartRef.current || !cardEl) return;
+    const dx = e.changedTouches[0].clientX - swipeStartRef.current.x;
+    const finalOffset = swipeOffsetRef.current + dx;
+    cardEl.style.transition = "transform 0.2s ease-out";
+    if (finalOffset < -SWIPE_THRESHOLD) {
+      cardEl.style.transform = `translateX(-${ACTION_WIDTH}px)`;
+      setSwipedCarId(carId);
+    } else {
+      cardEl.style.transform = "translateX(0)";
+      setSwipedCarId(null);
+    }
+    swipeStartRef.current = null;
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-
     setLoadingAction("add");
     try {
       await addCar(name, licensePlate || null, parseFloat(defaultGas) || 0);
@@ -55,6 +104,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
 
   async function handleDelete(carId: string) {
     if (!confirm(t.confirmDeleteCar)) return;
+    setSwipedCarId(null);
     setLoadingAction(`delete-${carId}`);
     try {
       await deleteCar(carId);
@@ -64,6 +114,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
   }
 
   function startEdit(car: { id: string; name: string; licensePlate: string | null; defaultGasCost: number }) {
+    setSwipedCarId(null);
     setEditingCarId(car.id);
     setEditName(car.name);
     setEditLicensePlate(car.licensePlate ?? "");
@@ -186,154 +237,168 @@ export default function CarManagement({ cars }: CarManagementProps) {
         const tapUrl = `${baseUrl}/api/tap?carId=${car.id}`;
         const isQrOpen = expandedQrId === car.id;
         const isEditing = editingCarId === car.id;
+        const isSwiped = swipedCarId === car.id;
 
         return (
           <div
             key={car.id}
-            className="rounded-2xl border border-border bg-card shadow-sm animate-fade-in"
+            data-swipe-id={car.id}
+            className="relative overflow-hidden rounded-2xl bg-secondary animate-fade-in"
           >
-            {isEditing ? (
-              /* Edit form */
-              <div className="p-4 space-y-3 animate-fade-in">
-                <h3 className="text-sm font-semibold text-foreground">
-                  {th ? "แก้ไขรถ" : "Edit Car"}
-                </h3>
-                <form onSubmit={handleEditSave} className="space-y-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      {t.carName} <span className="text-debt">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className={inputClass}
-                      required
-                      autoFocus
+            {/* Action buttons behind the card */}
+            <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-evenly">
+              <button
+                type="button"
+                onClick={() => startEdit(car)}
+                className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(car.id)}
+                className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Sliding card */}
+            <div
+              className="relative rounded-2xl border border-border bg-card shadow-sm"
+              style={{
+                transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
+                transition: "transform 0.2s ease-out",
+              }}
+              onTouchStart={(e) => handleSwipeTouchStart(e, car.id)}
+              onTouchMove={(e) => handleSwipeTouchMove(e, e.currentTarget as HTMLDivElement)}
+              onTouchEnd={(e) => handleSwipeTouchEnd(e, car.id, e.currentTarget as HTMLDivElement)}
+            >
+              {isEditing ? (
+                /* Edit form */
+                <div className="p-4 space-y-3 animate-fade-in">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {th ? "แก้ไขรถ" : "Edit Car"}
+                  </h3>
+                  <form onSubmit={handleEditSave} className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        {t.carName} <span className="text-debt">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className={inputClass}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        {t.licensePlate} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editLicensePlate}
+                        onChange={(e) => setEditLicensePlate(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        {t.defaultGasCost} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={editGasCost}
+                        onChange={(e) => setEditGasCost(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={isAnyLoading || !editName.trim()}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+                      >
+                        <Check className="h-4 w-4" />
+                        {th ? "บันทึก" : "Save"}
+                        {loadingAction === `edit-${car.id}` && "..."}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent"
+                      >
+                        {t.cancel}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                /* Normal display */
+                <button
+                  type="button"
+                  onClick={() => setExpandedQrId(isQrOpen ? null : car.id)}
+                  className="flex w-full items-center gap-3 p-4 text-left"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Car className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <p className="font-semibold text-foreground">{car.name}</p>
+                      {car.licensePlate && (
+                        <p className="text-xs text-muted-foreground">{car.licensePlate}</p>
+                      )}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                      <Fuel className="h-3 w-3" />
+                      <span>&#3647;{car.defaultGasCost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  {isQrOpen ? (
+                    <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  )}
+                </button>
+              )}
+
+              {/* QR Code content */}
+              {isQrOpen && (
+                <div className="px-4 pb-5 text-center animate-fade-in">
+                  <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
+                    <QRCodeSVG
+                      value={tapUrl}
+                      size={200}
+                      level="H"
+                      className="mx-auto h-auto w-full max-w-[200px]"
                     />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      {t.licensePlate} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={editLicensePlate}
-                      onChange={(e) => setEditLicensePlate(e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      {t.defaultGasCost} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={editGasCost}
-                      onChange={(e) => setEditGasCost(e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={isAnyLoading || !editName.trim()}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
-                    >
-                      <Check className="h-4 w-4" />
-                      {th ? "บันทึก" : "Save"}
-                      {loadingAction === `edit-${car.id}` && "..."}
-                    </button>
+
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2">
+                    <code className="text-xs text-muted-foreground select-all break-all">
+                      {tapUrl}
+                    </code>
                     <button
                       type="button"
-                      onClick={cancelEdit}
-                      className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent"
+                      onClick={(e) => { e.stopPropagation(); handleCopy(tapUrl, car.id); }}
+                      className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
-                      {t.cancel}
+                      {copiedId === car.id ? (
+                        <Check className="h-3.5 w-3.5 text-settled" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
-                </form>
-              </div>
-            ) : (
-              /* Normal display */
-              <div className="flex items-center gap-3 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <Car className="h-5 w-5 text-primary" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <p className="font-semibold text-foreground">{car.name}</p>
-                    {car.licensePlate && (
-                      <p className="text-xs text-muted-foreground">{car.licensePlate}</p>
-                    )}
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                    <Fuel className="h-3 w-3" />
-                    <span>&#3647;{car.defaultGasCost.toFixed(2)}</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => startEdit(car)}
-                  disabled={isAnyLoading}
-                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(car.id)}
-                  disabled={isAnyLoading}
-                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-debt/10 hover:text-debt disabled:opacity-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-
-            {/* QR Code toggle */}
-            <button
-              type="button"
-              onClick={() => setExpandedQrId(isQrOpen ? null : car.id)}
-              className="flex w-full items-center justify-center gap-1.5 border-t border-border px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50"
-            >
-              <QrCode className="h-3.5 w-3.5" />
-              QR Code
-              {isQrOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            </button>
-
-            {/* QR Code content */}
-            {isQrOpen && (
-              <div className="border-t border-border px-4 pb-5 pt-4 text-center animate-fade-in">
-                <div className="mx-auto rounded-xl bg-white p-3 inline-block">
-                  <QRCodeSVG
-                    value={tapUrl}
-                    size={180}
-                    level="H"
-                    className="mx-auto"
-                  />
-                </div>
-
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2">
-                  <code className="text-xs text-muted-foreground select-all break-all">
-                    {tapUrl}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(tapUrl, car.id)}
-                    className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  >
-                    {copiedId === car.id ? (
-                      <Check className="h-3.5 w-3.5 text-settled" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         );
       })}

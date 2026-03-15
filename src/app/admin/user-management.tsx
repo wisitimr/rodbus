@@ -17,6 +17,7 @@ interface UserManagementProps {
   }[];
   currentUserId: string;
   groupId: string;
+  ownerId: string;
 }
 
 const roleBadgeStyle: Record<string, string> = {
@@ -24,7 +25,7 @@ const roleBadgeStyle: Record<string, string> = {
   ADMIN: "bg-debt/10 text-debt",
 };
 
-export default function UserManagement({ users, currentUserId, groupId }: UserManagementProps) {
+export default function UserManagement({ users, currentUserId, groupId, ownerId }: UserManagementProps) {
   const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [roleMenuId, setRoleMenuId] = useState<string | null>(null);
@@ -189,7 +190,7 @@ export default function UserManagement({ users, currentUserId, groupId }: UserMa
                   )}
                 </div>
               )}
-              {!isMe && (
+              {!isMe && user.id !== ownerId && (
                 <button
                   onClick={() => handleRemove(user.memberId)}
                   disabled={isAnyLoading}
