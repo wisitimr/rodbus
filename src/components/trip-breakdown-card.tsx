@@ -33,6 +33,7 @@ export interface BreakdownCardEntry {
   driverName: string | null;
   time?: string;
   sharedParking?: SharedParkingInfo | null;
+  paidAmount?: number;
 }
 
 interface TripBreakdownCardProps {
@@ -205,7 +206,13 @@ export default function TripBreakdownCard({
           <div className={`border-t border-border/50 ${compact ? "pt-1.5" : "pt-2"}`}>
             <div className={`flex items-center justify-between font-bold ${compact ? "text-xs" : "text-sm"}`}>
               <span className="text-foreground">{t.total}</span>
-              <span className="font-mono text-foreground">&#3647;{entry.share.toFixed(2)}</span>
+              {entry.paidAmount != null && entry.paidAmount > 0 ? (
+                <span className="font-mono text-foreground">
+                  (&#3647;{(entry.share + entry.paidAmount).toFixed(2)}) - &#3647;{entry.paidAmount.toFixed(2)} = <strong>&#3647;{entry.share.toFixed(2)}</strong>
+                </span>
+              ) : (
+                <span className="font-mono text-foreground">&#3647;{entry.share.toFixed(2)}</span>
+              )}
             </div>
           </div>
         </div>
