@@ -66,7 +66,7 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
         className="flex items-center gap-2 rounded-full py-1 pl-2 pr-1 transition hover:bg-accent"
       >
         {(role === "ADMIN" || role === "MEMBER") && (
-          <span className={`rounded-lg border border-border px-2 py-0.5 text-xs font-medium ${roleBadge[role] ?? roleBadge.MEMBER}`}>
+          <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${roleBadge[role] ?? roleBadge.MEMBER}`}>
             {roleLabel[role] ?? role}
           </span>
         )}

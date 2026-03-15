@@ -156,7 +156,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate font-semibold text-foreground">{user.name ?? t.noName}</p>
-                  <span className={`shrink-0 rounded-lg border border-border px-2 py-0.5 text-xs font-medium ${badge}`}>
+                  <span className={`shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium ${badge}`}>
                     {user.role === "ADMIN" ? t.admin.toUpperCase() : t.passenger.toUpperCase()}
                   </span>
                 </div>
