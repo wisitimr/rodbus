@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Trash2, Plus, Check } from "lucide-react";
+import { Copy, Trash2, Plus, Check, QrCode, ChevronDown, ChevronUp } from "lucide-react";
 import { generateInviteLink, revokeInviteLink, deleteGroup, switchActiveGroup } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
 import { Users as UsersIcon } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface InviteManagementProps {
   tokens: {
@@ -25,6 +26,7 @@ export default function InviteManagement({ tokens, groupId, groupName, isOwner }
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [qrTokenId, setQrTokenId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -100,33 +102,60 @@ export default function InviteManagement({ tokens, groupId, groupName, isOwner }
         </p>
       )}
 
-      {activeTokens.map((token) => (
-        <div
-          key={token.id}
-          className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
-        >
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-mono text-xs text-foreground">
-              /join/{token.token}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {th ? "หมดอายุ" : "Expires"}: {new Date(token.expiresAt).toLocaleDateString(th ? "th-TH" : "en-US")}
-            </p>
+      {activeTokens.map((token) => {
+        const joinUrl = typeof window !== "undefined"
+          ? `${window.location.origin}/join/${token.token}`
+          : `/join/${token.token}`;
+        const isQrOpen = qrTokenId === token.id;
+
+        return (
+          <div
+            key={token.id}
+            className="rounded-xl border border-border bg-card"
+          >
+            <div className="flex items-center gap-3 p-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-xs text-foreground">
+                  /join/{token.token}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {th ? "หมดอายุ" : "Expires"}: {new Date(token.expiresAt).toLocaleDateString(th ? "th-TH" : "en-US")}
+                </p>
+              </div>
+              <button
+                onClick={() => handleCopy(token.token, token.id)}
+                className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                {copiedId === token.id ? <Check className="h-4 w-4 text-settled" /> : <Copy className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => handleRevoke(token.id)}
+                className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-debt/10 hover:text-debt"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* QR Code toggle */}
+            <button
+              onClick={() => setQrTokenId(isQrOpen ? null : token.id)}
+              className="flex w-full items-center justify-center gap-1.5 border-t border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent/50"
+            >
+              <QrCode className="h-3.5 w-3.5" />
+              {th ? "QR Code" : "QR Code"}
+              {isQrOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+
+            {isQrOpen && (
+              <div className="flex justify-center border-t border-border px-3 py-4">
+                <div className="rounded-xl bg-white p-3">
+                  <QRCodeSVG value={joinUrl} size={180} />
+                </div>
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => handleCopy(token.token, token.id)}
-            className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            {copiedId === token.id ? <Check className="h-4 w-4 text-settled" /> : <Copy className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={() => handleRevoke(token.id)}
-            className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-debt/10 hover:text-debt"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+        );
+      })}
 
       {expiredTokens.length > 0 && (
         <div className="space-y-2">
