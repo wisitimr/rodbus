@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
 
   if (!user) {
     const loginUrl = new URL("/sign-in", request.url);
+    loginUrl.searchParams.set("redirectUrl", request.nextUrl.pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 
