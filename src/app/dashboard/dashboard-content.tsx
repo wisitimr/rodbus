@@ -18,7 +18,7 @@ interface RecentTrip {
   tripNumber: number;
   sharedParkingTripIds: string[];
   isOwner: boolean;
-  paymentStatus: "paid" | "pending";
+  paymentStatus: "paid" | "pending" | "no_passengers";
 }
 
 interface DashboardContentProps {
@@ -180,6 +180,7 @@ export default function DashboardContent({
                   tripNumber: t.tripNumber,
                   paid: t.paid,
                   pending: t.pending,
+                  noPassengers: t.noPassengers,
                   editTrip: t.editTrip,
                   edit: t.edit,
                   editing: t.editing,

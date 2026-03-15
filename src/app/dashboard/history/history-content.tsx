@@ -106,6 +106,7 @@ interface HistoryContentProps {
     accrued: string;
     paid: string;
     pending: string;
+    noPassengers: string;
     you: string;
     onlyMe: string;
     allData: string;
@@ -1282,7 +1283,11 @@ export default function HistoryContent({
                                   <span className="text-xs font-medium text-primary">
                                     {t.tripNumber} #{trip.tripNumber}
                                   </span>
-                                  {(trip.isOwner
+                                  {trip.riderCount <= 1 ? (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+                                      {t.noPassengers}
+                                    </span>
+                                  ) : (trip.isOwner
                                     ? (!tripDebtors.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`) || fullySettledTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`))
                                     : paidTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`)
                                   ) ? (
