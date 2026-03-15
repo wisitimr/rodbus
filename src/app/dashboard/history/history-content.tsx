@@ -1194,7 +1194,7 @@ export default function HistoryContent({
                           {/* Sliding card */}
                           <div
                             ref={(el) => { if (isSwiped || swipeStartRef.current) swipeCardRef.current = el; }}
-                            className="relative flex items-center gap-3 rounded-xl border border-border bg-card p-3"
+                            className="relative rounded-xl border border-border bg-card p-3"
                             style={{
                               transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
                               transition: "transform 0.2s ease-out",
@@ -1209,38 +1209,40 @@ export default function HistoryContent({
                               handleSwipeTouchEnd(e, trip.id, cardEl);
                             } : undefined}
                           >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                              <Bus className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-foreground">
-                                {trip.carName}
-                                {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(0)}
-                              </p>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {trip.time}
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                <Bus className="h-5 w-5 text-primary" />
                               </div>
-                              <p className="text-xs font-medium text-primary">
-                                {t.tripNumber} #{trip.tripNumber}
-                              </p>
-                              {/* Payment status badge */}
-                              {paidTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`) ? (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-settled">
-                                  <CircleCheck className="h-3 w-3" />
-                                  {t.paid}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-debt">
-                                  <CircleAlert className="h-3 w-3" />
-                                  {t.pending}
-                                </span>
-                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-foreground">
+                                  {trip.carName}
+                                  {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(0)}
+                                </p>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  {trip.time}
+                                </div>
+                                <p className="text-xs font-medium text-primary">
+                                  {t.tripNumber} #{trip.tripNumber}
+                                  {" "}
+                                  {paidTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`) ? (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-settled">
+                                      <CircleCheck className="h-3 w-3" />
+                                      {t.paid}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-debt">
+                                      <CircleAlert className="h-3 w-3" />
+                                      {t.pending}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
