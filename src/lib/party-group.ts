@@ -85,8 +85,7 @@ export async function getActiveGroupOrRedirect(): Promise<string> {
     return cookieGroupId;
   }
 
-  // Otherwise, set the first group as active
-  await setActiveGroupId(groups[0].id);
+  // Otherwise, use the first group (cookie will be set when user switches via action)
   return groups[0].id;
 }
 
