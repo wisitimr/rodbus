@@ -27,6 +27,7 @@ export async function updateCheckInDate(checkInId: string, newDate: string) {
 
   revalidatePath("/dashboard/history");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
 
@@ -46,6 +47,7 @@ export async function deleteCheckIn(checkInId: string) {
 
   revalidatePath("/dashboard/history");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
 
@@ -145,6 +147,7 @@ export async function updateTrip(
 
   revalidatePath("/dashboard/history");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
 
@@ -167,5 +170,6 @@ export async function deleteTrip(tripId: string) {
 
   revalidatePath("/dashboard/history");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
