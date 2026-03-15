@@ -17,9 +17,10 @@ export default async function AdminLayout({
   if (!user) redirect("/sign-in");
 
   const activeGroupId = await getActiveGroupOrRedirect();
-  const [role, carCount] = await Promise.all([
+  const [role, carCount, tripCount] = await Promise.all([
     getGroupRole(user.id, activeGroupId),
     prisma.car.count({ where: { ownerId: user.id } }),
+    prisma.trip.count({ where: { partyGroupId: activeGroupId }, take: 1 }),
   ]);
   if (role !== GroupRole.ADMIN) redirect("/dashboard");
 
@@ -44,7 +45,7 @@ export default async function AdminLayout({
       </header>
 
       {children}
-      <BottomNav isAdmin={true} hasCars={carCount > 0} />
+      <BottomNav isAdmin={true} hasCars={carCount > 0} hasTrips={tripCount > 0} />
     </div>
   );
 }

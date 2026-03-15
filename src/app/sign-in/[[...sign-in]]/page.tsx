@@ -3,10 +3,17 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 
-export default async function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirectUrl?: string }>;
+}) {
+  const { redirectUrl } = await searchParams;
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
   const t = getTranslations(locale);
+
+  const targetUrl = redirectUrl?.startsWith("/") ? redirectUrl : "/dashboard";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 pb-24">
@@ -22,7 +29,7 @@ export default async function SignInPage() {
         <p className="mt-2 text-sm text-muted-foreground">{t.signInSubtitle}</p>
       </div>
       <div className="mt-8 animate-fade-in">
-        <SignIn forceRedirectUrl="/dashboard" afterSignOutUrl="/" />
+        <SignIn forceRedirectUrl={targetUrl} afterSignOutUrl="/" />
       </div>
     </main>
   );
