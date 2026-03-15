@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { joinViaInvite } from "@/lib/group-actions";
+import { useState } from "react";
+import { joinViaGroupId } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
 
 interface JoinFormProps {
-  token: string;
+  groupId: string;
   groupName: string;
   th: boolean;
 }
 
-export default function JoinForm({ token, groupName, th }: JoinFormProps) {
+export default function JoinForm({ groupId, groupName, th }: JoinFormProps) {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "joining" | "pending" | "already" | "error">("idle");
 
   async function handleJoin() {
     setStatus("joining");
     try {
-      const result = await joinViaInvite(token);
+      const result = await joinViaGroupId(groupId);
       if (result.status === "already_member") {
         router.push("/dashboard");
       } else {

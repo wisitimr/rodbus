@@ -5,12 +5,12 @@ import { headers } from "next/headers";
 import { detectLocale } from "@/lib/i18n";
 import JoinForm from "./join-form";
 
-export default async function JoinTokenPage({
+export default async function JoinGroupPage({
   params,
 }: {
-  params: Promise<{ token: string }>;
+  params: Promise<{ groupId: string }>;
 }) {
-  const { token } = await params;
+  const { groupId } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
@@ -18,12 +18,12 @@ export default async function JoinTokenPage({
   const locale = detectLocale(headersList.get("accept-language"));
   const th = locale === "th";
 
-  const inviteToken = await prisma.inviteToken.findUnique({
-    where: { token },
-    include: { partyGroup: { select: { id: true, name: true } } },
+  const group = await prisma.partyGroup.findUnique({
+    where: { id: groupId },
+    select: { id: true, name: true },
   });
 
-  if (!inviteToken) {
+  if (!group) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm text-center">
@@ -42,29 +42,10 @@ export default async function JoinTokenPage({
     );
   }
 
-  if (inviteToken.expiresAt < new Date()) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-6">
-        <div className="w-full max-w-sm text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warning/10">
-            <svg className="h-8 w-8 text-warning" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold text-foreground">{th ? "ลิงก์หมดอายุ" : "Link Expired"}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{th ? "ลิงก์เชิญนี้หมดอายุแล้ว ขอลิงก์ใหม่จากแอดมิน" : "This invite link has expired. Ask the admin for a new one."}</p>
-          <a href="/join" className="mt-4 inline-block text-sm font-medium text-primary hover:text-primary/80">
-            {th ? "กลับ" : "Go back"}
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   // Check if already a member
   const existing = await prisma.partyGroupMember.findUnique({
     where: {
-      userId_partyGroupId: { userId: user.id, partyGroupId: inviteToken.partyGroupId },
+      userId_partyGroupId: { userId: user.id, partyGroupId: group.id },
     },
   });
 
@@ -79,7 +60,7 @@ export default async function JoinTokenPage({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <JoinForm token={token} groupName={inviteToken.partyGroup.name} th={th} />
+        <JoinForm groupId={group.id} groupName={group.name} th={th} />
       </div>
     </div>
   );

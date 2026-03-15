@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateDefaultGasCost } from "@/lib/admin-actions";
+import { updateCar } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 
 interface CostManagementProps {
@@ -28,7 +28,8 @@ export default function CostManagement({ cars }: CostManagementProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      await updateDefaultGasCost(carId, parseFloat(gasCost) || 0);
+      const car = cars.find((c) => c.id === carId);
+      await updateCar(carId, { name: car?.name ?? "", licensePlate: null, defaultGasCost: parseFloat(gasCost) || 0 });
       setStatus("saved");
       setTimeout(() => setStatus("idle"), 2000);
     } catch {

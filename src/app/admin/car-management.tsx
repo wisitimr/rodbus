@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Fuel, Pencil, Check, Trash2, Car, QrCode, Copy, ChevronDown, ChevronUp } from "lucide-react";
-import { addCar, deleteCar, updateDefaultGasCost } from "@/lib/admin-actions";
+import { addCar, deleteCar, updateCar } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -20,9 +20,11 @@ export default function CarManagement({ cars }: CarManagementProps) {
   const [defaultGas, setDefaultGas] = useState("0");
   const [status, setStatus] = useState<"idle" | "error">("idle");
 
-  // Inline gas cost editing
-  const [editingGasId, setEditingGasId] = useState<string | null>(null);
-  const [editGasValue, setEditGasValue] = useState("");
+  // Edit car state
+  const [editingCarId, setEditingCarId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editLicensePlate, setEditLicensePlate] = useState("");
+  const [editGasCost, setEditGasCost] = useState("");
 
   // QR accordion — only one open at a time
   const [expandedQrId, setExpandedQrId] = useState<string | null>(cars[0]?.id ?? null);
@@ -61,26 +63,33 @@ export default function CarManagement({ cars }: CarManagementProps) {
     }
   }
 
-  function startEditGas(carId: string, currentCost: number) {
-    setEditingGasId(carId);
-    setEditGasValue(currentCost.toString());
+  function startEdit(car: { id: string; name: string; licensePlate: string | null; defaultGasCost: number }) {
+    setEditingCarId(car.id);
+    setEditName(car.name);
+    setEditLicensePlate(car.licensePlate ?? "");
+    setEditGasCost(car.defaultGasCost.toString());
   }
 
-  async function saveGasCost(carId: string) {
-    setLoadingAction(`gas-${carId}`);
+  function cancelEdit() {
+    setEditingCarId(null);
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingCarId || !editName.trim()) return;
+    setLoadingAction(`edit-${editingCarId}`);
     try {
-      await updateDefaultGasCost(carId, parseFloat(editGasValue) || 0);
-      setEditingGasId(null);
+      await updateCar(editingCarId, {
+        name: editName,
+        licensePlate: editLicensePlate || null,
+        defaultGasCost: parseFloat(editGasCost) || 0,
+      });
+      setEditingCarId(null);
     } catch {
       // keep editing
     } finally {
       setLoadingAction(null);
     }
-  }
-
-  function cancelEditGas() {
-    setEditingGasId(null);
-    setEditGasValue("");
   }
 
   function handleCopy(url: string, carId: string) {
@@ -176,83 +185,113 @@ export default function CarManagement({ cars }: CarManagementProps) {
       {cars.map((car) => {
         const tapUrl = `${baseUrl}/api/tap?carId=${car.id}`;
         const isQrOpen = expandedQrId === car.id;
+        const isEditing = editingCarId === car.id;
 
         return (
           <div
             key={car.id}
             className="rounded-2xl border border-border bg-card shadow-sm animate-fade-in"
           >
-            {/* Header */}
-            <div className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Car className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-foreground">{car.name}</p>
-                {car.licensePlate && (
-                  <p className="text-xs text-muted-foreground">{car.licensePlate}</p>
-                )}
-              </div>
-              <button
-                onClick={() => handleDelete(car.id)}
-                disabled={isAnyLoading}
-                className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-debt/10 hover:text-debt disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Gas cost row */}
-            <div className="mx-4 mb-3 flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-xs text-muted-foreground">
-              <Fuel className="h-3 w-3 shrink-0" />
-              <span>{t.gas}:</span>
-              {editingGasId === car.id ? (
-                <div className="flex flex-1 items-center gap-1.5">
-                  <div className="relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">&#3647;</span>
+            {isEditing ? (
+              /* Edit form */
+              <div className="p-4 space-y-3 animate-fade-in">
+                <h3 className="text-sm font-semibold text-foreground">
+                  {th ? "แก้ไขรถ" : "Edit Car"}
+                </h3>
+                <form onSubmit={handleEditSave} className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      {t.carName} <span className="text-debt">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className={inputClass}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      {t.licensePlate} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editLicensePlate}
+                      onChange={(e) => setEditLicensePlate(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      {t.defaultGasCost} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
+                    </label>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      value={editGasValue}
-                      onChange={(e) => setEditGasValue(e.target.value)}
-                      className="w-20 rounded-lg border border-primary/30 bg-background py-1 pl-6 pr-2 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveGasCost(car.id);
-                        if (e.key === "Escape") cancelEditGas();
-                      }}
+                      value={editGasCost}
+                      onChange={(e) => setEditGasCost(e.target.value)}
+                      className={inputClass}
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => saveGasCost(car.id)}
-                    disabled={isAnyLoading}
-                    className="rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                  >
-                    <Check className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEditGas}
-                    className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    ✕
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={isAnyLoading || !editName.trim()}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <Check className="h-4 w-4" />
+                      {th ? "บันทึก" : "Save"}
+                      {loadingAction === `edit-${car.id}` && "..."}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent"
+                    >
+                      {t.cancel}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              /* Normal display */
+              <div className="flex items-center gap-3 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Car className="h-5 w-5 text-primary" />
                 </div>
-              ) : (
-                <>
-                  <span className="font-bold text-foreground">&#3647;{car.defaultGasCost.toFixed(2)}</span>
-                  <button
-                    type="button"
-                    onClick={() => startEditGas(car.id, car.defaultGasCost)}
-                    className="ml-auto rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                </>
-              )}
-            </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <p className="font-semibold text-foreground">{car.name}</p>
+                    {car.licensePlate && (
+                      <p className="text-xs text-muted-foreground">{car.licensePlate}</p>
+                    )}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Fuel className="h-3 w-3" />
+                    <span>&#3647;{car.defaultGasCost.toFixed(2)}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => startEdit(car)}
+                  disabled={isAnyLoading}
+                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(car.id)}
+                  disabled={isAnyLoading}
+                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-debt/10 hover:text-debt disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
             {/* QR Code toggle */}
             <button
