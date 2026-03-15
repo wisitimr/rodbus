@@ -20,10 +20,8 @@ export default function JoinForm({ token, groupName, th }: JoinFormProps) {
       const result = await joinViaInvite(token);
       if (result.status === "already_member") {
         router.push("/dashboard");
-      } else if (result.status === "already_pending") {
-        setStatus("pending");
       } else {
-        setStatus("pending");
+        router.push("/pending-approval");
       }
     } catch {
       setStatus("error");
