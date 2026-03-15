@@ -317,7 +317,7 @@ function SummaryCard({
   dayBreakdownMap,
   expandedSubPeriods,
   toggleSubPeriod,
-  settledDays,
+  paidTripKeys,
   locale,
   t,
   allDebts,
@@ -329,7 +329,7 @@ function SummaryCard({
   dayBreakdownMap: Map<string, BreakdownEntry[]>;
   expandedSubPeriods: Set<string>;
   toggleSubPeriod: (key: string) => void;
-  settledDays: Set<string>;
+  paidTripKeys: Set<string>;
   locale: string;
   t: HistoryContentProps["t"];
   allDebts?: DebtWithBreakdown[];
@@ -478,7 +478,7 @@ function SummaryCard({
                       {/* User's trip breakdown entries */}
                       {userEntries.map((entry, i) => {
                         const entryKey = `${group.key}_${e.userId}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
-                        const entrySettled = settledDays.has(entry.date);
+                        const entrySettled = paidTripKeys.has(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
                         return (
                           <SummaryEntryCard
                             key={entryKey}
@@ -500,7 +500,7 @@ function SummaryCard({
             /* Single user: show entries directly */
             allEntries.map((entry, i) => {
               const entryKey = `${group.key}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
-              const entrySettled = settledDays.has(entry.date);
+              const entrySettled = paidTripKeys.has(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
               return (
                 <SummaryEntryCard
                   key={entryKey}
@@ -739,24 +739,49 @@ export default function HistoryContent({
   const summaryPeriod: SummaryPeriod = "month";
 
   // Compute which trips are paid vs pending (oldest-first payment allocation)
-  const paidTripKeys = useMemo(() => {
-    const keys = new Set<string>();
-    const myDebt = allDebts.find((d) => d.userId === currentUserId);
-    if (!myDebt) return keys;
-    const sorted = [...myDebt.breakdown].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    let remaining = myDebt.totalPaid;
-    for (const entry of sorted) {
-      if (remaining >= entry.share) {
-        remaining = Math.round((remaining - entry.share) * 100) / 100;
-        keys.add(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
-      } else {
-        break;
+  // Per-user paid trip keys (oldest-first allocation)
+  const perUserPaidKeys = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const debt of allDebts) {
+      const keys = new Set<string>();
+      const sorted = [...debt.breakdown].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      let remaining = debt.totalPaid;
+      for (const entry of sorted) {
+        if (remaining >= entry.share) {
+          remaining = Math.round((remaining - entry.share) * 100) / 100;
+          keys.add(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
+        } else {
+          break;
+        }
+      }
+      map.set(debt.userId, keys);
+    }
+    return map;
+  }, [allDebts]);
+
+  const paidTripKeys = useMemo(() => perUserPaidKeys.get(currentUserId) ?? new Set<string>(), [perUserPaidKeys, currentUserId]);
+
+  // For owner trips: check if ALL users who owe on that trip have paid
+  const { fullySettledTripKeys, tripDebtors } = useMemo(() => {
+    const debtors = new Map<string, string[]>();
+    for (const debt of allDebts) {
+      for (const b of debt.breakdown) {
+        const key = `${b.carId}-${b.date}-${b.tripNumber}`;
+        const list = debtors.get(key) ?? [];
+        list.push(debt.userId);
+        debtors.set(key, list);
       }
     }
-    return keys;
-  }, [allDebts, currentUserId]);
+    const settled = new Set<string>();
+    for (const [tripKey, userIds] of debtors) {
+      if (userIds.every((uid) => perUserPaidKeys.get(uid)?.has(tripKey))) {
+        settled.add(tripKey);
+      }
+    }
+    return { fullySettledTripKeys: settled, tripDebtors: debtors };
+  }, [allDebts, perUserPaidKeys]);
 
   // Trip filter state
   const [showTripFilter, setShowTripFilter] = useState(false);
@@ -956,21 +981,7 @@ export default function HistoryContent({
     return map;
   }, [allDebts, currentUserId, isAdmin, onlyMe]);
 
-  // Set of settled day keys — days where pendingDebt <= 0
-  const settledDays = useMemo(() => {
-    const dayGroups = groupByPeriod(allDebts, allPayments, "day", locale);
-    const settled = new Set<string>();
-    for (const g of dayGroups) {
-      if (isAdmin) {
-        const allSettled = g.entries.length > 0 && g.entries.every((e) => e.pendingDebt <= 0);
-        if (allSettled) settled.add(g.key);
-      } else {
-        const e = g.entries.find((e) => e.userId === currentUserId);
-        if (e && e.pendingDebt <= 0) settled.add(g.key);
-      }
-    }
-    return settled;
-  }, [allDebts, allPayments, locale, currentUserId, isAdmin]);
+
   const togglePayment = (id: string) => {
     setExpandedPayments((prev) => {
       const next = new Set(prev);
@@ -1231,7 +1242,10 @@ export default function HistoryContent({
                                   <span className="text-xs font-medium text-primary">
                                     {t.tripNumber} #{trip.tripNumber}
                                   </span>
-                                  {(trip.isOwner || paidTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`)) ? (
+                                  {(trip.isOwner
+                                    ? (!tripDebtors.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`) || fullySettledTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`))
+                                    : paidTripKeys.has(`${trip.carId}-${trip.dateISO}-${trip.tripNumber}`)
+                                  ) ? (
                                     <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-settled">
                                       <CircleCheck className="h-3 w-3" />
                                       {t.paid}
@@ -1327,7 +1341,7 @@ export default function HistoryContent({
                   dayBreakdownMap={dayBreakdownMap}
                   expandedSubPeriods={expandedSubPeriods}
                   toggleSubPeriod={toggleSubPeriod}
-                  settledDays={settledDays}
+                  paidTripKeys={paidTripKeys}
                   locale={locale}
                   t={t}
                   allDebts={isAdmin && !onlyMe ? allDebts : undefined}

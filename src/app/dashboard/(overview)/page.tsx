@@ -135,20 +135,40 @@ export default async function DashboardPage() {
   }));
 
   // Compute which trips are paid vs pending (oldest-first payment allocation)
-  const paidTripKeys = new Set<string>();
-  if (myDebt) {
-    const sorted = [...myDebt.breakdown].sort(
+  // Per-user: which trip keys each user has fully paid
+  const perUserPaidKeys = new Map<string, Set<string>>();
+  for (const debt of debts) {
+    const keys = new Set<string>();
+    const sorted = [...debt.breakdown].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-    let remaining = myDebt.totalPaid;
+    let remaining = debt.totalPaid;
     for (const entry of sorted) {
       if (remaining >= entry.share) {
         remaining = Math.round((remaining - entry.share) * 100) / 100;
-        paidTripKeys.add(`${entry.carId}-${new Date(entry.date).toISOString().split("T")[0]}-${entry.tripNumber}`);
+        keys.add(`${entry.carId}-${new Date(entry.date).toISOString().split("T")[0]}-${entry.tripNumber}`);
       } else {
         break;
       }
     }
+    perUserPaidKeys.set(debt.userId, keys);
+  }
+  const paidTripKeys = perUserPaidKeys.get(userId) ?? new Set<string>();
+
+  // For owner trips: a trip is "settled" if ALL users who owe debt on it have paid
+  const tripDebtors = new Map<string, string[]>(); // tripKey -> userIds who owe
+  for (const debt of debts) {
+    for (const b of debt.breakdown) {
+      const key = `${b.carId}-${new Date(b.date).toISOString().split("T")[0]}-${b.tripNumber}`;
+      const list = tripDebtors.get(key) ?? [];
+      list.push(debt.userId);
+      tripDebtors.set(key, list);
+    }
+  }
+  const fullySettledTripKeys = new Set<string>();
+  for (const [tripKey, userIds] of tripDebtors) {
+    const allPaid = userIds.every((uid) => perUserPaidKeys.get(uid)?.has(tripKey));
+    if (allPaid) fullySettledTripKeys.add(tripKey);
   }
 
   // Format recent trips for client component
@@ -170,7 +190,9 @@ export default async function DashboardPage() {
       riderCount: trip.checkIns.length + 1,
       tripNumber: tn,
       isOwner: trip.car.ownerId === userId,
-      paymentStatus: (trip.car.ownerId === userId || paidTripKeys.has(`${trip.carId}-${dateISO}-${tn}`)) ? "paid" as const : "pending" as const,
+      paymentStatus: trip.car.ownerId === userId
+        ? ((!tripDebtors.has(`${trip.carId}-${dateISO}-${tn}`) || fullySettledTripKeys.has(`${trip.carId}-${dateISO}-${tn}`)) ? "paid" as const : "pending" as const)
+        : (paidTripKeys.has(`${trip.carId}-${dateISO}-${tn}`) ? "paid" as const : "pending" as const),
     };
   });
 
