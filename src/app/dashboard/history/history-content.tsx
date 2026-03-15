@@ -273,6 +273,7 @@ function useInfiniteScroll<T>(items: T[]) {
 function SummaryEntryCard({
   entry,
   settled,
+  paidAmount,
   isExpanded,
   onToggle,
   locale,
@@ -280,6 +281,7 @@ function SummaryEntryCard({
 }: {
   entry: BreakdownEntry;
   settled: boolean;
+  paidAmount?: number;
   isExpanded: boolean;
   onToggle: () => void;
   locale: string;
@@ -288,9 +290,14 @@ function SummaryEntryCard({
   const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
   const dateLabel = new Date(entry.date + "T00:00:00").toLocaleDateString(loc, { month: "short", day: "numeric", year: "numeric" });
 
+  // When partially paid, TripBreakdownCard expects share = remaining (not full share)
+  const adjustedShare = paidAmount != null && paidAmount > 0 && paidAmount < entry.share
+    ? Math.round((entry.share - paidAmount) * 100) / 100
+    : entry.share;
+
   return (
     <TripBreakdownCard
-      entry={{ ...entry, date: dateLabel, totalCost: entry.gasCost + entry.parkingCost, time: entry.time }}
+      entry={{ ...entry, date: dateLabel, totalCost: entry.gasCost + entry.parkingCost, time: entry.time, paidAmount, share: adjustedShare }}
       isExpanded={isExpanded}
       onToggle={onToggle}
       status={settled ? "paid" : "pending"}
@@ -321,6 +328,7 @@ function SummaryCard({
   toggleSubPeriod,
   paidTripKeys,
   perUserPaidKeys,
+  perUserPaidAmounts,
   locale,
   t,
   allDebts,
@@ -334,6 +342,7 @@ function SummaryCard({
   toggleSubPeriod: (key: string) => void;
   paidTripKeys: Set<string>;
   perUserPaidKeys: Map<string, Set<string>>;
+  perUserPaidAmounts: Map<string, Map<string, number>>;
   locale: string;
   t: HistoryContentProps["t"];
   allDebts?: DebtWithBreakdown[];
@@ -431,10 +440,6 @@ function SummaryCard({
             </div>
           )}
         </div>
-        <span className="flex shrink-0 items-center gap-1.5 text-sm font-bold">
-          {totalPaid > 0 && <span className="text-settled">฿{totalPaid.toFixed(2)}</span>}
-          {pendingDebt > 0 && <span className="text-debt">฿{pendingDebt.toFixed(2)}</span>}
-        </span>
         {isExpanded ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
@@ -489,13 +494,16 @@ function SummaryCard({
                       {/* User's trip breakdown entries */}
                       {userEntries.map((entry, i) => {
                         const entryKey = `${group.key}_${e.userId}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
+                        const tripKey = `${entry.carId}-${entry.date}-${entry.tripNumber}`;
                         const userPaid = perUserPaidKeys.get(e.userId);
-                        const entrySettled = userPaid ? userPaid.has(`${entry.carId}-${entry.date}-${entry.tripNumber}`) : false;
+                        const entrySettled = userPaid ? userPaid.has(tripKey) : false;
+                        const entryPaidAmount = entrySettled ? undefined : perUserPaidAmounts.get(e.userId)?.get(tripKey);
                         return (
                           <SummaryEntryCard
                             key={entryKey}
                             entry={entry}
                             settled={entrySettled}
+                            paidAmount={entryPaidAmount}
                             isExpanded={expandedSubPeriods.has(entryKey)}
                             onToggle={() => toggleSubPeriod(entryKey)}
                             locale={locale}
@@ -515,13 +523,16 @@ function SummaryCard({
               const tripKey = `${entry.carId}-${entry.date}-${entry.tripNumber}`;
               // If only one user entry, use that user's paid keys; otherwise fall back to current user's
               const singleUserId = group.entries.length === 1 ? group.entries[0].userId : null;
+              const userId = singleUserId ?? "";
               const userPaid = singleUserId ? perUserPaidKeys.get(singleUserId) : paidTripKeys;
               const entrySettled = userPaid ? userPaid.has(tripKey) : false;
+              const entryPaidAmount = entrySettled ? undefined : perUserPaidAmounts.get(userId)?.get(tripKey);
               return (
                 <SummaryEntryCard
                   key={entryKey}
                   entry={entry}
                   settled={entrySettled}
+                  paidAmount={entryPaidAmount}
                   isExpanded={expandedSubPeriods.has(entryKey)}
                   onToggle={() => toggleSubPeriod(entryKey)}
                   locale={locale}
@@ -756,25 +767,35 @@ export default function HistoryContent({
 
   // Compute which trips are paid vs pending (oldest-first payment allocation)
   // Per-user paid trip keys (oldest-first allocation)
-  const perUserPaidKeys = useMemo(() => {
-    const map = new Map<string, Set<string>>();
+  // perUserPaidKeys: fully-paid trip keys
+  // perUserPaidAmounts: partial payment amount per trip key (only for the partially-paid entry)
+  const { perUserPaidKeys, perUserPaidAmounts } = useMemo(() => {
+    const keyMap = new Map<string, Set<string>>();
+    const amtMap = new Map<string, Map<string, number>>();
     for (const debt of allDebts) {
       const keys = new Set<string>();
+      const amounts = new Map<string, number>();
       const sorted = [...debt.breakdown].sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       );
       let remaining = debt.totalPaid;
       for (const entry of sorted) {
+        const tripKey = `${entry.carId}-${entry.date}-${entry.tripNumber}`;
         if (remaining >= entry.share) {
           remaining = Math.round((remaining - entry.share) * 100) / 100;
-          keys.add(`${entry.carId}-${entry.date}-${entry.tripNumber}`);
+          keys.add(tripKey);
+        } else if (remaining > 0) {
+          amounts.set(tripKey, remaining);
+          remaining = 0;
+          break;
         } else {
           break;
         }
       }
-      map.set(debt.userId, keys);
+      keyMap.set(debt.userId, keys);
+      amtMap.set(debt.userId, amounts);
     }
-    return map;
+    return { perUserPaidKeys: keyMap, perUserPaidAmounts: amtMap };
   }, [allDebts]);
 
   const paidTripKeys = useMemo(() => perUserPaidKeys.get(currentUserId) ?? new Set<string>(), [perUserPaidKeys, currentUserId]);
@@ -1362,6 +1383,7 @@ export default function HistoryContent({
                   toggleSubPeriod={toggleSubPeriod}
                   paidTripKeys={paidTripKeys}
                   perUserPaidKeys={perUserPaidKeys}
+                  perUserPaidAmounts={perUserPaidAmounts}
                   locale={locale}
                   t={t}
                   allDebts={isAdmin && !onlyMe ? allDebts : undefined}
