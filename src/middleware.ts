@@ -9,7 +9,6 @@ const isPublicRoute = createRouteMatcher([
   "/pending-approval(.*)",
   "/tap-success(.*)",
   "/tap-confirm(.*)",
-  "/api/tap(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
@@ -17,7 +16,7 @@ export default clerkMiddleware(async (auth, request) => {
     const { userId } = await auth();
     if (!userId) {
       const url = new URL("/sign-in", request.url);
-      url.searchParams.set("redirectUrl", request.nextUrl.pathname);
+      url.searchParams.set("redirectUrl", request.nextUrl.pathname + request.nextUrl.search);
       return NextResponse.redirect(url);
     }
   }
