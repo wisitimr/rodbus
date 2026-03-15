@@ -37,6 +37,7 @@ interface BreakdownItem {
 interface DebtEntry {
   userId: string;
   userName: string | null;
+  userImage: string | null;
   pendingDebt: number;
   totalDebt: number;
   totalPaid: number;
@@ -122,6 +123,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [confirmingUserId, setConfirmingUserId] = useState<string | null>(null);
+  const [settleNote, setSettleNote] = useState("");
 
   function toggleSet(set: Set<string>, id: string): Set<string> {
     const next = new Set(set);
@@ -155,8 +157,9 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   async function handleSettle(userId: string) {
     setLoadingAction(`settle-${userId}`);
     try {
-      await markAsSettled(userId, carId, partyGroupId);
+      await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined);
       setConfirmingUserId(null);
+      setSettleNote("");
       router.refresh();
     } finally {
       setLoadingAction(null);
@@ -391,8 +394,12 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                     >
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-debt/10 text-sm font-bold text-debt">
-                          {initial}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-debt/10 text-sm font-bold text-debt">
+                          {d.userImage ? (
+                            <img src={d.userImage} alt={d.userName ?? ""} className="h-full w-full object-cover" />
+                          ) : (
+                            initial
+                          )}
                         </div>
                         <div className="text-left">
                           <p className="font-semibold text-foreground">{d.userName ?? "Unknown"}</p>
@@ -464,17 +471,29 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                         {!isConfirming ? (
                           <button
                             type="button"
-                            onClick={() => setConfirmingUserId(d.userId)}
+                            onClick={() => { setConfirmingUserId(d.userId); setSettleNote(""); }}
                             className="flex w-full items-center justify-center gap-2 rounded-xl bg-settled px-4 py-3 text-sm font-semibold text-white transition hover:bg-settled/90 active:scale-[0.98]"
                           >
                             <CheckCircle2 className="h-4 w-4" />
                             {t.markAsSettled}
                           </button>
                         ) : (
-                          <div className="rounded-xl border-2 border-settled bg-settled/5 p-3 text-center animate-fade-in">
-                            <p className="mb-3 text-sm font-medium text-foreground">
+                          <div className="rounded-xl border-2 border-settled bg-settled/5 p-3 animate-fade-in">
+                            <p className="mb-3 text-center text-sm font-medium text-foreground">
                               {t.confirmSettlement} ฿{d.pendingDebt.toFixed(2)} {t.confirmSettlementFor} {d.userName}?
                             </p>
+                            <div className="mb-3 text-left">
+                              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                {t.settlementNote} ({t.optional})
+                              </label>
+                              <input
+                                type="text"
+                                value={settleNote}
+                                onChange={(e) => setSettleNote(e.target.value)}
+                                placeholder={t.settlementNotePlaceholder}
+                                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm"
+                              />
+                            </div>
                             <div className="flex gap-3">
                               <button
                                 type="button"

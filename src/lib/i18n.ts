@@ -131,6 +131,8 @@ const translations = {
     pendingDebtsByUser: "Pending debts by user",
     allBalancesCleared: "All balances are cleared.",
     markAsSettled: "Mark as Settled",
+    settlementNote: "Note",
+    settlementNotePlaceholder: "e.g. Cash, PromptPay, …",
     customAmount: "Custom Amount (฿)",
     recordPayment: "Record Payment",
     // Group / Invite
@@ -373,6 +375,8 @@ const translations = {
     pendingDebtsByUser: "หนี้ค้างชำระรายบุคคล",
     allBalancesCleared: "ยอดทั้งหมดเคลียร์แล้ว",
     markAsSettled: "เคลียร์ยอดแล้ว",
+    settlementNote: "โน้ต",
+    settlementNotePlaceholder: "เช่น เงินสด, โอน, …",
     customAmount: "จำนวนเงิน (฿)",
     recordPayment: "บันทึกการชำระเงิน",
     // Group / Invite

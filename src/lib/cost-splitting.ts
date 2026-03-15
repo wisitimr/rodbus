@@ -16,6 +16,7 @@ export interface SharedParkingInfo {
 export interface UserDebt {
   userId: string;
   userName: string | null;
+  userImage: string | null;
   totalDebt: number;
   totalPaid: number;
   pendingDebt: number;
@@ -259,6 +260,7 @@ export async function calculateDebts(
         entry = {
           userId: uid,
           userName: checkIn?.user.name ?? null,
+          userImage: checkIn?.user.image ?? null,
           totalDebt: 0,
           totalPaid: 0,
           pendingDebt: 0,
