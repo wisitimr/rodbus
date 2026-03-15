@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getActiveGroupOrRedirect } from "@/lib/party-group";
-import { MemberStatus } from "@prisma/client";
 import UserManagement from "./user-management";
 import CarManagement from "./car-management";
 import InviteManagement from "./invite-management";
@@ -12,7 +11,7 @@ export default async function AdminPage() {
   const userId = user.id;
   const activeGroupId = await getActiveGroupOrRedirect();
 
-  const [groupMembers, myCars, inviteTokens, partyGroup] = await Promise.all([
+  const [groupMembers, myCars, partyGroup] = await Promise.all([
     prisma.partyGroupMember.findMany({
       where: { partyGroupId: activeGroupId },
       include: { user: { select: { id: true, name: true, email: true } } },
@@ -21,10 +20,6 @@ export default async function AdminPage() {
     prisma.car.findMany({
       where: { ownerId: userId },
       select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
-    }),
-    prisma.inviteToken.findMany({
-      where: { partyGroupId: activeGroupId },
-      orderBy: { createdAt: "desc" },
     }),
     prisma.partyGroup.findUnique({
       where: { id: activeGroupId },
@@ -39,14 +34,6 @@ export default async function AdminPage() {
     email: m.user.email,
     role: m.role,
     status: m.status,
-  }));
-
-  const tokens = inviteTokens.map((t) => ({
-    id: t.id,
-    token: t.token,
-    expiresAt: t.expiresAt.toISOString(),
-    createdAt: t.createdAt.toISOString(),
-    isExpired: t.expiresAt < new Date(),
   }));
 
   return (
@@ -71,7 +58,6 @@ export default async function AdminPage() {
         }
         inviteTab={
           <InviteManagement
-            tokens={tokens}
             groupId={activeGroupId}
             groupName={partyGroup?.name ?? ""}
             isOwner={partyGroup?.ownerId === userId}

@@ -40,7 +40,6 @@ model PartyGroup {
   owner      User?               @relation("OwnedGroups", fields: [ownerId], references: [id])
   members      PartyGroupMember[]
   trips        Trip[]
-  inviteTokens InviteToken[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
@@ -57,17 +56,6 @@ model PartyGroupMember {
 
   @@unique([userId, partyGroupId])
   @@index([partyGroupId])
-}
-
-model InviteToken {
-  id           String     @id @default(cuid())
-  token        String     @unique @default(cuid())
-  partyGroupId String
-  partyGroup   PartyGroup @relation(fields: [partyGroupId], references: [id], onDelete: Cascade)
-  expiresAt    DateTime
-  createdAt    DateTime   @default(now())
-
-  @@index([token])
 }
 
 model Car {

@@ -37,12 +37,17 @@ export async function createTrip(
 }
 
 // ---------------------------------------------------------------------------
-// Default Gas Cost — Admin sets default gas cost per car
+// Update Car — Admin edits car name, license plate, and default gas cost
 // ---------------------------------------------------------------------------
 
-export async function updateDefaultGasCost(carId: string, gasCost: number) {
+export async function updateCar(
+  carId: string,
+  data: { name: string; licensePlate: string | null; defaultGasCost: number }
+) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+
+  if (!data.name.trim()) throw new Error("Car name is required");
 
   const car = await prisma.car.findUnique({ where: { id: carId } });
   if (!car) throw new Error("Car not found");
@@ -50,11 +55,16 @@ export async function updateDefaultGasCost(carId: string, gasCost: number) {
 
   await prisma.car.update({
     where: { id: carId },
-    data: { defaultGasCost: gasCost },
+    data: {
+      name: data.name.trim(),
+      licensePlate: data.licensePlate?.trim() || null,
+      defaultGasCost: data.defaultGasCost,
+    },
   });
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidateTag("dashboard");
 }
 
 // ---------------------------------------------------------------------------

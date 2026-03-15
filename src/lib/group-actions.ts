@@ -37,71 +37,46 @@ export async function createGroup(name: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Invite Links
+// Join via Group ID
 // ---------------------------------------------------------------------------
 
-/** Generate an invite link with expiry (admin only). */
-export async function generateInviteLink(groupId: string, expiresInDays: number = 7) {
-  await requireGroupAdmin(groupId);
-
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + expiresInDays);
-
-  const token = await prisma.inviteToken.create({
-    data: { partyGroupId: groupId, expiresAt },
-  });
-
-  revalidatePath("/admin");
-  return token;
-}
-
-/** Revoke an invite link (admin only). */
-export async function revokeInviteLink(tokenId: string, groupId: string) {
-  await requireGroupAdmin(groupId);
-
-  await prisma.inviteToken.delete({ where: { id: tokenId } });
-  revalidatePath("/admin");
-}
-
-/** Join a group via invite token. Creates a PENDING membership. */
-export async function joinViaInvite(tokenValue: string) {
+/** Join a group by its ID. Creates a PENDING membership. */
+export async function joinViaGroupId(groupId: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
 
-  const token = await prisma.inviteToken.findUnique({
-    where: { token: tokenValue },
-    include: { partyGroup: { select: { id: true, name: true } } },
+  const group = await prisma.partyGroup.findUnique({
+    where: { id: groupId },
+    select: { id: true, name: true },
   });
 
-  if (!token) throw new Error("Invalid invite link");
-  if (token.expiresAt < new Date()) throw new Error("Invite link has expired");
+  if (!group) throw new Error("Invalid invite link");
 
   // Check if already a member
   const existing = await prisma.partyGroupMember.findUnique({
     where: {
-      userId_partyGroupId: { userId: user.id, partyGroupId: token.partyGroupId },
+      userId_partyGroupId: { userId: user.id, partyGroupId: group.id },
     },
   });
 
   if (existing) {
     if (existing.status === MemberStatus.ACTIVE) {
-      return { status: "already_member" as const, groupName: token.partyGroup.name };
+      return { status: "already_member" as const, groupName: group.name };
     }
-    // Already pending
-    return { status: "already_pending" as const, groupName: token.partyGroup.name };
+    return { status: "already_pending" as const, groupName: group.name };
   }
 
   await prisma.partyGroupMember.create({
     data: {
       userId: user.id,
-      partyGroupId: token.partyGroupId,
+      partyGroupId: group.id,
       role: GroupRole.MEMBER,
       status: MemberStatus.PENDING,
     },
   });
 
   revalidatePath("/admin");
-  return { status: "pending" as const, groupName: token.partyGroup.name };
+  return { status: "pending" as const, groupName: group.name };
 }
 
 // ---------------------------------------------------------------------------
@@ -220,7 +195,7 @@ export async function deleteGroup(groupId: string): Promise<{ remainingGroups: {
   // Delete trips (and their checkIns via cascade) belonging to this group
   await prisma.trip.deleteMany({ where: { partyGroupId: groupId } });
 
-  // PartyGroupMember and InviteToken cascade from PartyGroup
+  // PartyGroupMember cascades from PartyGroup
   await prisma.partyGroup.delete({ where: { id: groupId } });
 
   // Find remaining groups
