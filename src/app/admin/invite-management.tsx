@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Trash2, Check } from "lucide-react";
+import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert } from "lucide-react";
 import { deleteGroup, switchActiveGroup } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
@@ -49,9 +49,12 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
       {/* QR Code Card */}
       <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4">
         {/* Header */}
-        <p className="text-sm text-muted-foreground mb-4">
-          {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
-        </p>
+        <div className="flex items-center gap-2 mb-4">
+          <UserRoundPlus className="h-4 w-4 shrink-0 text-primary" />
+          <p className="text-sm text-muted-foreground">
+            {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
+          </p>
+        </div>
 
         <div className="text-center">
         <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
@@ -84,7 +87,8 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
 
       {/* Danger Zone — only visible to the party creator */}
       {isOwner && <div className="mt-6 rounded-xl border-2 border-debt/30 p-4">
-        <h3 className="text-sm font-semibold text-debt">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-debt">
+          <TriangleAlert className="h-4 w-4 shrink-0" />
           {t.deleteParty}
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
