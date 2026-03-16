@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp, Link2, Check, Loader2 } from "lucide-react";
 import { markAsSettled } from "@/lib/admin-actions";
@@ -123,6 +123,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
   const [confirmingUserId, setConfirmingUserId] = useState<string | null>(null);
   const [settleNote, setSettleNote] = useState("");
   // Per-user selected tripIds for selective settlement (auto-check all)
@@ -190,11 +191,13 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setConfirmingUserId(null);
       setSettleNote("");
       setSelectedSettleTripIds((prev) => { const next = new Map(prev); next.delete(userId); return next; });
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+        setLoadingAction(null);
+      });
     } catch {
-      /* ignore */
+      setLoadingAction(null);
     }
-    setLoadingAction(null);
   }
 
   const usersWithDebt = debts.filter((d) => d.pendingDebt > 0);
