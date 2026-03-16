@@ -4,17 +4,17 @@ import { calculateDebts } from "@/lib/cost-splitting";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
 import DashboardContent from "../dashboard-content";
-import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 import { unstable_cache } from "next/cache";
 import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
 
 async function fetchDashboardData(userId: string, isAdmin: boolean, partyGroupId: string) {
-  const startOfMonth = startOfMonthBangkok();
-  const endOfMonth = endOfMonthBangkok();
+  // Use all-time range for debt calculation so pending debt includes all months
+  const allTimeStart = new Date(2000, 0, 1);
+  const allTimeEnd = new Date(2099, 11, 31);
 
   const [debts, recentTrips] = await Promise.all([
-    calculateDebts(startOfMonth, endOfMonth, partyGroupId),
+    calculateDebts(allTimeStart, allTimeEnd, partyGroupId),
     prisma.trip.findMany({
       where: {
         partyGroupId,

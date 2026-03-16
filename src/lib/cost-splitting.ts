@@ -269,7 +269,8 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
-      entry.totalDebt += perPerson;
+      const roundedShare = Math.round(perPerson * 100) / 100;
+      entry.totalDebt += roundedShare;
       entry.breakdown.push({
         tripId: trip.id,
         carId: trip.carId,
