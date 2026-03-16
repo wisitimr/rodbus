@@ -191,10 +191,10 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setSettleNote("");
       setSelectedSettleTripIds((prev) => { const next = new Map(prev); next.delete(userId); return next; });
       router.refresh();
-      // Don't clear loading — revalidation will re-render with updated props
     } catch {
-      setLoadingAction(null);
+      /* ignore */
     }
+    setLoadingAction(null);
   }
 
   const usersWithDebt = debts.filter((d) => d.pendingDebt > 0);
@@ -485,7 +485,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           return (
                                 <TripBreakdownCard
                                   key={entryKey}
-                                  leading={
+                                  leading={pendingBreakdown.length > 1 ? (
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); toggleSettleTrip(d.userId, b.tripId, pendingBreakdown); }}
@@ -497,7 +497,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                                         {isChecked && <Check className="h-3 w-3" />}
                                       </div>
                                     </button>
-                                  }
+                                  ) : undefined}
                                   entry={{
                                     date: dateLabel,
                                     carName: b.carName,
