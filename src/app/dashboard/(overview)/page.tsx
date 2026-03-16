@@ -16,9 +16,13 @@ async function fetchDashboardData(userId: string, isAdmin: boolean, partyGroupId
   const [debts, recentTrips] = await Promise.all([
     calculateDebts(startOfMonth, endOfMonth, partyGroupId),
     prisma.trip.findMany({
-      where: isAdmin
-        ? { partyGroupId }
-        : { partyGroupId, checkIns: { some: { userId } } },
+      where: {
+        partyGroupId,
+        OR: [
+          { car: { ownerId: userId } },
+          { checkIns: { some: { userId } } },
+        ],
+      },
       orderBy: { createdAt: "desc" },
       take: 5,
       include: {

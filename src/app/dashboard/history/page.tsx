@@ -32,7 +32,7 @@ export default async function HistoryPage() {
         : { partyGroupId: activeGroupId, checkIns: { some: { userId } } },
       include: {
         car: { select: { name: true, licensePlate: true, ownerId: true } },
-        checkIns: { select: { id: true } },
+        checkIns: { select: { id: true, userId: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -87,6 +87,7 @@ export default async function HistoryPage() {
       tripNumber: idx >= 0 ? idx + 1 : 1,
       sharedParkingTripIds: trip.sharedParkingTripIds,
       isOwner: trip.car.ownerId === userId,
+      isMyTrip: trip.car.ownerId === userId || trip.checkIns.some((c) => c.userId === userId),
     };
   });
 

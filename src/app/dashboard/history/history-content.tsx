@@ -23,6 +23,7 @@ interface Trip {
   tripNumber: number;
   sharedParkingTripIds: string[];
   isOwner: boolean;
+  isMyTrip: boolean;
 }
 
 interface PaymentRecord {
@@ -1083,15 +1084,16 @@ export default function HistoryContent({
   }
 
   const filteredTrips = useMemo(() => {
-    if (!tripDateFrom && !tripDateTo) return trips;
+    const base = isAdmin && onlyMe ? trips.filter((t) => t.isMyTrip) : trips;
+    if (!tripDateFrom && !tripDateTo) return base;
     const from = tripDateFrom;
     const to = tripDateTo || tripDateFrom;
-    return trips.filter((trip) => {
+    return base.filter((trip) => {
       if (from && trip.dateISO < from) return false;
       if (to && trip.dateISO > to) return false;
       return true;
     });
-  }, [trips, tripDateFrom, tripDateTo]);
+  }, [trips, tripDateFrom, tripDateTo, isAdmin, onlyMe]);
 
   const filteredPayments = useMemo(() => {
     const base = isAdmin && !onlyMe ? allPayments : allPayments.filter((p) => p.userId === currentUserId);
