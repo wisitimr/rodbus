@@ -18,6 +18,7 @@ interface UserManagementProps {
     status: MemberStatus;
   }[];
   currentUserId: string;
+  currentUserRole: GroupRole;
   groupId: string;
   ownerId: string;
 }
@@ -28,7 +29,7 @@ const roleBadgeStyle: Record<string, string> = {
   OWNER: "bg-primary/10 text-primary",
 };
 
-export default function UserManagement({ users, currentUserId, groupId, ownerId }: UserManagementProps) {
+export default function UserManagement({ users, currentUserId, currentUserRole, groupId, ownerId }: UserManagementProps) {
   const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [roleMenuId, setRoleMenuId] = useState<string | null>(null);
@@ -180,8 +181,10 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
           const initial = (user.name || "?")[0].toUpperCase();
           const { style: badge, label: badgeLabel } = getRoleBadge(user);
           const isLoading = loadingAction === `remove-${user.memberId}` || loadingAction === `role-${user.memberId}` || loadingAction === `transfer-${user.memberId}`;
-          const canManage = !isMe && (!isUserOwner || isOwner);
-          const canRemove = !isMe && !isUserOwner;
+          const isTargetAdmin = user.role === "ADMIN";
+          // Co-hosts can only manage members, not other co-hosts. Owner can manage everyone.
+          const canManage = !isMe && (isOwner || (!isUserOwner && !isTargetAdmin));
+          const canRemove = !isMe && (isOwner ? !isUserOwner : (!isUserOwner && !isTargetAdmin));
           return (
             <div
               key={user.memberId}

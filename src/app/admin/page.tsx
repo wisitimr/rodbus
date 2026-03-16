@@ -37,6 +37,8 @@ export default async function AdminPage() {
     status: m.status,
   }));
 
+  const currentUserRole = groupMembers.find((m) => m.userId === userId)?.role ?? "MEMBER";
+
   return (
     <main className="mx-auto max-w-lg p-4">
       <SettingsTabs
@@ -44,6 +46,7 @@ export default async function AdminPage() {
           <UserManagement
             users={users}
             currentUserId={userId}
+            currentUserRole={currentUserRole}
             groupId={activeGroupId}
             ownerId={partyGroup?.ownerId ?? ""}
           />
