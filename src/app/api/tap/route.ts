@@ -157,9 +157,7 @@ export async function POST(request: NextRequest) {
   await prisma.checkIn.create({
     data: {
       userId: user.id,
-      carId,
       tripId: finalTripId,
-      date: result.today,
     },
   });
 

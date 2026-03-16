@@ -44,7 +44,6 @@ export interface UserDebt {
 
 /**
  * For each Trip, split total cost (gas + parking) among linked check-ins + driver.
- * Legacy check-ins (without tripId) fall back to matching by carId+date.
  */
 export async function calculateDebts(
   startDate: Date,
@@ -79,30 +78,14 @@ export async function calculateDebts(
     [...trips, ...linkedTripsOutOfRange].map((t) => [t.id, t])
   );
 
-  // Fetch check-ins for linked trips outside the date range too
-  const linkedCheckInsOutOfRange = allLinkedIds.size > 0
+  // Fetch all check-ins for trips in range + linked trips outside range
+  const allTripIds = [...trips.map((t) => t.id), ...Array.from(allLinkedIds)];
+  const allCheckIns = allTripIds.length > 0
     ? await prisma.checkIn.findMany({
-        where: {
-          OR: [
-            { tripId: { in: Array.from(allLinkedIds) } },
-            ...linkedTripsOutOfRange.map((t) => ({
-              tripId: null as string | null,
-              carId: t.carId,
-              date: t.date,
-            })),
-          ],
-        },
+        where: { tripId: { in: allTripIds } },
         include: { user: true },
       })
     : [];
-
-  const dateRangeCheckIns = await prisma.checkIn.findMany({
-    where: {
-      date: { gte: startDate, lte: endDate },
-    },
-    include: { user: true },
-  });
-  const allCheckIns = [...dateRangeCheckIns, ...linkedCheckInsOutOfRange];
 
   // Pre-compute trip numbers per car+date
   const tripNumberMap = new Map<string, number>();
@@ -124,8 +107,7 @@ export async function calculateDebts(
     // Find check-ins linked to this Trip (or legacy match by carId+date)
     const linkedCheckIns = allCheckIns.filter(
       (c) =>
-        c.tripId === trip.id ||
-        (c.tripId === null && c.carId === trip.carId && c.date.getTime() === trip.date.getTime())
+        c.tripId === trip.id
     );
 
     if (linkedCheckIns.length === 0) continue;
@@ -150,8 +132,7 @@ export async function calculateDebts(
         allDriverIds.add(linkedTrip.car.ownerId);
         const linkedCIs = allCheckIns.filter(
           (c) =>
-            c.tripId === linkedTripId ||
-            (c.tripId === null && c.carId === linkedTrip.carId && c.date.getTime() === linkedTrip.date.getTime())
+            c.tripId === linkedTripId
         );
         for (const ci of linkedCIs) {
           allParkingUserIds.add(ci.userId);
@@ -216,8 +197,7 @@ export async function calculateDebts(
         }
         const linkedCIs = allCheckIns.filter(
           (c) =>
-            c.tripId === linkedTripId ||
-            (c.tripId === null && c.carId === linkedTrip.carId && c.date.getTime() === linkedTrip.date.getTime())
+            c.tripId === linkedTripId
         );
         for (const ci of linkedCIs) {
           if (ci.user.name && !parkingNameSet.has(ci.userId)) {
@@ -320,8 +300,7 @@ export async function calculateDebts(
       groupDriverIds.add(gt.car.ownerId);
       const gtCheckIns = allCheckIns.filter(
         (c) =>
-          c.tripId === gt.id ||
-          (c.tripId === null && c.carId === gt.carId && c.date.getTime() === gt.date.getTime())
+          c.tripId === gt.id
       );
       for (const ci of gtCheckIns) groupParkingUserIds.add(ci.userId);
     }
@@ -404,19 +383,12 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
   });
 
   const tripIds = allTripsForUser.map((t) => t.id);
-  const allCheckInsForUser = await prisma.checkIn.findMany({
-    where: {
-      OR: [
-        { tripId: { in: tripIds } },
-        ...allTripsForUser.map((t) => ({
-          tripId: null as string | null,
-          carId: t.carId,
-          date: t.date,
-        })),
-      ],
-    },
-    include: { user: true },
-  });
+  const allCheckInsForUser = tripIds.length > 0
+    ? await prisma.checkIn.findMany({
+        where: { tripId: { in: tripIds } },
+        include: { user: true },
+      })
+    : [];
 
   const allTripsMapForUser = new Map(allTripsForUser.map((t) => [t.id, t]));
 
@@ -435,8 +407,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
 
     const linkedCheckIns = allCheckInsForUser.filter(
       (c) =>
-        c.tripId === trip.id ||
-        (c.tripId === null && c.carId === trip.carId && c.date.getTime() === trip.date.getTime())
+        c.tripId === trip.id
     );
 
     if (linkedCheckIns.length === 0) continue;
@@ -457,8 +428,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
         allDriverIds.add(linkedTrip.car.ownerId);
         const linkedCIs = allCheckInsForUser.filter(
           (c) =>
-            c.tripId === linkedTripId ||
-            (c.tripId === null && c.carId === linkedTrip.carId && c.date.getTime() === linkedTrip.date.getTime())
+            c.tripId === linkedTripId
         );
         for (const ci of linkedCIs) allParkingUserIds.add(ci.userId);
       }
@@ -498,8 +468,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
       groupDriverIds.add(gt.car.ownerId);
       const gtCheckIns = allCheckInsForUser.filter(
         (c) =>
-          c.tripId === gt.id ||
-          (c.tripId === null && c.carId === gt.carId && c.date.getTime() === gt.date.getTime())
+          c.tripId === gt.id
       );
       for (const ci of gtCheckIns) groupParkingUserIds.add(ci.userId);
     }
@@ -523,8 +492,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
       if (!dsTrip) continue;
       const dsCIs = allCheckInsForUser.filter(
         (c) =>
-          c.tripId === dsTrip.id ||
-          (c.tripId === null && c.carId === dsTrip.carId && c.date.getTime() === dsTrip.date.getTime())
+          c.tripId === dsTrip.id
       );
       const dsPassengerIds = new Set(dsCIs.map((c) => c.userId));
       const dsHeadcount = dsPassengerIds.size + (dsPassengerIds.has(dsTrip.car.ownerId) ? 0 : 1);
@@ -540,8 +508,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
           dsDrivers.add(lt.car.ownerId);
           const ltCIs = allCheckInsForUser.filter(
             (c) =>
-              c.tripId === ltId ||
-              (c.tripId === null && c.carId === lt.carId && c.date.getTime() === lt.date.getTime())
+              c.tripId === ltId
           );
           for (const ci of ltCIs) dsParkingUsers.add(ci.userId);
         }

@@ -167,20 +167,24 @@ export async function recordPayment(
   revalidateTag("dashboard");
 }
 
-/** Clear the full pending balance for a user by creating one payment per trip */
-export async function markAsSettled(userId: string, carId: string, partyGroupId: string, note?: string) {
+/** Clear the pending balance for a user. If tripIds provided, settle only those trips. */
+export async function markAsSettled(userId: string, carId: string, partyGroupId: string, note?: string, tripIds?: string[]) {
   await requireGroupAdmin(partyGroupId);
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
   const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);
 
-  if (result.totalPending <= 0) {
+  const tripsToSettle = tripIds
+    ? result.perTrip.filter((entry) => tripIds.includes(entry.tripId))
+    : result.perTrip;
+
+  if (tripsToSettle.length === 0) {
     throw new Error("User has no pending debt");
   }
 
   // Create one payment per trip
   await prisma.payment.createMany({
-    data: result.perTrip.map((entry) => ({
+    data: tripsToSettle.map((entry) => ({
       userId,
       tripId: entry.tripId,
       amount: entry.amount,

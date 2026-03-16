@@ -56,6 +56,7 @@ export default async function ManagePage() {
         totalDebt: myCarDebt,
         totalPaid: d.totalPaid,
         breakdown: myCarBreakdown.map((b) => ({
+          tripId: b.tripId,
           carName: b.carName,
           licensePlate: b.licensePlate,
           date: formatDateShort(b.date, locale),

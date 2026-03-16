@@ -73,7 +73,7 @@ export default function TripBreakdownCard({
 
   // Build display list: passengers + driver
   const allNames = [...entry.passengerNames];
-  if (entry.driverName && !allNames.includes(entry.driverName)) {
+  if (entry.driverName && !entry.passengerNames.includes(entry.driverName)) {
     allNames.push(entry.driverName);
   }
 
