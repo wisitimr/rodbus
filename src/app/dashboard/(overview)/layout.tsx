@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
-import { Home } from "lucide-react";
+import RodBusLogo from "@/components/rodbus-logo";
 import ProfileMenu from "../profile-menu";
 import { getActiveGroupOrRedirect, getGroupRole, getUserActiveGroups } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
@@ -30,9 +30,7 @@ export default async function OverviewLayout({
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-              <Home className="h-5 w-5 text-primary" />
-            </div>
+            <RodBusLogo className="h-9 w-9" />
             <div>
               <h1 className="text-lg font-bold text-foreground">
                 RodBus
