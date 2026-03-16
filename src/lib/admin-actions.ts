@@ -136,36 +136,28 @@ export async function recordPayment(
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
   const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);
 
-  // Distribute payment across dates oldest-first
+  // Distribute payment across trips oldest-first
   let remaining = amount;
-  const payments: { date: Date; amount: number }[] = [];
+  const payments: { tripId: string; amount: number }[] = [];
 
-  for (const entry of result.perDate) {
+  for (const entry of result.perTrip) {
     if (remaining <= 0) break;
     const pay = Math.min(remaining, entry.amount);
-    payments.push({ date: entry.date, amount: Math.round(pay * 100) / 100 });
+    payments.push({ tripId: entry.tripId, amount: Math.round(pay * 100) / 100 });
     remaining = Math.round((remaining - pay) * 100) / 100;
   }
 
-  // If amount exceeds total pending, put remainder on the latest date
-  if (remaining > 0) {
-    const lastDate = result.perDate.length > 0
-      ? result.perDate[result.perDate.length - 1].date
-      : todayBangkokUTC();
-    if (payments.length > 0 && payments[payments.length - 1].date.getTime() === lastDate.getTime()) {
-      payments[payments.length - 1].amount += remaining;
-    } else {
-      payments.push({ date: lastDate, amount: remaining });
-    }
+  // If amount exceeds total pending, put remainder on the latest trip
+  if (remaining > 0 && payments.length > 0) {
+    payments[payments.length - 1].amount += remaining;
   }
 
   await prisma.payment.createMany({
     data: payments.map((p) => ({
       userId,
-      carId,
+      tripId: p.tripId,
       amount: p.amount,
       note: note || null,
-      date: p.date,
     })),
   });
 
@@ -175,7 +167,7 @@ export async function recordPayment(
   revalidateTag("dashboard");
 }
 
-/** Clear the full pending balance for a user by creating a payment for the exact amount */
+/** Clear the full pending balance for a user by creating one payment per trip */
 export async function markAsSettled(userId: string, carId: string, partyGroupId: string, note?: string) {
   await requireGroupAdmin(partyGroupId);
 
@@ -186,14 +178,13 @@ export async function markAsSettled(userId: string, carId: string, partyGroupId:
     throw new Error("User has no pending debt");
   }
 
-  // Create one payment per cost date
+  // Create one payment per trip
   await prisma.payment.createMany({
-    data: result.perDate.map((entry) => ({
+    data: result.perTrip.map((entry) => ({
       userId,
-      carId,
+      tripId: entry.tripId,
       amount: entry.amount,
       note: note || null,
-      date: entry.date,
     })),
   });
 

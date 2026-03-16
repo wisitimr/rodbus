@@ -40,7 +40,15 @@ export default async function HistoryPage() {
     calculateDebts(oneYearAgo, farFuture, activeGroupId),
     prisma.payment.findMany({
       where: isAdmin ? {} : { userId },
-      include: { car: { select: { name: true, licensePlate: true } }, user: { select: { name: true } } },
+      include: {
+        user: { select: { name: true } },
+        trip: {
+          select: {
+            id: true, carId: true, date: true, createdAt: true,
+            car: { select: { name: true, licensePlate: true } },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
@@ -134,59 +142,44 @@ export default async function HistoryPage() {
     })),
   }));
 
-  // Assign a specific Trip # to each payment.
-  const paymentTripCounters = new Map<string, number>();
-
-  const paymentCarDatePairs = [...new Map(
+  // Compute trip number for each payment from its linked trip
+  // Fetch trip order data for payment trips not already in carDateTripIds
+  const paymentTripCarDatePairs = [...new Map(
     allPayments
-      .filter(p => !carDateTripIds.has(`${p.carId}-${p.date.toISOString().split("T")[0]}`))
-      .map(p => [`${p.carId}-${p.date.toISOString().split("T")[0]}`, { carId: p.carId, date: p.date }])
+      .filter(p => !carDateTripIds.has(`${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`))
+      .map(p => [`${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`, { carId: p.trip.carId, date: p.trip.date }])
   ).values()];
 
-  const paymentTripCounts = paymentCarDatePairs.length > 0
+  const extraTripOrders = paymentTripCarDatePairs.length > 0
     ? await prisma.trip.findMany({
-        where: { OR: paymentCarDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
-        select: { carId: true, date: true },
+        where: { OR: paymentTripCarDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, carId: true, date: true },
       })
     : [];
 
-  const paymentTripTotalCache = new Map<string, number>();
-  for (const [key, ids] of carDateTripIds) {
-    paymentTripTotalCache.set(key, ids.length);
-  }
-  for (const t of paymentTripCounts) {
+  for (const t of extraTripOrders) {
     const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
-    paymentTripTotalCache.set(key, (paymentTripTotalCache.get(key) ?? 0) + 1);
-  }
-
-  const paymentsByCreated = [...allPayments].sort(
-    (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-  );
-  const paymentTripNumberMap = new Map<string, number>();
-
-  for (const p of paymentsByCreated) {
-    const groupKey = `${p.userId}-${p.carId}-${p.date.toISOString().split("T")[0]}`;
-    const idx = (paymentTripCounters.get(groupKey) ?? 0) + 1;
-    paymentTripCounters.set(groupKey, idx);
-    paymentTripNumberMap.set(p.id, idx);
+    if (!carDateTripIds.has(key)) carDateTripIds.set(key, []);
+    carDateTripIds.get(key)!.push(t.id);
   }
 
   const serializedPayments = allPayments.map((p) => {
-    const cdKey = `${p.carId}-${p.date.toISOString().split("T")[0]}`;
-    const tripNumber = paymentTripNumberMap.get(p.id) ?? 1;
-    const tripTotal = paymentTripTotalCache.get(cdKey) ?? 1;
+    const cdKey = `${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`;
+    const tripIds = carDateTripIds.get(cdKey) ?? [];
+    const tripNumber = Math.max(1, tripIds.indexOf(p.tripId) + 1);
     return {
       id: p.id,
       userId: p.userId,
       userName: p.user.name,
-      carName: p.car.name,
-      licensePlate: p.car.licensePlate ?? null,
-      date: formatDateShort(p.date, locale),
-      dateISO: p.date.toISOString().split("T")[0],
+      carName: p.trip.car.name,
+      licensePlate: p.trip.car.licensePlate ?? null,
+      date: formatDateShort(p.trip.date, locale),
+      dateISO: p.trip.date.toISOString().split("T")[0],
       paidAt: formatDateShort(p.createdAt, locale),
       amount: p.amount,
       note: p.note,
-      tripNumber: tripNumber <= tripTotal ? tripNumber : 1,
+      tripNumber,
     };
   });
 

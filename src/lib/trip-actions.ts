@@ -177,6 +177,7 @@ export async function deleteTrip(tripId: string) {
     throw new Error("Forbidden");
   }
 
+  // CheckIns and Payments cascade-deleted via schema onDelete: Cascade
   await prisma.trip.delete({ where: { id: tripId } });
 
   revalidatePath("/dashboard/history");
