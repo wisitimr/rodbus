@@ -424,19 +424,14 @@ function SummaryCard({
         onClick={onToggle}
         className="flex w-full items-center justify-between text-left"
       >
-        <div className="flex-1">
-          <p className="font-semibold text-foreground">{group.label}</p>
-          <div className="mt-1 flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">฿{totalDebt.toFixed(2)}</span>
-            <span className={`ml-auto font-bold ${pendingDebt > 0 ? "text-debt" : "text-settled"}`}>
-              {pendingDebt > 0 ? `฿${pendingDebt.toFixed(2)}` : `฿${totalPaid.toFixed(2)}`}
-            </span>
-          </div>
-        </div>
+        <p className="flex-1 font-semibold text-foreground">{group.label}</p>
+        <span className={`shrink-0 text-sm font-bold ${pendingDebt > 0 ? "text-debt" : "text-settled"}`}>
+          {pendingDebt > 0 ? `฿${pendingDebt.toFixed(2)}` : `฿${totalPaid.toFixed(2)}`}
+        </span>
         {isExpanded ? (
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          <ChevronUp className="ml-2 h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="ml-2 h-4 w-4 text-muted-foreground" />
         )}
       </button>
 
