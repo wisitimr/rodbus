@@ -426,13 +426,15 @@ function SummaryCard({
         className="flex w-full items-center justify-between text-left"
       >
         <p className="flex-1 font-semibold text-foreground">{group.label}</p>
-        <span className={`shrink-0 text-sm font-bold ${pendingDebt > 0 ? "text-debt" : "text-settled"}`}>
-          {pendingDebt > 0 ? `฿${pendingDebt.toFixed(2)}` : `฿${totalPaid.toFixed(2)}`}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5 text-xs font-bold">
+          {pendingDebt > 0 && <span className="text-debt">฿{pendingDebt.toFixed(2)}</span>}
+          {totalPaid > 0 && <span className="text-settled">฿{totalPaid.toFixed(2)}</span>}
+          <span className="text-muted-foreground">฿{totalDebt.toFixed(2)}</span>
+        </div>
         {isExpanded ? (
-          <ChevronUp className="ml-2 h-4 w-4 text-muted-foreground" />
+          <ChevronUp className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
         ) : (
-          <ChevronDown className="ml-2 h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
         )}
       </button>
 
