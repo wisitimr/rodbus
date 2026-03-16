@@ -80,7 +80,7 @@ export default function TripBreakdownCard({
   }
 
   return (
-    <div className={`${leading ? "flex items-center gap-3" : ""} ${
+    <div className={`${leading ? "flex items-start gap-3 pt-4" : ""} ${
       compact
         ? "rounded-xl border border-border/60 bg-card p-3"
         : "animate-fade-in rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
