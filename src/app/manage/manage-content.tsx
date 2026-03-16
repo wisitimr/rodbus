@@ -463,9 +463,9 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           <button
                             type="button"
                             onClick={() => toggleAllSettleTrips(d.userId, pendingBreakdown)}
-                            className="flex items-center gap-2 px-1 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                           >
-                            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                            <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                               allSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
                             }`}>
                               {allSelected && <Check className="h-3 w-3" />}
@@ -483,11 +483,11 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                             : b.date;
 
                           return (
-                            <div key={entryKey} className="flex items-start gap-2">
+                            <div key={entryKey} className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => toggleSettleTrip(d.userId, b.tripId, pendingBreakdown)}
-                                className="mt-3 shrink-0"
+                                className="shrink-0"
                               >
                                 <div className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
                                   isChecked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
