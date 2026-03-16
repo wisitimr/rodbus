@@ -225,7 +225,7 @@ export default async function HistoryPage() {
           trip: t.trip,
           people: t.people,
           splitAmong: t.splitAmong,
-          passenger: t.passenger,
+          passenger: t.member,
           paidDate: t.paidDate,
           tripNumber: t.tripNumber,
           sharedParking: t.sharedParking,

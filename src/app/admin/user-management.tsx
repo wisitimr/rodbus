@@ -113,7 +113,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
     if (user.role === "ADMIN") {
       return { style: roleBadgeStyle.ADMIN, label: t.coHost.toUpperCase() };
     }
-    return { style: roleBadgeStyle.MEMBER, label: t.passenger.toUpperCase() };
+    return { style: roleBadgeStyle.MEMBER, label: t.member.toUpperCase() };
   }
 
   return (
@@ -218,7 +218,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                         onClick={() => handleRoleChange(user.memberId, "MEMBER" as GroupRole)}
                         className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent ${user.role === "MEMBER" && !isUserOwner ? "text-primary" : "text-foreground"}`}
                       >
-                        {t.passenger.toUpperCase()}
+                        {t.member.toUpperCase()}
                       </button>
                       <button
                         type="button"

@@ -36,7 +36,7 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
   const [open, setOpen] = useState(false);
   const roleLabel: Record<string, string> = {
     ADMIN: t.coHost.toUpperCase(),
-    MEMBER: t.passenger.toUpperCase(),
+    MEMBER: t.member.toUpperCase(),
   };
   const menuRef = useRef<HTMLDivElement>(null);
 
