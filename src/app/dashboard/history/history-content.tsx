@@ -68,6 +68,7 @@ interface BreakdownEntry {
 interface DebtWithBreakdown {
   userId: string;
   userName: string | null;
+  userImage: string | null;
   totalDebt: number;
   totalPaid: number;
   pendingDebt: number;
@@ -77,7 +78,7 @@ interface DebtWithBreakdown {
 interface GroupedPeriod {
   key: string; // ISO date, YYYY-MM, or YYYY
   label: string;
-  entries: { userId: string; userName: string | null; totalDebt: number; totalPaid: number; pendingDebt: number; gasTotal: number; parkingTotal: number }[];
+  entries: { userId: string; userName: string | null; userImage: string | null; totalDebt: number; totalPaid: number; pendingDebt: number; gasTotal: number; parkingTotal: number }[];
 }
 
 interface HistoryContentProps {
@@ -425,24 +426,12 @@ function SummaryCard({
       >
         <div className="flex-1">
           <p className="font-semibold text-foreground">{group.label}</p>
-          {!isMultiUser && (
-            <div className="mt-1 flex items-center gap-3 text-xs">
-              <span className="text-debt">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
-              <span className="text-settled">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
-              <span className="ml-auto text-muted-foreground">Total: <span className="font-bold text-foreground">฿{totalDebt.toFixed(2)}</span></span>
-            </div>
-          )}
-          {isMultiUser && (
-            <div className="mt-1 flex items-center gap-3 text-xs">
-              {pendingDebt > 0 && (
-                <span className="text-debt">{t.pending}: <span className="font-medium">฿{pendingDebt.toFixed(2)}</span></span>
-              )}
-              {totalPaid > 0 && (
-                <span className="text-settled">{t.paid}: <span className="font-medium">฿{totalPaid.toFixed(2)}</span></span>
-              )}
-              <span className="ml-auto text-muted-foreground">Total: <span className="font-bold text-foreground">฿{totalDebt.toFixed(2)}</span></span>
-            </div>
-          )}
+          <div className="mt-1 flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">฿{totalDebt.toFixed(2)}</span>
+            <span className={`ml-auto font-bold ${pendingDebt > 0 ? "text-debt" : "text-settled"}`}>
+              {pendingDebt > 0 ? `฿${pendingDebt.toFixed(2)}` : `฿${totalPaid.toFixed(2)}`}
+            </span>
+          </div>
         </div>
         {isExpanded ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -468,8 +457,12 @@ function SummaryCard({
                     onClick={() => toggleUser(e.userId)}
                     className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left"
                   >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                      {initial}
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      {e.userImage ? (
+                        <img src={e.userImage} alt={e.userName ?? ""} className="h-full w-full object-cover" />
+                      ) : (
+                        initial
+                      )}
                     </div>
                     <span className="flex-1 truncate text-sm font-medium text-foreground">{e.userName ?? "—"}</span>
                     <span className="flex shrink-0 items-center gap-1.5 text-sm font-bold">
@@ -486,15 +479,6 @@ function SummaryCard({
                   {/* User expanded details */}
                   {isUserOpen && (
                     <div className="border-t border-border px-3 pb-3 pt-2 space-y-2 animate-fade-in">
-                      {/* User summary line */}
-                      <div className="flex items-center gap-3 text-xs">
-                        {e.pendingDebt > 0 && (
-                          <span className="text-debt">{t.pending}: <span className="font-medium">฿{e.pendingDebt.toFixed(2)}</span></span>
-                        )}
-                        {e.totalPaid > 0 && (
-                          <span className="text-settled">{t.paid}: <span className="font-medium">฿{e.totalPaid.toFixed(2)}</span></span>
-                        )}
-                      </div>
                       {/* User's trip breakdown entries */}
                       {userEntries.map((entry, i) => {
                         const entryKey = `${group.key}_${e.userId}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
@@ -704,8 +688,10 @@ function groupByPeriod(
   }
 
   const userNames = new Map<string, string | null>();
+  const userImages = new Map<string, string | null>();
   for (const d of allDebts) {
     userNames.set(d.userId, d.userName);
+    userImages.set(d.userId, d.userImage);
   }
 
   const groups: GroupedPeriod[] = [];
@@ -726,6 +712,7 @@ function groupByPeriod(
       entries.push({
         userId: uid,
         userName: userNames.get(uid) ?? null,
+        userImage: userImages.get(uid) ?? null,
         totalDebt,
         totalPaid,
         pendingDebt: Math.round((totalDebt - totalPaid) * 100) / 100,

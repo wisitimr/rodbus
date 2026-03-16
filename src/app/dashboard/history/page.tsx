@@ -95,6 +95,7 @@ export default async function HistoryPage() {
   const serializedDebts = allDebts.map((d) => ({
     userId: d.userId,
     userName: d.userName,
+    userImage: d.userImage,
     totalDebt: d.totalDebt,
     totalPaid: d.totalPaid,
     pendingDebt: d.pendingDebt,
