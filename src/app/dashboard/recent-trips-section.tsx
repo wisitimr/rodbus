@@ -187,7 +187,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
               {/* Sliding card */}
               <div
                 ref={(el) => { if (isSwiped || swipeStartRef.current) swipeCardRef.current = el; }}
-                className="relative rounded-xl border border-border bg-card p-3"
+                className={`relative rounded-xl border bg-card p-3 ${trip.isOwner ? "border-l-[3px] border-l-primary border-y-border border-r-border" : "border-border"}`}
                 style={{
                   transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
                   transition: "transform 0.2s ease-out",

@@ -427,8 +427,8 @@ function SummaryCard({
       >
         <p className="flex-1 font-semibold text-foreground">{group.label}</p>
         <div className="flex shrink-0 items-center gap-1.5 text-xs font-bold">
-          {pendingDebt > 0 && <span className="text-debt">฿{pendingDebt.toFixed(2)}</span>}
           {totalPaid > 0 && <span className="text-settled">฿{totalPaid.toFixed(2)}</span>}
+          {pendingDebt > 0 && <span className="text-debt">฿{pendingDebt.toFixed(2)}</span>}
           <span className="text-muted-foreground">฿{totalDebt.toFixed(2)}</span>
         </div>
         {isExpanded ? (
@@ -1248,7 +1248,7 @@ export default function HistoryContent({
                           {/* Sliding card */}
                           <div
                             ref={(el) => { if (isSwiped || swipeStartRef.current) swipeCardRef.current = el; }}
-                            className="relative rounded-xl border border-border bg-card p-3"
+                            className={`relative rounded-xl border bg-card p-3 ${trip.isOwner ? "border-l-[3px] border-l-primary border-y-border border-r-border" : "border-border"}`}
                             style={{
                               transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
                               transition: "transform 0.2s ease-out",
