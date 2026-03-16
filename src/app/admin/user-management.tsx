@@ -268,15 +268,18 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
       {/* Transfer ownership modal */}
       {confirmTransfer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm" onClick={() => setConfirmTransfer(null)}>
-          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-2 mb-2">
+          <div className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center gap-2 border-b border-border px-6 py-4">
               <Crown className="h-5 w-5 text-primary" />
               <h3 className="text-base font-semibold text-foreground">{t.transferOwnership}</h3>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t.transferOwnershipDesc}
-            </p>
-            <div className="flex gap-2">
+            {/* Body */}
+            <div className="px-6 py-4">
+              <p className="text-sm text-muted-foreground">{t.transferOwnershipDesc}</p>
+            </div>
+            {/* Footer */}
+            <div className="flex gap-2 border-t border-border px-6 py-4">
               <button
                 onClick={() => setConfirmTransfer(null)}
                 className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"

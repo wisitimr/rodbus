@@ -253,15 +253,18 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) handleTripEditCancel(); }}
         >
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-4 shadow-lg animate-scale-in">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              {t.editTrip}
-            </h3>
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-lg animate-scale-in">
+            {/* Header */}
+            <div className="border-b border-border px-6 py-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                {t.editTrip}
+              </h3>
+            </div>
 
             <form
               onSubmit={(e) => { e.preventDefault(); handleTripEditSave(); }}
-              className="space-y-3"
             >
+              <div className="space-y-3 px-6 py-4">
               {/* Car (read-only) */}
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -375,8 +378,10 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                 </div>
               )}
 
-              {/* Buttons */}
-              <div className="flex gap-2">
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-2 border-t border-border px-6 py-4">
                 <button
                   type="submit"
                   disabled={editStatus === "saving"}
@@ -391,7 +396,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                 <button
                   type="button"
                   onClick={handleTripEditCancel}
-                  className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent"
+                  className="flex-1 rounded-xl border border-border py-3 text-sm font-medium text-muted-foreground transition hover:bg-accent"
                 >
                   {t.cancel}
                 </button>

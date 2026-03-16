@@ -32,16 +32,25 @@ export default function ConfirmModal({
       onClick={onCancel}
     >
       <div
-        className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl"
+        className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         {title && (
-          <h3 className={`mb-2 text-base font-semibold ${isDanger ? "text-debt" : "text-foreground"}`}>
-            {title}
-          </h3>
+          <div className="border-b border-border px-6 py-4">
+            <h3 className={`text-base font-semibold ${isDanger ? "text-debt" : "text-foreground"}`}>
+              {title}
+            </h3>
+          </div>
         )}
-        <p className="text-sm text-muted-foreground">{message}</p>
-        <div className="mt-4 flex gap-2">
+
+        {/* Body */}
+        <div className="px-6 py-4">
+          <p className="text-sm text-muted-foreground">{message}</p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-2 border-t border-border px-6 py-4">
           {!isAlert && (
             <button
               onClick={onCancel}
