@@ -113,9 +113,11 @@ input[type="date"] {
   }
 }
 
-/* Global border color */
-* {
-  border-color: var(--color-border);
+/* Global border color — use @layer so Tailwind utilities can override */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
 }
 
 /* Body background gradient */

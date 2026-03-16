@@ -240,6 +240,7 @@ export default async function HistoryPage() {
           edit: t.edit,
           editing: t.editing,
           confirmDeleteTrip: t.confirmDeleteTrip,
+          confirmDeleteAction: t.confirmDeleteAction,
           gasCost: t.gasCost,
           parkingCost: t.parkingCost,
           total: t.total,

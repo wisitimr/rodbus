@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Plus, Fuel, Pencil, Check, Trash2, Car, Copy, ChevronDown, ChevronUp } from "lucide-react";
 import { addCar, deleteCar, updateCar } from "@/lib/admin-actions";
 import { useT } from "@/lib/i18n-context";
+import ConfirmModal from "@/components/confirm-modal";
 import { QRCodeSVG } from "qrcode.react";
 
 interface CarManagementProps {
@@ -31,6 +32,9 @@ export default function CarManagement({ cars }: CarManagementProps) {
   // QR accordion — only one open at a time
   const [expandedQrId, setExpandedQrId] = useState<string | null>(cars[0]?.id ?? null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Delete confirmation state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Swipe state
   const [swipedCarId, setSwipedCarId] = useState<string | null>(null);
@@ -104,7 +108,6 @@ export default function CarManagement({ cars }: CarManagementProps) {
   }
 
   async function handleDelete(carId: string) {
-    if (!confirm(t.confirmDeleteCar)) return;
     setSwipedCarId(null);
     setLoadingAction(`delete-${carId}`);
     try {
@@ -259,7 +262,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
               </button>
               <button
                 type="button"
-                onClick={() => handleDelete(car.id)}
+                onClick={() => setConfirmDeleteId(car.id)}
                 className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
               >
                 <Trash2 className="h-4 w-4" />
@@ -409,6 +412,20 @@ export default function CarManagement({ cars }: CarManagementProps) {
       {cars.length === 0 && !showAddForm && (
         <p className="text-center text-sm text-muted-foreground">{t.noCars}</p>
       )}
+
+      <ConfirmModal
+        open={!!confirmDeleteId}
+        title={t.confirmDeleteAction}
+        message={t.confirmDeleteCar}
+        confirmLabel={t.confirmDeleteAction}
+        cancelLabel={t.cancel}
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDeleteId) handleDelete(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }
