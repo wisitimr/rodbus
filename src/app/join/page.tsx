@@ -6,15 +6,22 @@ import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import JoinContent from "./join-content";
 
-export default async function JoinPage() {
+export default async function JoinPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
+  const { mode } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  // If user has pending memberships, show pending page instead
-  const pendingCount = await prisma.partyGroupMember.count({
-    where: { userId: user.id, status: MemberStatus.PENDING },
-  });
-  if (pendingCount > 0) redirect("/pending-approval");
+  // If user has pending memberships and not explicitly creating, show pending page
+  if (mode !== "create") {
+    const pendingCount = await prisma.partyGroupMember.count({
+      where: { userId: user.id, status: MemberStatus.PENDING },
+    });
+    if (pendingCount > 0) redirect("/pending-approval");
+  }
 
   // Check if user has active groups (show "back to dashboard" link if so)
   const activeGroupCount = await prisma.partyGroupMember.count({
