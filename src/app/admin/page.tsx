@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getActiveGroupOrRedirect } from "@/lib/party-group";
 import UserManagement from "./user-management";
 import CarManagement from "./car-management";
-import InviteManagement from "./invite-management";
+import InviteManagement from "./party-management";
 import SettingsTabs from "./settings-tabs";
 
 export default async function AdminPage() {
