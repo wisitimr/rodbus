@@ -130,14 +130,16 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
             </>
           )}
 
-          <Link
-            href="/join?mode=create"
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent"
-          >
-            <Plus className="h-4 w-4 text-muted-foreground" />
-            {t.createGroup}
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/join?mode=create"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent"
+            >
+              <Plus className="h-4 w-4 text-muted-foreground" />
+              {t.createGroup}
+            </Link>
+          )}
           <div className="border-t border-border" />
           <SignOutButton>
             <button className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent">
