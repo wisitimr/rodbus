@@ -6,6 +6,8 @@ import { bangkokDateToUTC } from "@/lib/timezone";
 import { getActiveGroupId } from "@/lib/party-group";
 import { MemberStatus } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/costs?date=YYYY-MM-DD&carIds=id1,id2 — Fetch trips for given date and cars
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
