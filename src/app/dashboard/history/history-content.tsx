@@ -427,8 +427,8 @@ function SummaryCard({
       >
         <p className="flex-1 font-semibold text-foreground">{group.label}</p>
         <div className="flex shrink-0 items-center gap-1.5 text-xs font-bold">
-          {pendingDebt > 0 && <span className="text-debt">฿{pendingDebt.toFixed(2)}</span>}
           {totalPaid > 0 && <span className="text-settled">฿{totalPaid.toFixed(2)}</span>}
+          {pendingDebt > 0 && <span className="text-debt">฿{pendingDebt.toFixed(2)}</span>}
           <span className="text-muted-foreground">฿{totalDebt.toFixed(2)}</span>
         </div>
         {isExpanded ? (
