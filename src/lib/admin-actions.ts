@@ -134,7 +134,7 @@ export async function recordPayment(
   }
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
-  const result = await calculateUserPendingBreakdown(userId, partyGroupId);
+  const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);
 
   // Distribute payment across dates oldest-first
   let remaining = amount;
@@ -180,7 +180,7 @@ export async function markAsSettled(userId: string, carId: string, partyGroupId:
   await requireGroupAdmin(partyGroupId);
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
-  const result = await calculateUserPendingBreakdown(userId, partyGroupId);
+  const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);
 
   if (result.totalPending <= 0) {
     throw new Error("User has no pending debt");

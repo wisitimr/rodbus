@@ -394,7 +394,7 @@ export async function calculateDebts(
  * Calculate pending debt for a single user (all-time), broken down by date.
  * Returns per-date shares sorted oldest-first, with already-paid amounts subtracted.
  */
-export async function calculateUserPendingBreakdown(userId: string, partyGroupId: string): Promise<{
+export async function calculateUserPendingBreakdown(userId: string, partyGroupId: string, carId?: string): Promise<{
   totalPending: number;
   perDate: { date: Date; amount: number }[];
 }> {
@@ -421,9 +421,14 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
 
   const allTripsMapForUser = new Map(allTripsForUser.map((t) => [t.id, t]));
 
+  // When carId is provided, only process trips for that car (but keep full map for shared parking lookups)
+  const tripsToProcess = carId
+    ? allTripsForUser.filter((t) => t.carId === carId)
+    : allTripsForUser;
+
   const dateShares: { date: Date; amount: number; tripId: string }[] = [];
 
-  for (const trip of allTripsForUser) {
+  for (const trip of tripsToProcess) {
     if (trip.gasCost === 0 && trip.parkingCost === 0) continue;
 
     // Skip if user is the car owner
@@ -475,7 +480,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
 
   // Post-processing: redistribute shared parking deficit to user's own trip entries
   const processedGroups = new Set<string>();
-  for (const trip of allTripsForUser) {
+  for (const trip of tripsToProcess) {
     if (trip.sharedParkingTripIds.length === 0) continue;
 
     const groupIds = [trip.id, ...trip.sharedParkingTripIds].sort();
@@ -557,10 +562,10 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
   }
 
   // Subtract payments from oldest dates first
-  // Scope payments to cars that have trips in this group
-  const groupCarIds = [...new Set(allTripsForUser.map((t) => t.carId))];
+  // Scope payments to the target car (or all group cars if no carId filter)
+  const paymentCarIds = carId ? [carId] : [...new Set(allTripsForUser.map((t) => t.carId))];
   const paymentsAgg = await prisma.payment.aggregate({
-    where: { userId, carId: { in: groupCarIds } },
+    where: { userId, carId: { in: paymentCarIds } },
     _sum: { amount: true },
   });
 
