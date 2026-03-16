@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Bus, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
+import { Bus, ShipWheel, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateTrip, deleteTrip } from "@/lib/trip-actions";
 import ConfirmModal from "@/components/confirm-modal";
 
@@ -203,8 +203,8 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                 } : undefined}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${trip.isOwner ? "bg-primary" : "bg-primary/10"}`}>
-                    <Bus className={`h-5 w-5 ${trip.isOwner ? "text-primary-foreground" : "text-primary"}`} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    {trip.isOwner ? <ShipWheel className="h-5 w-5 text-primary" /> : <Bus className="h-5 w-5 text-primary" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">
