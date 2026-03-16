@@ -33,6 +33,8 @@ export async function createTrip(
   });
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
 
@@ -64,6 +66,7 @@ export async function updateCar(
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
 
@@ -91,6 +94,7 @@ export async function addCar(name: string, licensePlate: string | null, defaultG
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
 
@@ -167,6 +171,7 @@ export async function recordPayment(
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }
 
@@ -194,5 +199,6 @@ export async function markAsSettled(userId: string, carId: string, partyGroupId:
 
   revalidatePath("/admin");
   revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidateTag("dashboard");
 }

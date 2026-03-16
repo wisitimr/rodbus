@@ -100,9 +100,9 @@ export default function CarManagement({ cars }: CarManagementProps) {
       setDefaultGas("0");
       setShowAddForm(false);
       setStatus("idle");
+      // Don't clear loading — revalidation will re-render with updated props
     } catch {
       setStatus("error");
-    } finally {
       setLoadingAction(null);
     }
   }
@@ -112,7 +112,8 @@ export default function CarManagement({ cars }: CarManagementProps) {
     setLoadingAction(`delete-${carId}`);
     try {
       await deleteCar(carId);
-    } finally {
+      // Don't clear loading — revalidation will re-render with updated props
+    } catch {
       setLoadingAction(null);
     }
   }
@@ -141,9 +142,8 @@ export default function CarManagement({ cars }: CarManagementProps) {
         defaultGasCost: parseFloat(editGasCost) || 0,
       });
       setEditingCarId(null);
+      // Don't clear loading — revalidation will re-render with updated props
     } catch {
-      // keep editing
-    } finally {
       setLoadingAction(null);
     }
   }

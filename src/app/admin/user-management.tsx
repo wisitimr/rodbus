@@ -59,7 +59,8 @@ export default function UserManagement({ users, currentUserId, currentUserRole, 
     setLoadingAction(`approve-${memberId}`);
     try {
       await approveJoinRequest(memberId, groupId);
-    } finally {
+      // Don't clear loading — revalidation will re-render with updated props
+    } catch {
       setLoadingAction(null);
     }
   }
@@ -68,7 +69,7 @@ export default function UserManagement({ users, currentUserId, currentUserRole, 
     setLoadingAction(`reject-${memberId}`);
     try {
       await rejectJoinRequest(memberId, groupId);
-    } finally {
+    } catch {
       setLoadingAction(null);
     }
   }
@@ -77,7 +78,7 @@ export default function UserManagement({ users, currentUserId, currentUserRole, 
     setLoadingAction(`remove-${memberId}`);
     try {
       await removeGroupMember(memberId, groupId);
-    } finally {
+    } catch {
       setLoadingAction(null);
     }
   }

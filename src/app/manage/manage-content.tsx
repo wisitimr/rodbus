@@ -161,7 +161,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setConfirmingUserId(null);
       setSettleNote("");
       router.refresh();
-    } finally {
+      // Don't clear loading — revalidation will re-render with updated props
+    } catch {
       setLoadingAction(null);
     }
   }
