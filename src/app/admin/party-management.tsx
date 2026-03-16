@@ -127,7 +127,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
       {isOwner && <div className="mt-6">
         <div className="flex items-center gap-2">
           <TriangleAlert className="h-4 w-4 text-debt" />
-          <h3 className="text-sm font-semibold text-debt">{t.deleteParty}</h3>
+          <h3 className="text-sm font-semibold text-debt">{t.dangerZone}</h3>
         </div>
         <hr className="mt-2 mb-3 border-debt/30" />
         <div className="rounded-xl border-2 border-debt/30 p-4">
