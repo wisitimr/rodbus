@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Bus, ShipWheel, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
+import { Bus, Crown, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateCheckInDate, deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 import ConfirmModal from "@/components/confirm-modal";
@@ -1264,8 +1264,8 @@ export default function HistoryContent({
                             } : undefined}
                           >
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                {trip.isOwner ? <ShipWheel className="h-5 w-5 text-primary" /> : <Bus className="h-5 w-5 text-primary" />}
+                              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${trip.isOwner ? "bg-amber-500/10" : "bg-primary/10"}`}>
+                                {trip.isOwner ? <Crown className="h-5 w-5 text-amber-500" /> : <Bus className="h-5 w-5 text-primary" />}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-foreground">
