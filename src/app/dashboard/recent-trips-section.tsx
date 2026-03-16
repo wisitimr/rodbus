@@ -17,7 +17,6 @@ interface RecentTrip {
   tripNumber: number;
   sharedParkingTripIds: string[];
   isOwner: boolean;
-  ownerName: string | null;
   paymentStatus: "paid" | "pending" | "no_passengers";
 }
 
@@ -188,7 +187,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
               {/* Sliding card */}
               <div
                 ref={(el) => { if (isSwiped || swipeStartRef.current) swipeCardRef.current = el; }}
-                className="relative rounded-xl border border-border bg-card p-3"
+                className={`relative rounded-xl border bg-card p-3 ${trip.isOwner ? "border-l-[3px] border-l-primary border-y-border border-r-border" : "border-border"}`}
                 style={{
                   transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
                   transition: "transform 0.2s ease-out",
@@ -213,7 +212,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                       {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {trip.ownerName && <>{trip.ownerName} &middot; </>}{trip.riderCount} {t.people} &middot; ฿{(trip.gasCost + trip.parkingCost).toFixed(2)}
+                      {trip.riderCount} {t.people} &middot; ฿{(trip.gasCost + trip.parkingCost).toFixed(2)}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">

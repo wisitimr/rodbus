@@ -18,7 +18,6 @@ interface RecentTrip {
   tripNumber: number;
   sharedParkingTripIds: string[];
   isOwner: boolean;
-  ownerName: string | null;
   paymentStatus: "paid" | "pending" | "no_passengers";
 }
 
