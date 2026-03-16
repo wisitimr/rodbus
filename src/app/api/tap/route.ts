@@ -5,8 +5,6 @@ import { MemberStatus } from "@prisma/client";
 import { todayBangkokUTC } from "@/lib/timezone";
 import { revalidateTag } from "next/cache";
 
-export const dynamic = "force-dynamic";
-
 type ValidateError =
   | { error: "not_found" }
   | { error: "owner"; car: string }
