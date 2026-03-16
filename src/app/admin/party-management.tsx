@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert, Pencil, Link } from "lucide-react";
+import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert, Link } from "lucide-react";
 import { deleteGroup, switchActiveGroup, updateGroupName } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
@@ -50,11 +50,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
     <div className="space-y-4">
       {/* Party Name */}
       <div>
-        <div className="flex items-center gap-2">
-          <Pencil className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">{t.partyName}</h3>
-        </div>
-        <hr className="mt-2 mb-3 border-border" />
+        <label className="mb-2 block text-xs font-medium text-muted-foreground">{t.partyName}</label>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -86,14 +82,14 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
       </div>
 
       {/* Invite Link */}
-      <div>
+      <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4">
         <div className="flex items-center gap-2">
           <Link className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">{t.inviteLink}</h3>
         </div>
-        <hr className="mt-2 mb-3 border-border" />
+        <hr className="mt-2 mb-4 border-border" />
 
-        <p className="mb-3 text-sm text-muted-foreground">
+        <p className="mb-4 text-sm text-muted-foreground">
           {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
         </p>
 
@@ -127,13 +123,14 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
       </div>
 
       {/* Danger Zone — only visible to the party creator */}
-      {isOwner && <div>
+      {isOwner && <div className="mt-6 rounded-xl border-2 border-debt/30 p-4">
         <div className="flex items-center gap-2">
           <TriangleAlert className="h-4 w-4 text-debt" />
-          <h3 className="text-sm font-semibold text-debt">{t.deleteParty}</h3>
+          <h3 className="text-sm font-semibold text-debt">{t.dangerZone}</h3>
         </div>
         <hr className="mt-2 mb-3 border-debt/30" />
-        <p className="text-xs text-muted-foreground">
+        <h4 className="text-sm font-semibold text-debt">{t.deleteParty}</h4>
+        <p className="mt-1 text-xs text-muted-foreground">
           {t.deletePartyDesc}
         </p>
 
