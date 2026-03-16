@@ -232,6 +232,7 @@ const translations = {
     noGroupMembershipDesc: "You need to join a group before checking in.",
     tapReceived: "Tap Received",
     tapProcessed: "Your tap has been processed.",
+    somethingWentWrongDesc: "An unexpected error occurred. Please try again.",
 
     // Tap
     ownerCannotCheckIn: "Owner Cannot Check In",
@@ -487,6 +488,7 @@ const translations = {
     noGroupMembershipDesc: "คุณต้องเข้าร่วมกลุ่มก่อนเช็คอิน",
     tapReceived: "รับการแตะแล้ว",
     tapProcessed: "การแตะของคุณถูกประมวลผลแล้ว",
+    somethingWentWrongDesc: "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง",
 
     // Tap
     ownerCannotCheckIn: "เจ้าของรถไม่ต้องเช็คอิน",
