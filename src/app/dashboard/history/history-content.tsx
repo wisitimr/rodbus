@@ -357,7 +357,7 @@ function SummaryCard({
   const totalPaid = group.entries.reduce((sum, e) => sum + e.totalPaid, 0);
   const pendingDebt = group.entries.reduce((sum, e) => sum + e.pendingDebt, 0);
 
-  const isMultiUser = group.entries.length > 1;
+  const isMultiUser = group.entries.length >= 1;
 
   // Track which users are expanded (for multi-user / admin view)
   const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
