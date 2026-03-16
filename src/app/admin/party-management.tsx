@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert } from "lucide-react";
+import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert, Pencil, Link } from "lucide-react";
 import { deleteGroup, switchActiveGroup, updateGroupName } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
@@ -50,7 +50,11 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
     <div className="space-y-4">
       {/* Party Name */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-muted-foreground">{t.partyName}</label>
+        <div className="flex items-center gap-2">
+          <Pencil className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">{t.partyName}</h3>
+        </div>
+        <hr className="mt-2 mb-3 border-border" />
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -81,52 +85,55 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
         </form>
       </div>
 
-      {/* QR Code Card */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-4">
-          <UserRoundPlus className="h-4 w-4 shrink-0 text-primary" />
-          <p className="text-sm text-muted-foreground">
-            {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
-          </p>
+      {/* Invite Link */}
+      <div>
+        <div className="flex items-center gap-2">
+          <Link className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">{t.inviteLink}</h3>
         </div>
+        <hr className="mt-2 mb-3 border-border" />
+
+        <p className="mb-3 text-sm text-muted-foreground">
+          {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
+        </p>
 
         <div className="text-center">
-        <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
-          <QRCodeSVG
-            value={joinUrl}
-            size={200}
-            level="H"
-            className="mx-auto h-auto w-full max-w-[200px]"
-          />
-        </div>
+          <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
+            <QRCodeSVG
+              value={joinUrl}
+              size={200}
+              level="H"
+              className="mx-auto h-auto w-full max-w-[200px]"
+            />
+          </div>
 
-        <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2">
-          <code className="text-xs text-muted-foreground select-all break-all">
-            {joinUrl}
-          </code>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-settled" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
-        </div>
+          <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2">
+            <code className="text-xs text-muted-foreground select-all break-all">
+              {joinUrl}
+            </code>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-settled" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Danger Zone — only visible to the party creator */}
-      {isOwner && <div className="mt-6 rounded-xl border-2 border-debt/30 p-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-debt">
-          <TriangleAlert className="h-4 w-4 shrink-0" />
-          {t.deleteParty}
-        </h3>
-        <p className="mt-1 text-xs text-muted-foreground">
+      {isOwner && <div>
+        <div className="flex items-center gap-2">
+          <TriangleAlert className="h-4 w-4 text-debt" />
+          <h3 className="text-sm font-semibold text-debt">{t.deleteParty}</h3>
+        </div>
+        <hr className="mt-2 mb-3 border-debt/30" />
+        <p className="text-xs text-muted-foreground">
           {t.deletePartyDesc}
         </p>
 
