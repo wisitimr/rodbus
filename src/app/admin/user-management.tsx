@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ShieldCheck, Trash2, UserRoundCog, X } from "lucide-react";
-import { approveJoinRequest, rejectJoinRequest, removeGroupMember, setGroupMemberRole } from "@/lib/group-actions";
+import { Crown, ShieldCheck, Trash2, UserRoundCog, X } from "lucide-react";
+import { approveJoinRequest, rejectJoinRequest, removeGroupMember, setGroupMemberRole, transferOwnership } from "@/lib/group-actions";
 import { useT } from "@/lib/i18n-context";
 import type { GroupRole, MemberStatus } from "@prisma/client";
 
@@ -24,14 +24,17 @@ interface UserManagementProps {
 const roleBadgeStyle: Record<string, string> = {
   MEMBER: "bg-muted text-muted-foreground",
   ADMIN: "bg-debt/10 text-debt",
+  OWNER: "bg-primary/10 text-primary",
 };
 
 export default function UserManagement({ users, currentUserId, groupId, ownerId }: UserManagementProps) {
   const { t } = useT();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [roleMenuId, setRoleMenuId] = useState<string | null>(null);
+  const [confirmTransfer, setConfirmTransfer] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const isOwner = currentUserId === ownerId;
   const isAnyLoading = loadingAction !== null;
   const pendingUsers = users.filter((u) => u.status === "PENDING");
   const activeUsers = users.filter((u) => u.status === "ACTIVE");
@@ -87,6 +90,30 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
     } finally {
       setLoadingAction(null);
     }
+  }
+
+  async function handleTransferOwnership(memberId: string) {
+    setConfirmTransfer(null);
+    setRoleMenuId(null);
+    setLoadingAction(`transfer-${memberId}`);
+    try {
+      const result = await transferOwnership(memberId, groupId);
+      if (result.error) {
+        alert(result.error);
+      }
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  function getRoleBadge(user: { id: string; role: GroupRole }) {
+    if (user.id === ownerId) {
+      return { style: roleBadgeStyle.OWNER, label: t.partyOwner.toUpperCase() };
+    }
+    if (user.role === "ADMIN") {
+      return { style: roleBadgeStyle.ADMIN, label: t.admin.toUpperCase() };
+    }
+    return { style: roleBadgeStyle.MEMBER, label: t.passenger.toUpperCase() };
   }
 
   return (
@@ -147,9 +174,12 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
         </h3>
         {activeUsers.map((user) => {
           const isMe = user.id === currentUserId;
+          const isUserOwner = user.id === ownerId;
           const initial = (user.name || "?")[0].toUpperCase();
-          const badge = roleBadgeStyle[user.role] || "bg-muted text-muted-foreground";
-          const isLoading = loadingAction === `remove-${user.memberId}` || loadingAction === `role-${user.memberId}`;
+          const { style: badge, label: badgeLabel } = getRoleBadge(user);
+          const isLoading = loadingAction === `remove-${user.memberId}` || loadingAction === `role-${user.memberId}` || loadingAction === `transfer-${user.memberId}`;
+          const canManage = !isMe && (!isUserOwner || isOwner);
+          const canRemove = !isMe && !isUserOwner;
           return (
             <div
               key={user.memberId}
@@ -166,12 +196,12 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                 <div className="flex items-center gap-2">
                   <p className="truncate font-semibold text-foreground">{user.name ?? t.noName}</p>
                   <span className={`shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium ${badge}`}>
-                    {user.role === "ADMIN" ? t.admin.toUpperCase() : t.passenger.toUpperCase()}
+                    {badgeLabel}
                   </span>
                 </div>
                 <p className="truncate text-xs text-muted-foreground">{user.email}</p>
               </div>
-              {!isMe && user.id !== ownerId && (
+              {canManage && (
                 <div className="relative shrink-0" ref={roleMenuId === user.memberId ? menuRef : undefined}>
                   <button
                     type="button"
@@ -182,26 +212,42 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                     <UserRoundCog className="h-4 w-4" />
                   </button>
                   {roleMenuId === user.memberId && (
-                    <div className="absolute right-0 z-10 mt-1 w-32 rounded-xl border border-border bg-card p-1.5 shadow-lg animate-fade-in">
+                    <div className="absolute right-0 z-10 mt-1 w-40 rounded-xl border border-border bg-card p-1.5 shadow-lg animate-fade-in">
                       <button
                         type="button"
                         onClick={() => handleRoleChange(user.memberId, "MEMBER" as GroupRole)}
-                        className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent ${user.role === "MEMBER" ? "text-primary" : "text-foreground"}`}
+                        className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent ${user.role === "MEMBER" && !isUserOwner ? "text-primary" : "text-foreground"}`}
                       >
                         {t.passenger.toUpperCase()}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleRoleChange(user.memberId, "ADMIN" as GroupRole)}
-                        className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent ${user.role === "ADMIN" ? "text-primary" : "text-foreground"}`}
+                        className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent ${user.role === "ADMIN" && !isUserOwner ? "text-primary" : "text-foreground"}`}
                       >
                         {t.admin.toUpperCase()}
                       </button>
+                      {isOwner && !isUserOwner && (
+                        <>
+                          <hr className="my-1 border-border" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRoleMenuId(null);
+                              setConfirmTransfer(user.memberId);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-medium text-primary transition-colors hover:bg-accent"
+                          >
+                            <Crown className="h-3.5 w-3.5" />
+                            {t.transferOwnership}
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
               )}
-              {!isMe && user.id !== ownerId && (
+              {canRemove && (
                 <button
                   onClick={() => handleRemove(user.memberId)}
                   disabled={isAnyLoading}
@@ -209,6 +255,29 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
+              )}
+
+              {/* Transfer ownership confirmation */}
+              {confirmTransfer === user.memberId && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-card/95 backdrop-blur-sm">
+                  <div className="text-center px-4">
+                    <p className="text-sm font-medium text-foreground mb-3">{t.transferOwnershipDesc}</p>
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => setConfirmTransfer(null)}
+                        className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+                      >
+                        {t.cancel}
+                      </button>
+                      <button
+                        onClick={() => handleTransferOwnership(user.memberId)}
+                        className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                      >
+                        {t.transferOwnership}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           );

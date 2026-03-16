@@ -185,6 +185,46 @@ export async function setGroupMemberRole(
   return {};
 }
 
+/** Transfer party ownership to another admin member. Only the current owner can do this. */
+export async function transferOwnership(
+  targetMemberId: string,
+  groupId: string
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const group = await prisma.partyGroup.findUnique({
+    where: { id: groupId },
+    select: { ownerId: true },
+  });
+  if (!group) return { error: "Group not found" };
+  if (group.ownerId !== user.id) return { error: "Only the current owner can transfer ownership" };
+
+  const targetMember = await prisma.partyGroupMember.findUnique({
+    where: { id: targetMemberId, partyGroupId: groupId },
+    select: { userId: true, role: true, status: true },
+  });
+  if (!targetMember) return { error: "Member not found" };
+  if (targetMember.status !== MemberStatus.ACTIVE) return { error: "Member is not active" };
+
+  // Transfer ownership and ensure target becomes ADMIN
+  await prisma.$transaction([
+    prisma.partyGroup.update({
+      where: { id: groupId },
+      data: { ownerId: targetMember.userId },
+    }),
+    ...(targetMember.role !== GroupRole.ADMIN
+      ? [prisma.partyGroupMember.update({
+          where: { id: targetMemberId },
+          data: { role: GroupRole.ADMIN },
+        })]
+      : []),
+  ]);
+
+  revalidatePath("/admin");
+  return {};
+}
+
 // ---------------------------------------------------------------------------
 // Self-service
 // ---------------------------------------------------------------------------
