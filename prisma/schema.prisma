@@ -81,7 +81,7 @@ model CheckIn {
   tappedAt DateTime @default(now())
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   car     Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
-  trip    Trip?    @relation(fields: [tripId], references: [id])
+  trip    Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([userId, carId, date])
   @@index([carId, date])
