@@ -187,7 +187,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
               {/* Sliding card */}
               <div
                 ref={(el) => { if (isSwiped || swipeStartRef.current) swipeCardRef.current = el; }}
-                className={`relative rounded-xl border bg-card p-3 ${trip.isOwner ? "border-l-[3px] border-l-primary border-y-border border-r-border" : "border-border"}`}
+                className="relative rounded-xl border border-border bg-card p-3"
                 style={{
                   transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
                   transition: "transform 0.2s ease-out",
@@ -203,8 +203,8 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                 } : undefined}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Bus className="h-5 w-5 text-primary" />
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${trip.isOwner ? "bg-primary" : "bg-primary/10"}`}>
+                    <Bus className={`h-5 w-5 ${trip.isOwner ? "text-primary-foreground" : "text-primary"}`} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">
