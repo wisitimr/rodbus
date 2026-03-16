@@ -26,7 +26,7 @@ async function fetchDashboardData(userId: string, isAdmin: boolean, partyGroupId
       orderBy: { createdAt: "desc" },
       take: 5,
       include: {
-        car: { select: { name: true, licensePlate: true, ownerId: true } },
+        car: { select: { name: true, licensePlate: true, ownerId: true, owner: { select: { name: true } } } },
         checkIns: { select: { id: true } },
       },
     }),
@@ -206,6 +206,7 @@ export default async function DashboardPage() {
       tripNumber: tn,
       sharedParkingTripIds: trip.sharedParkingTripIds,
       isOwner: trip.car.ownerId === userId,
+      ownerName: trip.car.owner.name,
       paymentStatus: trip.checkIns.length === 0
         ? "no_passengers" as const
         : trip.car.ownerId === userId
