@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Bus, Crown, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
-import { updateCheckInDate, deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
+import { deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 import ConfirmModal from "@/components/confirm-modal";
 import { formatDateMedium, type Locale } from "@/lib/i18n";
@@ -824,10 +824,6 @@ export default function HistoryContent({
   // Admin: filter to own data only
   const [onlyMe, setOnlyMe] = useState(false);
 
-  // Trip edit/delete state (legacy check-in based)
-  const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [editDate, setEditDate] = useState("");
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Swipe state
@@ -938,26 +934,6 @@ export default function HistoryContent({
     document.addEventListener("touchstart", handleTap);
     return () => document.removeEventListener("touchstart", handleTap);
   }, [swipedTripId]);
-
-  function handleEditStart(trip: Trip) {
-    setEditingTripId(trip.id);
-    setEditDate(trip.dateISO);
-  }
-
-  function handleEditCancel() {
-    setEditingTripId(null);
-    setEditDate("");
-  }
-
-  function handleEditSave(checkInId: string) {
-    startTransition(async () => {
-      try {
-        await updateCheckInDate(checkInId, editDate);
-        setEditingTripId(null);
-        setEditDate("");
-      } catch { /* ignore */ }
-    });
-  }
 
   function handleDelete(checkInId: string) {
     startTransition(async () => {

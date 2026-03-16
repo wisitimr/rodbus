@@ -5,40 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { bangkokDateToUTC } from "@/lib/timezone";
-
-/** Update a check-in's date. User can edit own check-ins; group admin can edit any. */
-export async function updateCheckInDate(checkInId: string, newDate: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const checkIn = await prisma.checkIn.findUnique({
-    where: { id: checkInId },
-    include: { trip: { select: { partyGroupId: true } } },
-  });
-  if (!checkIn) throw new Error("Check-in not found");
-
-  // Check permission: own check-in OR group admin
-  if (checkIn.userId !== user.id) {
-    const groupId = checkIn.trip?.partyGroupId;
-    if (!groupId) throw new Error("Forbidden");
-    const role = await getGroupRole(user.id, groupId);
-    if (role !== GroupRole.ADMIN) throw new Error("Forbidden");
-  }
-
-  const parsedDate = bangkokDateToUTC(newDate);
-
-  await prisma.checkIn.update({
-    where: { id: checkInId },
-    data: { date: parsedDate },
-  });
-
-  revalidatePath("/dashboard/history");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
-  revalidateTag("dashboard");
-}
-
 /** Delete a check-in. User can delete own check-ins; group admin can delete any. */
 export async function deleteCheckIn(checkInId: string) {
   const user = await getCurrentUser();
@@ -51,8 +17,7 @@ export async function deleteCheckIn(checkInId: string) {
   if (!checkIn) throw new Error("Check-in not found");
 
   if (checkIn.userId !== user.id) {
-    const groupId = checkIn.trip?.partyGroupId;
-    if (!groupId) throw new Error("Forbidden");
+    const groupId = checkIn.trip.partyGroupId;
     const role = await getGroupRole(user.id, groupId);
     if (role !== GroupRole.ADMIN) throw new Error("Forbidden");
   }

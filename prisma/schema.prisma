@@ -65,26 +65,21 @@ model Car {
   defaultGasCost Float     @default(0)
   ownerId        String
   owner          User      @relation("OwnedCars", fields: [ownerId], references: [id], onDelete: Cascade)
-  checkIns       CheckIn[]
   trips          Trip[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
 
 model CheckIn {
-  id      String   @id @default(cuid())
-  userId  String
-  carId   String
-  tripId  String?
-  date    DateTime @db.Date
+  id       String   @id @default(cuid())
+  userId   String
+  tripId   String
   tappedAt DateTime @default(now())
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  car     Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
-  trip    Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip     Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
-  @@index([userId, carId, date])
-  @@index([carId, date])
   @@index([tripId])
+  @@index([userId, tripId])
   @@map("CheckIn")
 }
 
