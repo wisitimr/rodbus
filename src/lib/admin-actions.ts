@@ -138,12 +138,12 @@ export async function recordPayment(
 
   // Distribute payment across trips oldest-first
   let remaining = amount;
-  const payments: { tripId: string; date: Date; amount: number }[] = [];
+  const payments: { tripId: string; amount: number }[] = [];
 
   for (const entry of result.perTrip) {
     if (remaining <= 0) break;
     const pay = Math.min(remaining, entry.amount);
-    payments.push({ tripId: entry.tripId, date: entry.date, amount: Math.round(pay * 100) / 100 });
+    payments.push({ tripId: entry.tripId, amount: Math.round(pay * 100) / 100 });
     remaining = Math.round((remaining - pay) * 100) / 100;
   }
 
@@ -155,11 +155,9 @@ export async function recordPayment(
   await prisma.payment.createMany({
     data: payments.map((p) => ({
       userId,
-      carId,
       tripId: p.tripId,
       amount: p.amount,
       note: note || null,
-      date: p.date,
     })),
   });
 
@@ -184,11 +182,9 @@ export async function markAsSettled(userId: string, carId: string, partyGroupId:
   await prisma.payment.createMany({
     data: result.perTrip.map((entry) => ({
       userId,
-      carId,
       tripId: entry.tripId,
       amount: entry.amount,
       note: note || null,
-      date: entry.date,
     })),
   });
 

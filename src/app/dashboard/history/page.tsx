@@ -41,9 +41,13 @@ export default async function HistoryPage() {
     prisma.payment.findMany({
       where: isAdmin ? {} : { userId },
       include: {
-        car: { select: { name: true, licensePlate: true } },
         user: { select: { name: true } },
-        trip: { select: { id: true, carId: true, date: true, createdAt: true } },
+        trip: {
+          select: {
+            id: true, carId: true, date: true, createdAt: true,
+            car: { select: { name: true, licensePlate: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -168,8 +172,8 @@ export default async function HistoryPage() {
       id: p.id,
       userId: p.userId,
       userName: p.user.name,
-      carName: p.car.name,
-      licensePlate: p.car.licensePlate ?? null,
+      carName: p.trip.car.name,
+      licensePlate: p.trip.car.licensePlate ?? null,
       date: formatDateShort(p.trip.date, locale),
       dateISO: p.trip.date.toISOString().split("T")[0],
       paidAt: formatDateShort(p.createdAt, locale),
