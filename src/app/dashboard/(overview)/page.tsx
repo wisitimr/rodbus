@@ -114,6 +114,11 @@ export default async function DashboardPage() {
   // Format debt entries for client component
   const debtEntries = pendingEntries.entries.map((b, idx) => ({
     date: formatDateMedium(new Date(b.date), locale),
+    time: new Date(b.createdAt).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Bangkok",
+    }),
     carName: b.carName,
     licensePlate: b.licensePlate,
     share: b.share,
