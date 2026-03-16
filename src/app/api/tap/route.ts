@@ -79,12 +79,17 @@ async function validateTap(
   return { ok: true, trips: availableTrips, car: car.name, today };
 }
 
+const noCacheHeaders = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+  "Pragma": "no-cache",
+};
+
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
 
   if (!user) {
     const loginUrl = new URL("/sign-in", request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(loginUrl, { headers: noCacheHeaders });
   }
 
   // Check user has at least one active group
@@ -93,12 +98,12 @@ export async function GET(request: NextRequest) {
   });
   if (!hasGroup) {
     const joinUrl = new URL("/join", request.url);
-    return NextResponse.redirect(joinUrl);
+    return NextResponse.redirect(joinUrl, { headers: noCacheHeaders });
   }
 
   const carId = request.nextUrl.searchParams.get("carId");
   if (!carId) {
-    return NextResponse.json({ error: "Missing carId parameter" }, { status: 400 });
+    return NextResponse.json({ error: "Missing carId parameter" }, { status: 400 }, );
   }
 
   const result = await validateTap(user, carId);
@@ -107,14 +112,14 @@ export async function GET(request: NextRequest) {
     const successUrl = new URL("/tap-success", request.url);
     successUrl.searchParams.set("status", result.error);
     if ("car" in result) successUrl.searchParams.set("car", result.car);
-    return NextResponse.redirect(successUrl);
+    return NextResponse.redirect(successUrl, { headers: noCacheHeaders });
   }
 
   const confirmUrl = new URL("/tap-confirm", request.url);
   confirmUrl.searchParams.set("carId", carId);
   confirmUrl.searchParams.set("car", result.car);
   confirmUrl.searchParams.set("trips", JSON.stringify(result.trips));
-  return NextResponse.redirect(confirmUrl);
+  return NextResponse.redirect(confirmUrl, { headers: noCacheHeaders });
 }
 
 export async function POST(request: NextRequest) {
