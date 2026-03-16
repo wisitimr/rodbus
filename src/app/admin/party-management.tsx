@@ -89,8 +89,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
         </div>
         <hr className="mt-2 mb-3 border-border" />
         <div className="rounded-2xl border border-border bg-card shadow-sm p-4">
-        <h4 className="text-sm font-semibold">{t.inviteLink}</h4>
-        <p className="mt-1 mb-4 text-sm text-muted-foreground">
+        <p className="mb-4 text-sm text-muted-foreground">
           {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
         </p>
 
