@@ -142,9 +142,7 @@ export async function deleteTrip(tripId: string) {
     throw new Error("Forbidden");
   }
 
-  // Explicitly delete related records first, then the trip
-  await prisma.payment.deleteMany({ where: { tripId } });
-  await prisma.checkIn.deleteMany({ where: { tripId } });
+  // Payments and CheckIns cascade-deleted via DB ON DELETE CASCADE
   await prisma.trip.delete({ where: { id: tripId } });
 
   revalidatePath("/dashboard/history");
