@@ -118,6 +118,8 @@ export async function approveJoinRequest(memberId: string, groupId: string) {
   });
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/manage");
   revalidatePath("/join");
 }
 
@@ -130,6 +132,8 @@ export async function rejectJoinRequest(memberId: string, groupId: string) {
   });
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/manage");
 }
 
 /** Remove an active member from the group (kick). Admins can remove members, but not the party owner. */
@@ -157,6 +161,8 @@ export async function removeGroupMember(memberId: string, groupId: string) {
   });
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/manage");
 }
 
 /** Change a member's role (admin only). Prevents demoting the last admin. */
@@ -202,6 +208,8 @@ export async function setGroupMemberRole(
   });
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/manage");
   return {};
 }
 
@@ -242,6 +250,8 @@ export async function transferOwnership(
   ]);
 
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/manage");
   return {};
 }
 
