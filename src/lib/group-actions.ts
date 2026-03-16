@@ -17,16 +17,15 @@ export async function createGroup(name: string) {
 
   if (!name.trim()) throw new Error("Group name is required");
 
-  // Only allow if user is admin/owner in at least one group, or has no groups yet
+  // Only admins/owners of an existing group can create new parties
   const existingMembership = await prisma.partyGroupMember.findFirst({
     where: { userId: user.id, status: MemberStatus.ACTIVE },
     include: { partyGroup: true },
   });
-  if (existingMembership) {
-    const isAdmin = existingMembership.role === GroupRole.ADMIN;
-    const isOwner = existingMembership.partyGroup.ownerId === user.id;
-    if (!isAdmin && !isOwner) throw new Error("Only admins can create new parties");
-  }
+  if (!existingMembership) throw new Error("Only admins can create new parties");
+  const isAdmin = existingMembership.role === GroupRole.ADMIN;
+  const isOwner = existingMembership.partyGroup.ownerId === user.id;
+  if (!isAdmin && !isOwner) throw new Error("Only admins can create new parties");
 
   const group = await prisma.partyGroup.create({
     data: {
