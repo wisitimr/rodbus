@@ -87,9 +87,9 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
           <Link className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">{t.inviteLink}</h3>
         </div>
-        <hr className="mt-2 mb-3 border-border" />
+        <hr className="mt-2 mb-4 border-border" />
 
-        <p className="mb-3 text-sm text-muted-foreground">
+        <p className="mb-4 text-sm text-muted-foreground">
           {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
         </p>
 
@@ -129,7 +129,10 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
           <h3 className="text-sm font-semibold text-debt">{t.dangerZone}</h3>
         </div>
         <hr className="mt-2 mb-3 border-debt/30" />
-        <h4 className="text-sm font-semibold text-debt">{t.deleteParty}</h4>
+        <h4 className="flex items-center gap-2 text-sm font-semibold text-debt">
+          <TriangleAlert className="h-4 w-4 shrink-0" />
+          {t.deleteParty}
+        </h4>
         <p className="mt-1 text-xs text-muted-foreground">
           {t.deletePartyDesc}
         </p>
