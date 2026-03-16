@@ -80,18 +80,18 @@ export default function TripBreakdownCard({
   }
 
   return (
-    <div className={`${leading ? "flex items-start gap-3 pt-4" : ""} ${
+    <div className={
       compact
         ? "rounded-xl border border-border/60 bg-card p-3"
         : "animate-fade-in rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
-    }`}>
-      {leading}
-      <div className={leading ? "flex-1 min-w-0" : ""}>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full flex-col gap-0.5 text-left"
-      >
+    }>
+      <div className={leading ? "flex items-center gap-3" : ""}>
+        {leading}
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex w-full min-w-0 flex-1 flex-col gap-0.5 text-left"
+        >
         {/* Row 1: date + badges */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={`font-medium text-muted-foreground ${compact ? "text-xs" : "text-sm"}`}>
@@ -144,7 +144,8 @@ export default function TripBreakdownCard({
             )}
           </div>
         </div>
-      </button>
+        </button>
+      </div>
 
       {isExpanded && (
         <div className={`animate-fade-in rounded-xl bg-accent/50 ${compact ? "mt-2 space-y-1.5 p-2" : "mt-3 space-y-2 p-3"}`}>
@@ -229,7 +230,6 @@ export default function TripBreakdownCard({
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }
