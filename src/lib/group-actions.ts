@@ -147,6 +147,11 @@ export async function removeGroupMember(memberId: string, groupId: string) {
   if (member.userId === user.id) throw new Error("Cannot remove yourself");
   if (member.userId === group.ownerId) throw new Error("Cannot remove the party owner");
 
+  // Co-hosts cannot remove other co-hosts — only the owner can
+  if (member.role === GroupRole.ADMIN && user.id !== group.ownerId) {
+    throw new Error("Only the owner can remove a co-host");
+  }
+
   await prisma.partyGroupMember.delete({
     where: { id: memberId },
   });
@@ -174,6 +179,11 @@ export async function setGroupMemberRole(
   // Prevent changing the owner's role
   if (member.userId === group.ownerId && user.id !== group.ownerId) {
     return { error: "Cannot change the owner's role" };
+  }
+
+  // Co-hosts cannot change other co-hosts' roles — only the owner can
+  if (member.role === GroupRole.ADMIN && user.id !== group.ownerId && member.userId !== user.id) {
+    return { error: "Only the owner can change a co-host's role" };
   }
 
   // Prevent demoting yourself if you're the last admin
