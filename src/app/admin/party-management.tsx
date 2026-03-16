@@ -124,7 +124,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
       </div>
 
       {/* Danger Zone — only visible to the party creator */}
-      {isOwner && <div className="mt-6 rounded-xl border-2 border-debt p-4">
+      {isOwner && <div className="mt-6 rounded-2xl border-2 border-debt bg-card p-4 shadow-sm">
         <div className="flex items-center gap-2">
           <TriangleAlert className="h-4 w-4 text-debt" />
           <h3 className="text-sm font-semibold text-debt">{t.dangerZone}</h3>
