@@ -82,14 +82,15 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
       </div>
 
       {/* Invite Link */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm px-4 pb-4 pt-4">
+      <div>
         <div className="flex items-center gap-2">
           <Link className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">{t.inviteLink}</h3>
         </div>
-        <hr className="mt-2 mb-4 border-border" />
-
-        <p className="mb-4 text-sm text-muted-foreground">
+        <hr className="mt-2 mb-3 border-border" />
+        <div className="rounded-2xl border border-border bg-card shadow-sm p-4">
+        <h4 className="text-sm font-semibold">{t.inviteLink}</h4>
+        <p className="mt-1 mb-4 text-sm text-muted-foreground">
           {t.shareInviteMessage} &ldquo;{groupName}&rdquo;
         </p>
 
@@ -120,6 +121,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
             </button>
           </div>
         </div>
+        </div>
       </div>
 
       {/* Danger Zone — only visible to the party creator */}
@@ -128,8 +130,10 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
           <TriangleAlert className="h-4 w-4 text-debt" />
           <h3 className="text-sm font-semibold text-debt">{t.deleteParty}</h3>
         </div>
-        <div className="mt-2 rounded-xl border-2 border-debt/30 p-4">
-        <p className="text-xs text-muted-foreground">
+        <hr className="mt-2 mb-3 border-debt/30" />
+        <div className="rounded-xl border-2 border-debt/30 p-4">
+        <h4 className="text-sm font-semibold text-debt">{t.deleteParty}</h4>
+        <p className="mt-1 text-xs text-muted-foreground">
           {t.deletePartyDesc}
         </p>
 
