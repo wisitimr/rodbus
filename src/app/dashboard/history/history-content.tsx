@@ -5,6 +5,7 @@ import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Tras
 import { updateCheckInDate, deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 import ConfirmModal from "@/components/confirm-modal";
+import { formatDateMedium, type Locale } from "@/lib/i18n";
 
 type Tab = "trips" | "payments" | "summary";
 type SummaryPeriod = "day" | "month" | "year";
@@ -136,6 +137,7 @@ interface HistoryContentProps {
     parkingCost?: string;
     total?: string;
     shareParkingWithTrips?: string;
+    loadMore?: string;
   };
 }
 
@@ -144,8 +146,7 @@ function toISO(d: Date) {
 }
 
 function fmtDate(iso: string, locale: string) {
-  const loc = locale === "th" ? "th-TH-u-ca-buddhist" : "en-US";
-  return new Date(iso + "T00:00:00").toLocaleDateString(loc);
+  return formatDateMedium(new Date(iso + "T00:00:00"), locale as Locale);
 }
 
 function Calendar({
@@ -1122,7 +1123,14 @@ export default function HistoryContent({
       .filter((g) => g.entries.length > 0);
   }, [allDebts, allPayments, summaryPeriod, locale, currentUserId, isAdmin, onlyMe]);
 
-  const summaryScroll = useInfiniteScroll(summaryGroups);
+  const SUMMARY_PAGE_SIZE = 3;
+  const [summaryVisibleCount, setSummaryVisibleCount] = useState(SUMMARY_PAGE_SIZE);
+  // Reset visible count when summaryGroups changes
+  useEffect(() => {
+    setSummaryVisibleCount(SUMMARY_PAGE_SIZE);
+  }, [summaryGroups]);
+  const visibleSummaryGroups = summaryGroups.slice(0, summaryVisibleCount);
+  const hasSummaryMore = summaryVisibleCount < summaryGroups.length;
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     {
@@ -1368,7 +1376,7 @@ export default function HistoryContent({
             <p className="text-sm text-muted-foreground">{t.noData}</p>
           ) : (
             <div className="space-y-3">
-              {summaryScroll.visible.map((group) => (
+              {visibleSummaryGroups.map((group) => (
                 <SummaryCard
                   key={group.key}
                   group={group}
@@ -1386,10 +1394,15 @@ export default function HistoryContent({
                   allDebts={isAdmin && !onlyMe ? allDebts : undefined}
                 />
               ))}
-              {summaryScroll.hasMore && (
-                <div ref={summaryScroll.sentinelRef} className="py-4 text-center text-sm text-muted-foreground">
-                  Loading...
-                </div>
+              {hasSummaryMore && (
+                <button
+                  type="button"
+                  onClick={() => setSummaryVisibleCount((c) => c + SUMMARY_PAGE_SIZE)}
+                  className="flex w-full items-center justify-center gap-1 rounded-xl border border-border bg-card py-2.5 text-sm font-medium text-primary transition-colors hover:bg-accent"
+                >
+                  {t.loadMore ?? "Load More"}
+                  <ChevronDown className="h-4 w-4" />
+                </button>
               )}
             </div>
           )}

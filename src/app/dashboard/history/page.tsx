@@ -247,6 +247,7 @@ export default async function HistoryPage() {
           parkingCost: t.parkingCost,
           total: t.total,
           shareParkingWithTrips: t.shareParkingWithTrips,
+          loadMore: t.loadMore,
         }}
       />
     </main>
