@@ -221,7 +221,6 @@ export default async function HistoryPage() {
           paid: t.paid,
           pending: t.pending,
           noPassengers: t.noPassengers,
-          myTrip: t.myTrip,
           you: t.you,
           onlyMe: t.onlyMe,
           allData: t.allData,

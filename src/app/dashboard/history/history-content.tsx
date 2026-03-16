@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
+import { Bus, ShipWheel, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateCheckInDate, deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 import ConfirmModal from "@/components/confirm-modal";
@@ -111,7 +111,6 @@ interface HistoryContentProps {
     paid: string;
     pending: string;
     noPassengers: string;
-    myTrip: string;
     you: string;
     onlyMe: string;
     allData: string;
@@ -1272,7 +1271,7 @@ export default function HistoryContent({
                                 <p className="text-sm font-semibold text-foreground">
                                   {trip.carName}
                                   {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
-                                  {trip.isOwner && <span className="ml-1.5 inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{t.myTrip}</span>}
+                                  {trip.isOwner && <ShipWheel className="ml-1 inline h-3.5 w-3.5 text-primary" />}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {trip.riderCount} {t.people} &middot; ฿{totalCost.toFixed(2)}

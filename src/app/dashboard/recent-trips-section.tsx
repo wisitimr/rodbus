@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Bus, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
+import { Bus, ShipWheel, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateTrip, deleteTrip } from "@/lib/trip-actions";
 import ConfirmModal from "@/components/confirm-modal";
 
@@ -41,7 +41,6 @@ interface RecentTripsSectionProps {
     shareParkingWithTrips: string;
     confirmDeleteTrip: string;
     confirmDeleteAction: string;
-    myTrip: string;
   };
 }
 
@@ -211,7 +210,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                     <p className="text-sm font-semibold text-foreground">
                       {trip.carName}
                       {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
-                      {trip.isOwner && <span className="ml-1.5 inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{t.myTrip}</span>}
+                      {trip.isOwner && <ShipWheel className="ml-1 inline h-3.5 w-3.5 text-primary" />}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {trip.riderCount} {t.people} &middot; ฿{(trip.gasCost + trip.parkingCost).toFixed(2)}
