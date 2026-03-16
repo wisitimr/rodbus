@@ -10,6 +10,7 @@ import TripBreakdownCard from "@/components/trip-breakdown-card";
 type Tab = "newTrip" | "settleDebts";
 
 interface BreakdownItem {
+  tripId: string;
   carName: string;
   licensePlate: string | null;
   date: string;
@@ -124,6 +125,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [confirmingUserId, setConfirmingUserId] = useState<string | null>(null);
   const [settleNote, setSettleNote] = useState("");
+  // Per-user selected tripIds for selective settlement (auto-check all)
+  const [selectedSettleTripIds, setSelectedSettleTripIds] = useState<Map<string, Set<string>>>(new Map());
 
   function toggleSet(set: Set<string>, id: string): Set<string> {
     const next = new Set(set);
@@ -154,12 +157,39 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     return pending;
   }
 
-  async function handleSettle(userId: string) {
+  function getSelectedTrips(userId: string, pendingBreakdown: BreakdownItem[]): Set<string> {
+    return selectedSettleTripIds.get(userId) ?? new Set(pendingBreakdown.map((b) => b.tripId));
+  }
+
+  function toggleSettleTrip(userId: string, tripId: string, pendingBreakdown: BreakdownItem[]) {
+    setSelectedSettleTripIds((prev) => {
+      const next = new Map(prev);
+      const current = next.get(userId) ?? new Set(pendingBreakdown.map((b) => b.tripId));
+      const updated = new Set(current);
+      if (updated.has(tripId)) updated.delete(tripId);
+      else updated.add(tripId);
+      next.set(userId, updated);
+      return next;
+    });
+  }
+
+  function toggleAllSettleTrips(userId: string, pendingBreakdown: BreakdownItem[]) {
+    setSelectedSettleTripIds((prev) => {
+      const next = new Map(prev);
+      const current = next.get(userId) ?? new Set(pendingBreakdown.map((b) => b.tripId));
+      const allSelected = current.size === pendingBreakdown.length;
+      next.set(userId, allSelected ? new Set() : new Set(pendingBreakdown.map((b) => b.tripId)));
+      return next;
+    });
+  }
+
+  async function handleSettle(userId: string, tripIds?: string[]) {
     setLoadingAction(`settle-${userId}`);
     try {
-      await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined);
+      await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined, tripIds);
       setConfirmingUserId(null);
       setSettleNote("");
+      setSelectedSettleTripIds((prev) => { const next = new Map(prev); next.delete(userId); return next; });
       router.refresh();
       // Don't clear loading — revalidation will re-render with updated props
     } catch {
@@ -419,52 +449,90 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                     </button>
 
                     {/* Expanded: breakdown entries */}
-                    {isUserExpanded && (
+                    {isUserExpanded && (() => {
+                      const selected = getSelectedTrips(d.userId, pendingBreakdown);
+                      const allSelected = selected.size === pendingBreakdown.length;
+                      const selectedAmount = pendingBreakdown
+                        .filter((b) => selected.has(b.tripId))
+                        .reduce((sum, b) => sum + b.share, 0);
+
+                      return (
                       <div className="mt-3 space-y-2 animate-fade-in">
+                        {/* Select all toggle */}
+                        {pendingBreakdown.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleAllSettleTrips(d.userId, pendingBreakdown)}
+                            className="flex items-center gap-2 px-1 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                              allSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
+                            }`}>
+                              {allSelected && <Check className="h-3 w-3" />}
+                            </div>
+                            {t.selectAll}
+                          </button>
+                        )}
+
                         {pendingBreakdown.map((b, i) => {
                           const entryKey = `${d.userId}_${b.dateISO ?? b.date}_${i}`;
                           const isEntryExpanded = expandedEntries.has(entryKey);
+                          const isChecked = selected.has(b.tripId);
                           const dateLabel = b.dateISO
                             ? new Date(b.dateISO + "T00:00:00").toLocaleDateString(loc, { month: "short", day: "numeric", year: "numeric" })
                             : b.date;
 
                           return (
-                            <TripBreakdownCard
-                              key={entryKey}
-                              entry={{
-                                date: dateLabel,
-                                carName: b.carName,
-                                licensePlate: b.licensePlate,
-                                share: b.share,
-                                gasShare: b.gasShare,
-                                gasCost: b.gasCost,
-                                parkingShare: b.parkingShare,
-                                parkingCost: b.parkingCost,
-                                totalCost: b.totalCost,
-                                headcount: b.headcount,
-                                parkingHeadcount: b.parkingHeadcount,
-                                tripNumber: b.tripNumber,
-                                passengerNames: b.passengerNames,
-                                driverName: b.driverName,
-                                sharedParking: b.sharedParking ?? null,
-                                paidAmount: b.paidAmount,
-                              }}
-                              isExpanded={isEntryExpanded}
-                              onToggle={() => setExpandedEntries((prev) => toggleSet(prev, entryKey))}
-                              status="pending"
-                              t={{
-                                pending: t.pending,
-                                tripNumber: t.tripNumber,
-                                people: t.people,
-                                gas: t.gas,
-                                parking: t.parking,
-                                total: t.total,
-                                driver: t.driver,
-                                sharedParking: t.sharedParking,
-                                sharedParkingAcross: t.sharedParkingAcross,
-                                uniquePeople: t.uniquePeople,
-                              }}
-                            />
+                            <div key={entryKey} className="flex items-start gap-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleSettleTrip(d.userId, b.tripId, pendingBreakdown)}
+                                className="mt-3 shrink-0"
+                              >
+                                <div className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                                  isChecked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
+                                }`}>
+                                  {isChecked && <Check className="h-3 w-3" />}
+                                </div>
+                              </button>
+                              <div className="flex-1 min-w-0">
+                                <TripBreakdownCard
+                                  entry={{
+                                    date: dateLabel,
+                                    carName: b.carName,
+                                    licensePlate: b.licensePlate,
+                                    share: b.share,
+                                    gasShare: b.gasShare,
+                                    gasCost: b.gasCost,
+                                    parkingShare: b.parkingShare,
+                                    parkingCost: b.parkingCost,
+                                    totalCost: b.totalCost,
+                                    headcount: b.headcount,
+                                    parkingHeadcount: b.parkingHeadcount,
+                                    tripNumber: b.tripNumber,
+                                    passengerNames: b.passengerNames,
+                                    driverName: b.driverName,
+                                    sharedParking: b.sharedParking ?? null,
+                                    paidAmount: b.paidAmount,
+                                  }}
+                                  isExpanded={isEntryExpanded}
+                                  onToggle={() => setExpandedEntries((prev) => toggleSet(prev, entryKey))}
+                                  status="pending"
+                                  t={{
+                                    pending: t.pending,
+                                    tripNumber: t.tripNumber,
+                                    people: t.people,
+                                    gas: t.gas,
+                                    parking: t.parking,
+                                    total: t.total,
+                                    driver: t.driver,
+                                    sharedParking: t.sharedParking,
+                                    sharedParkingAcross: t.sharedParkingAcross,
+                                    uniquePeople: t.uniquePeople,
+                                  }}
+                                />
+                              </div>
+                            </div>
                           );
                         })}
 
@@ -473,15 +541,16 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           <button
                             type="button"
                             onClick={() => { setConfirmingUserId(d.userId); setSettleNote(""); }}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-settled px-4 py-3 text-sm font-semibold text-white transition hover:bg-settled/90 active:scale-[0.98]"
+                            disabled={selected.size === 0}
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-settled px-4 py-3 text-sm font-semibold text-white transition hover:bg-settled/90 active:scale-[0.98] disabled:opacity-50"
                           >
                             <CheckCircle2 className="h-4 w-4" />
-                            {t.markAsSettled}
+                            {t.markAsSettled} {selected.size < pendingBreakdown.length ? `(${selected.size}/${pendingBreakdown.length})` : ""} ฿{Math.round(selectedAmount * 100 / 100).toFixed(2)}
                           </button>
                         ) : (
                           <div className="rounded-xl border-2 border-settled bg-settled/5 p-3 animate-fade-in">
                             <p className="mb-3 text-center text-sm font-medium text-foreground">
-                              {t.confirmSettlement} ฿{d.pendingDebt.toFixed(2)} {t.confirmSettlementFor} {d.userName}?
+                              {t.confirmSettlement} ฿{selectedAmount.toFixed(2)} {t.confirmSettlementFor} {d.userName}?
                             </p>
                             <div className="mb-3 text-left">
                               <label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -505,7 +574,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleSettle(d.userId)}
+                                onClick={() => handleSettle(d.userId, Array.from(selected))}
                                 disabled={isSettleLoading}
                                 className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-settled px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-settled/90 disabled:opacity-50"
                               >
@@ -516,7 +585,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           </div>
                         )}
                       </div>
-                    )}
+                    );
+                    })()}
                   </div>
                 );
               })}
