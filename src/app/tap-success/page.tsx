@@ -60,12 +60,12 @@ function TapResult() {
   };
 
   const msg = messages[status ?? ""] ?? {
-    title: t.tapReceived,
-    description: t.tapProcessed,
-    icon: <AlertCircle className="h-14 w-14 text-primary" />,
-    iconBg: "bg-primary/10",
-    iconBorder: "border-primary/30",
-    titleColor: "text-primary",
+    title: t.somethingWentWrong,
+    description: t.somethingWentWrongDesc,
+    icon: <XCircle className="h-14 w-14 text-debt" />,
+    iconBg: "bg-debt/10",
+    iconBorder: "border-debt/30",
+    titleColor: "text-debt",
   };
 
   return (
