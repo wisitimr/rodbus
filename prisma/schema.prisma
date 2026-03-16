@@ -84,6 +84,7 @@ model CheckIn {
 
   @@index([userId, carId, date])
   @@index([carId, date])
+  @@index([tripId])
   @@map("CheckIn")
 }
 
