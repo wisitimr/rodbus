@@ -463,7 +463,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           <button
                             type="button"
                             onClick={() => toggleAllSettleTrips(d.userId, pendingBreakdown)}
-                            className="flex items-center gap-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-3 py-1 pl-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                               allSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
