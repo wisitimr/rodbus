@@ -113,7 +113,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
     if (user.role === "ADMIN") {
       return { style: roleBadgeStyle.ADMIN, label: t.coHost.toUpperCase() };
     }
-    return { style: roleBadgeStyle.MEMBER, label: t.passenger.toUpperCase() };
+    return { style: roleBadgeStyle.MEMBER, label: t.member.toUpperCase() };
   }
 
   return (
@@ -218,7 +218,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                         onClick={() => handleRoleChange(user.memberId, "MEMBER" as GroupRole)}
                         className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent ${user.role === "MEMBER" && !isUserOwner ? "text-primary" : "text-foreground"}`}
                       >
-                        {t.passenger.toUpperCase()}
+                        {t.member.toUpperCase()}
                       </button>
                       <button
                         type="button"
@@ -257,32 +257,39 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                 </button>
               )}
 
-              {/* Transfer ownership confirmation */}
-              {confirmTransfer === user.memberId && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-card/95 backdrop-blur-sm">
-                  <div className="text-center px-4">
-                    <p className="text-sm font-medium text-foreground mb-3">{t.transferOwnershipDesc}</p>
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        onClick={() => setConfirmTransfer(null)}
-                        className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent"
-                      >
-                        {t.cancel}
-                      </button>
-                      <button
-                        onClick={() => handleTransferOwnership(user.memberId)}
-                        className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-                      >
-                        {t.transferOwnership}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
       </div>
+
+      {/* Transfer ownership modal */}
+      {confirmTransfer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setConfirmTransfer(null)}>
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-2">
+              <Crown className="h-5 w-5 text-primary" />
+              <h3 className="text-base font-semibold text-foreground">{t.transferOwnership}</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              {t.transferOwnershipDesc}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmTransfer(null)}
+                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+              >
+                {t.cancel}
+              </button>
+              <button
+                onClick={() => handleTransferOwnership(confirmTransfer)}
+                className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                {t.transferOwnership}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
