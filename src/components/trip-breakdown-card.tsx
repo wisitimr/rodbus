@@ -42,6 +42,7 @@ interface TripBreakdownCardProps {
   onToggle: () => void;
   status?: "pending" | "paid";
   compact?: boolean;
+  leading?: React.ReactNode;
   t: {
     pending: string;
     paid?: string;
@@ -63,6 +64,7 @@ export default function TripBreakdownCard({
   onToggle,
   status = "pending",
   compact = false,
+  leading,
   t,
 }: TripBreakdownCardProps) {
   const plateLabel = entry.licensePlate ? ` (${entry.licensePlate})` : "";
@@ -83,11 +85,13 @@ export default function TripBreakdownCard({
         ? "rounded-xl border border-border/60 bg-card p-3"
         : "animate-fade-in rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
     }>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full flex-col gap-0.5 text-left"
-      >
+      <div className="flex items-center gap-3">
+        {leading}
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex w-full min-w-0 flex-1 flex-col gap-0.5 text-left"
+        >
         {/* Row 1: date + badges */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={`font-medium text-muted-foreground ${compact ? "text-xs" : "text-sm"}`}>
@@ -141,6 +145,7 @@ export default function TripBreakdownCard({
           </div>
         </div>
       </button>
+      </div>
 
       {isExpanded && (
         <div className={`animate-fade-in rounded-xl bg-accent/50 ${compact ? "mt-2 space-y-1.5 p-2" : "mt-3 space-y-2 p-3"}`}>
