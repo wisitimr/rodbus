@@ -71,10 +71,9 @@ export default function TripBreakdownCard({
   const sp = entry.sharedParking;
   const hasSharedParking = sp != null && sp.trips.length > 0;
 
-  // Build display list: unique passengers + driver
-  const uniquePassengers = [...new Set(entry.passengerNames)];
-  const allNames = [...uniquePassengers];
-  if (entry.driverName && !allNames.includes(entry.driverName)) {
+  // Build display list: passengers + driver
+  const allNames = [...entry.passengerNames];
+  if (entry.driverName && !entry.passengerNames.includes(entry.driverName)) {
     allNames.push(entry.driverName);
   }
 
