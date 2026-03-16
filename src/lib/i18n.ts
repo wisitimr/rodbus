@@ -16,7 +16,7 @@ const translations = {
     // Dashboard
     dashboard: "Dashboard",
     welcome: "Welcome",
-    admin: "Admin",
+    coHost: "Co-host",
     configure: "Configure",
     yourPendingDebt: "Your Pending Debt",
     accrued: "Accrued",
@@ -267,7 +267,7 @@ const translations = {
     // Dashboard
     dashboard: "แดชบอร์ด",
     welcome: "สวัสดี",
-    admin: "แอดมิน",
+    coHost: "ผู้ช่วยจัดการ",
     configure: "ตั้งค่า",
     yourPendingDebt: "ยอดค้างจ่าย",
     accrued: "สะสม",
