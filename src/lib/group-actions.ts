@@ -10,12 +10,22 @@ import { revalidatePath } from "next/cache";
 // Group CRUD
 // ---------------------------------------------------------------------------
 
-/** Create a new party group. The creator becomes ADMIN. */
+/** Create a new party group. Only admins/owners can create new groups. */
 export async function createGroup(name: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
 
   if (!name.trim()) throw new Error("Group name is required");
+
+  // Only admins/owners of an existing group can create new parties
+  const existingMembership = await prisma.partyGroupMember.findFirst({
+    where: { userId: user.id, status: MemberStatus.ACTIVE },
+    include: { partyGroup: true },
+  });
+  if (!existingMembership) throw new Error("Only admins can create new parties");
+  const isAdmin = existingMembership.role === GroupRole.ADMIN;
+  const isOwner = existingMembership.partyGroup.ownerId === user.id;
+  if (!isAdmin && !isOwner) throw new Error("Only admins can create new parties");
 
   const group = await prisma.partyGroup.create({
     data: {

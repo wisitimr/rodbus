@@ -1,20 +1,38 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MemberStatus } from "@prisma/client";
+import { GroupRole, MemberStatus } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import JoinContent from "./join-content";
 
-export default async function JoinPage() {
+export default async function JoinPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
+  const { mode } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  // If user has pending memberships, show pending page instead
-  const pendingCount = await prisma.partyGroupMember.count({
-    where: { userId: user.id, status: MemberStatus.PENDING },
-  });
-  if (pendingCount > 0) redirect("/pending-approval");
+  // Block create mode: only admin/owner can create new parties
+  if (mode === "create") {
+    const activeMembership = await prisma.partyGroupMember.findFirst({
+      where: { userId: user.id, status: MemberStatus.ACTIVE },
+      include: { partyGroup: true },
+    });
+    const isAdmin = activeMembership?.role === GroupRole.ADMIN;
+    const isOwner = activeMembership?.partyGroup.ownerId === user.id;
+    if (!isAdmin && !isOwner) redirect("/dashboard");
+  }
+
+  // If user has pending memberships and not explicitly creating, show pending page
+  if (mode !== "create") {
+    const pendingCount = await prisma.partyGroupMember.count({
+      where: { userId: user.id, status: MemberStatus.PENDING },
+    });
+    if (pendingCount > 0) redirect("/pending-approval");
+  }
 
   // Check if user has active groups (show "back to dashboard" link if so)
   const activeGroupCount = await prisma.partyGroupMember.count({
@@ -43,7 +61,13 @@ export default async function JoinPage() {
           </p>
         </div>
 
-        <JoinContent />
+        {mode === "create" ? (
+          <JoinContent />
+        ) : (
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {t.waitForInvite}
+          </p>
+        )}
 
         {hasExistingGroups && (
           <a
