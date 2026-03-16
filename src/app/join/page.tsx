@@ -54,20 +54,14 @@ export default async function JoinPage({
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            {t.joinPartyTitle}
+            {mode === "create" ? t.joinPartyTitle : t.waitForInviteTitle}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {t.joinPartyDesc}
+            {mode === "create" ? t.joinPartyDesc : t.waitForInvite}
           </p>
         </div>
 
-        {mode === "create" ? (
-          <JoinContent />
-        ) : (
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {t.waitForInvite}
-          </p>
-        )}
+        {mode === "create" && <JoinContent />}
 
         {hasExistingGroups && (
           <a
