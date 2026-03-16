@@ -19,9 +19,11 @@ export default async function OverviewLayout({
 
   const activeGroupId = await getActiveGroupOrRedirect();
   const role = await getGroupRole(user.id, activeGroupId);
-  const isAdmin = role === GroupRole.ADMIN;
   const groups = await getUserActiveGroups(user.id);
-  const activeGroupName = groups.find((g) => g.id === activeGroupId)?.name;
+  const activeGroup = groups.find((g) => g.id === activeGroupId);
+  const activeGroupName = activeGroup?.name;
+  const isOwner = activeGroup?.ownerId === user.id;
+  const isAdmin = isOwner || role === GroupRole.ADMIN;
 
   return (
     <>
@@ -49,7 +51,7 @@ export default async function OverviewLayout({
             image={user.image}
             name={user.name}
             email={user.email}
-            role={isAdmin ? "ADMIN" : "MEMBER"}
+            role={isOwner ? "OWNER" : isAdmin ? "ADMIN" : "MEMBER"}
             isAdmin={isAdmin}
             groups={groups}
             activeGroupId={activeGroupId}
