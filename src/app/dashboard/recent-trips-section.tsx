@@ -41,6 +41,7 @@ interface RecentTripsSectionProps {
     shareParkingWithTrips: string;
     confirmDeleteTrip: string;
     confirmDeleteAction: string;
+    myTrip: string;
   };
 }
 
@@ -203,13 +204,14 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                 } : undefined}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${trip.isOwner ? "bg-primary" : "bg-primary/10"}`}>
-                    <Bus className={`h-5 w-5 ${trip.isOwner ? "text-primary-foreground" : "text-primary"}`} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Bus className="h-5 w-5 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">
                       {trip.carName}
                       {trip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({trip.licensePlate})</span>}
+                      {trip.isOwner && <span className="ml-1.5 inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{t.myTrip}</span>}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {trip.riderCount} {t.people} &middot; ฿{(trip.gasCost + trip.parkingCost).toFixed(2)}
