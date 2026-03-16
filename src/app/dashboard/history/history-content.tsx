@@ -357,7 +357,6 @@ function SummaryCard({
   const totalPaid = group.entries.reduce((sum, e) => sum + e.totalPaid, 0);
   const pendingDebt = group.entries.reduce((sum, e) => sum + e.pendingDebt, 0);
 
-  const isMultiUser = group.entries.length >= 1;
 
   // Track which users are expanded (for multi-user / admin view)
   const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
@@ -370,31 +369,9 @@ function SummaryCard({
     });
   };
 
-  // Collect all breakdown entries for expanded view (deduplicated by trip)
-  const allEntries = useMemo(() => {
-    if (!isExpanded) return [];
-    const seen = new Set<string>();
-    const entries: BreakdownEntry[] = [];
-    const prefix = group.key;
-    for (const [dateISO, dayEntries] of dayBreakdownMap) {
-      if (dateISO.startsWith(prefix)) {
-        for (const e of dayEntries) {
-          const key = `${e.carId}-${e.date}-${e.tripNumber}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            entries.push(e);
-          }
-        }
-      }
-    }
-    // Sort by date descending, then by trip number descending
-    entries.sort((a, b) => b.date.localeCompare(a.date) || b.tripNumber - a.tripNumber);
-    return entries;
-  }, [isExpanded, group.key, dayBreakdownMap]);
-
-  // Build per-user breakdown entries for multi-user view
+  // Build per-user breakdown entries
   const userEntriesMap = useMemo(() => {
-    if (!isMultiUser || !allDebts) return new Map<string, BreakdownEntry[]>();
+    if (!allDebts) return new Map<string, BreakdownEntry[]>();
     const map = new Map<string, BreakdownEntry[]>();
     const prefix = group.key;
     for (const debt of allDebts) {
@@ -415,7 +392,7 @@ function SummaryCard({
       }
     }
     return map;
-  }, [isMultiUser, allDebts, group.key]);
+  }, [allDebts, group.key]);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -441,9 +418,7 @@ function SummaryCard({
       {/* Expanded content */}
       {isExpanded && (
         <div className="mt-3 space-y-2 animate-fade-in">
-          {isMultiUser ? (
-            /* Multi-user: collapsible per-user rows */
-            group.entries.map((e) => {
+          {group.entries.map((e) => {
               const isUserOpen = expandedUserIds.has(e.userId);
               const userEntries = userEntriesMap.get(e.userId) ?? [];
               const initial = (e.userName ?? "?")[0].toUpperCase();
@@ -501,32 +476,7 @@ function SummaryCard({
                   )}
                 </div>
               );
-            })
-          ) : (
-            /* Single user: show entries directly */
-            allEntries.map((entry, i) => {
-              const entryKey = `${group.key}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
-              const tripKey = `${entry.carId}-${entry.date}-${entry.tripNumber}`;
-              // If only one user entry, use that user's paid keys; otherwise fall back to current user's
-              const singleUserId = group.entries.length === 1 ? group.entries[0].userId : null;
-              const userId = singleUserId ?? "";
-              const userPaid = singleUserId ? perUserPaidKeys.get(singleUserId) : paidTripKeys;
-              const entrySettled = userPaid ? userPaid.has(tripKey) : false;
-              const entryPaidAmount = entrySettled ? undefined : perUserPaidAmounts.get(userId)?.get(tripKey);
-              return (
-                <SummaryEntryCard
-                  key={entryKey}
-                  entry={entry}
-                  settled={entrySettled}
-                  paidAmount={entryPaidAmount}
-                  isExpanded={expandedSubPeriods.has(entryKey)}
-                  onToggle={() => toggleSubPeriod(entryKey)}
-                  locale={locale}
-                  t={t}
-                />
-              );
-            })
-          )}
+            })}
         </div>
       )}
     </div>
