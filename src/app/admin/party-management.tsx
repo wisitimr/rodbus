@@ -49,7 +49,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
   return (
     <div className="space-y-4">
       {/* Party Name */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm p-4">
+      <div>
         <label className="mb-2 block text-xs font-medium text-muted-foreground">{t.partyName}</label>
         <form
           onSubmit={async (e) => {
