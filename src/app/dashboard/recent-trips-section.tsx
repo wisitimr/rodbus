@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Bus, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateTrip, deleteTrip } from "@/lib/trip-actions";
+import ConfirmModal from "@/components/confirm-modal";
 
 interface RecentTrip {
   id: string;
@@ -39,6 +40,7 @@ interface RecentTripsSectionProps {
     parking: string;
     shareParkingWithTrips: string;
     confirmDeleteTrip: string;
+    confirmDeleteAction: string;
   };
 }
 
@@ -60,6 +62,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
   const [editParkingCost, setEditParkingCost] = useState("");
   const [editSharedParkingIds, setEditSharedParkingIds] = useState<string[]>([]);
   const [editStatus, setEditStatus] = useState<"idle" | "saving">("idle");
+  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState<RecentTrip | null>(null);
 
   const SWIPE_THRESHOLD = 40;
   const ACTION_WIDTH = 92;
@@ -128,7 +131,6 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
   }
 
   function handleTripDelete(trip: RecentTrip) {
-    if (!confirm(t.confirmDeleteTrip)) return;
     closeSwipe();
     setDeletingTripId(trip.id);
     startTransition(async () => {
@@ -174,7 +176,7 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleTripDelete(trip)}
+                    onClick={() => setConfirmDeleteTrip(trip)}
                     className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -398,6 +400,20 @@ export default function RecentTripsSection({ recentTrips, t }: RecentTripsSectio
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmDeleteTrip}
+        title={t.confirmDeleteAction}
+        message={t.confirmDeleteTrip}
+        confirmLabel={t.confirmDeleteAction}
+        cancelLabel={t.cancel}
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDeleteTrip) handleTripDelete(confirmDeleteTrip);
+          setConfirmDeleteTrip(null);
+        }}
+        onCancel={() => setConfirmDeleteTrip(null)}
+      />
     </>
   );
 }

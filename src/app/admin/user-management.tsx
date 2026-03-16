@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Crown, ShieldCheck, Trash2, UserRoundCog, X } from "lucide-react";
 import { approveJoinRequest, rejectJoinRequest, removeGroupMember, setGroupMemberRole, transferOwnership } from "@/lib/group-actions";
 import { useT } from "@/lib/i18n-context";
+import ConfirmModal from "@/components/confirm-modal";
 import type { GroupRole, MemberStatus } from "@prisma/client";
 
 interface UserManagementProps {
@@ -32,6 +33,8 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [roleMenuId, setRoleMenuId] = useState<string | null>(null);
   const [confirmTransfer, setConfirmTransfer] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isOwner = currentUserId === ownerId;
@@ -70,7 +73,6 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
   }
 
   async function handleRemove(memberId: string) {
-    if (!confirm(t.confirmDeleteUser)) return;
     setLoadingAction(`remove-${memberId}`);
     try {
       await removeGroupMember(memberId, groupId);
@@ -85,7 +87,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
     try {
       const result = await setGroupMemberRole(memberId, groupId, newRole);
       if (result.error) {
-        alert(result.error);
+        setErrorMessage(result.error);
       }
     } finally {
       setLoadingAction(null);
@@ -99,7 +101,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
     try {
       const result = await transferOwnership(memberId, groupId);
       if (result.error) {
-        alert(result.error);
+        setErrorMessage(result.error);
       }
     } finally {
       setLoadingAction(null);
@@ -250,7 +252,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
               )}
               {canRemove && (
                 <button
-                  onClick={() => handleRemove(user.memberId)}
+                  onClick={() => setConfirmRemove(user.memberId)}
                   disabled={isAnyLoading}
                   className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-debt/10 hover:text-debt disabled:opacity-50"
                 >
@@ -291,6 +293,31 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
           </div>
         </div>
       )}
+
+      {/* Remove user confirmation modal */}
+      <ConfirmModal
+        open={!!confirmRemove}
+        title={t.confirmDeleteAction}
+        message={t.confirmDeleteUser}
+        confirmLabel={t.confirmDeleteAction}
+        cancelLabel={t.cancel}
+        variant="danger"
+        onConfirm={() => {
+          if (confirmRemove) handleRemove(confirmRemove);
+          setConfirmRemove(null);
+        }}
+        onCancel={() => setConfirmRemove(null)}
+      />
+
+      {/* Error alert modal */}
+      <ConfirmModal
+        open={!!errorMessage}
+        message={errorMessage ?? ""}
+        confirmLabel="OK"
+        variant="default"
+        onConfirm={() => setErrorMessage(null)}
+        onCancel={() => setErrorMessage(null)}
+      />
     </div>
   );
 }

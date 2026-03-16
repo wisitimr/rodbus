@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransit
 import { Bus, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
 import { updateCheckInDate, deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
+import ConfirmModal from "@/components/confirm-modal";
 
 type Tab = "trips" | "payments" | "summary";
 type SummaryPeriod = "day" | "month" | "year";
@@ -128,6 +129,7 @@ interface HistoryContentProps {
     edit?: string;
     editing?: string;
     confirmDeleteTrip?: string;
+    confirmDeleteAction?: string;
     gasCost?: string;
     parkingCost?: string;
     total?: string;
@@ -850,6 +852,8 @@ export default function HistoryContent({
 
   // Delete loading state
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
+  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState<Trip | null>(null);
+  const [confirmDeleteCheckInId, setConfirmDeleteCheckInId] = useState<string | null>(null);
 
   // Edit trip modal state
   const [editModalTrip, setEditModalTrip] = useState<Trip | null>(null);
@@ -926,7 +930,6 @@ export default function HistoryContent({
   }
 
   function handleTripDelete(trip: Trip) {
-    if (!confirm(t.confirmDeleteTrip || t.confirmDeleteCheckIn)) return;
     closeSwipe();
     setDeletingTripId(trip.id);
     startTransition(async () => {
@@ -971,7 +974,6 @@ export default function HistoryContent({
   }
 
   function handleDelete(checkInId: string) {
-    if (!confirm(t.confirmDeleteCheckIn)) return;
     startTransition(async () => {
       try {
         await deleteCheckIn(checkInId);
@@ -1241,7 +1243,7 @@ export default function HistoryContent({
                                 <Pencil className="h-4 w-4" />
                               </button>
                               <button
-                                onClick={() => handleTripDelete(trip)}
+                                onClick={() => setConfirmDeleteTrip(trip)}
                                 className="flex items-center justify-center rounded-lg p-2 text-muted-foreground"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1563,6 +1565,34 @@ export default function HistoryContent({
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmDeleteTrip}
+        title={t.confirmDeleteAction ?? "Confirm Delete"}
+        message={t.confirmDeleteTrip ?? ""}
+        confirmLabel={t.confirmDeleteAction ?? "Confirm Delete"}
+        cancelLabel={t.cancel ?? "Cancel"}
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDeleteTrip) handleTripDelete(confirmDeleteTrip);
+          setConfirmDeleteTrip(null);
+        }}
+        onCancel={() => setConfirmDeleteTrip(null)}
+      />
+
+      <ConfirmModal
+        open={!!confirmDeleteCheckInId}
+        title={t.confirmDeleteAction ?? "Confirm Delete"}
+        message={t.confirmDeleteCheckIn ?? ""}
+        confirmLabel={t.confirmDeleteAction ?? "Confirm Delete"}
+        cancelLabel={t.cancel ?? "Cancel"}
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDeleteCheckInId) handleDelete(confirmDeleteCheckInId);
+          setConfirmDeleteCheckInId(null);
+        }}
+        onCancel={() => setConfirmDeleteCheckInId(null)}
+      />
     </div>
   );
 }

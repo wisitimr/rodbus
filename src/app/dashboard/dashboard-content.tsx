@@ -193,6 +193,7 @@ export default function DashboardContent({
                   parking: t.parking,
                   shareParkingWithTrips: t.shareParkingWithTrips,
                   confirmDeleteTrip: t.confirmDeleteTrip,
+                  confirmDeleteAction: t.confirmDeleteAction,
                 }}
               />
             )}
