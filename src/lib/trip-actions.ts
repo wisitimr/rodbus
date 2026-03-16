@@ -177,12 +177,7 @@ export async function deleteTrip(tripId: string) {
     throw new Error("Forbidden");
   }
 
-  // Delete payments matched to this trip's car + date
-  await prisma.payment.deleteMany({
-    where: { carId: trip.carId, date: trip.date },
-  });
-
-  // CheckIns cascade-deleted via schema onDelete: Cascade
+  // CheckIns and Payments cascade-deleted via schema onDelete: Cascade
   await prisma.trip.delete({ where: { id: tripId } });
 
   revalidatePath("/dashboard/history");

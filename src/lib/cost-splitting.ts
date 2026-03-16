@@ -364,14 +364,13 @@ export async function calculateDebts(
     }
   }
 
-  // Fetch all payments within the date range, scoped to cars used in this group
-  const groupCarIds = [...new Set(trips.map((t) => t.carId))];
-  const payments = await prisma.payment.findMany({
-    where: {
-      date: { gte: startDate, lte: endDate },
-      carId: { in: groupCarIds },
-    },
-  });
+  // Fetch all payments linked to trips in this date range
+  const tripIdsInRange = trips.map((t) => t.id);
+  const payments = tripIdsInRange.length > 0
+    ? await prisma.payment.findMany({
+        where: { tripId: { in: tripIdsInRange } },
+      })
+    : [];
 
   for (const payment of payments) {
     const entry = debtMap.get(payment.userId);
@@ -391,12 +390,12 @@ export async function calculateDebts(
 }
 
 /**
- * Calculate pending debt for a single user (all-time), broken down by date.
- * Returns per-date shares sorted oldest-first, with already-paid amounts subtracted.
+ * Calculate pending debt for a single user (all-time), broken down per trip.
+ * Returns per-trip shares sorted oldest-first, with already-paid amounts subtracted.
  */
 export async function calculateUserPendingBreakdown(userId: string, partyGroupId: string, carId?: string): Promise<{
   totalPending: number;
-  perDate: { date: Date; amount: number }[];
+  perTrip: { tripId: string; date: Date; amount: number }[];
 }> {
   const allTripsForUser = await prisma.trip.findMany({
     where: { partyGroupId },
@@ -561,34 +560,34 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
     }
   }
 
-  // Subtract payments from oldest dates first
-  // Scope payments to the target car (or all group cars if no carId filter)
-  const paymentCarIds = carId ? [carId] : [...new Set(allTripsForUser.map((t) => t.carId))];
-  const paymentsAgg = await prisma.payment.aggregate({
-    where: { userId, carId: { in: paymentCarIds } },
-    _sum: { amount: true },
-  });
+  // Subtract payments per trip
+  const tripIdsWithDebt = dateShares.map((ds) => ds.tripId);
+  const payments = tripIdsWithDebt.length > 0
+    ? await prisma.payment.findMany({
+        where: { userId, tripId: { in: tripIdsWithDebt } },
+        select: { tripId: true, amount: true },
+      })
+    : [];
 
-  let remaining = paymentsAgg._sum.amount ?? 0;
-  const pending: { date: Date; amount: number }[] = [];
+  // Sum payments per trip
+  const paidPerTrip = new Map<string, number>();
+  for (const p of payments) {
+    paidPerTrip.set(p.tripId, (paidPerTrip.get(p.tripId) ?? 0) + p.amount);
+  }
+
+  const pending: { tripId: string; date: Date; amount: number }[] = [];
 
   for (const entry of dateShares) {
-    if (remaining >= entry.amount) {
-      remaining = Math.round((remaining - entry.amount) * 100) / 100;
-    } else if (remaining > 0) {
-      pending.push({
-        date: entry.date,
-        amount: Math.round((entry.amount - remaining) * 100) / 100,
-      });
-      remaining = 0;
-    } else {
-      pending.push(entry);
+    const paid = Math.round((paidPerTrip.get(entry.tripId) ?? 0) * 100) / 100;
+    const remaining = Math.round((entry.amount - paid) * 100) / 100;
+    if (remaining > 0) {
+      pending.push({ tripId: entry.tripId, date: entry.date, amount: remaining });
     }
   }
 
   const totalPending = pending.reduce((sum, e) => sum + e.amount, 0);
   return {
     totalPending: Math.round(totalPending * 100) / 100,
-    perDate: pending,
+    perTrip: pending,
   };
 }
