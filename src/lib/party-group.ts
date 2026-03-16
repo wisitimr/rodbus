@@ -60,6 +60,7 @@ export async function getUserActiveGroups(userId: string) {
     id: m.partyGroup.id,
     name: m.partyGroup.name,
     role: m.role,
+    ownerId: m.partyGroup.ownerId,
   }));
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Check, Plus } from "lucide-react";
+import { LogOut, Check, Plus, Crown } from "lucide-react";
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
 import { useT } from "@/lib/i18n-context";
@@ -25,6 +25,7 @@ interface ProfileMenuProps {
 }
 
 const roleBadge: Record<string, string> = {
+  OWNER: "bg-primary/10 text-primary",
   ADMIN: "bg-debt/10 text-debt",
   MEMBER: "bg-muted text-muted-foreground",
 };
@@ -35,6 +36,7 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const roleLabel: Record<string, string> = {
+    OWNER: t.partyOwner.toUpperCase(),
     ADMIN: t.coHost.toUpperCase(),
     MEMBER: t.member.toUpperCase(),
   };
@@ -65,8 +67,9 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 rounded-full py-1 pl-2 pr-1 transition hover:bg-accent"
       >
-        {(role === "ADMIN" || role === "MEMBER") && (
-          <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${roleBadge[role] ?? roleBadge.MEMBER}`}>
+        {(role === "OWNER" || role === "ADMIN" || role === "MEMBER") && (
+          <span className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium ${roleBadge[role] ?? roleBadge.MEMBER}`}>
+            {role === "OWNER" && <Crown className="h-3 w-3" />}
             {roleLabel[role] ?? role}
           </span>
         )}

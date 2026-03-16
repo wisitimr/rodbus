@@ -195,7 +195,8 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate font-semibold text-foreground">{user.name ?? t.noName}</p>
-                  <span className={`shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium ${badge}`}>
+                  <span className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium ${badge}`}>
+                    {isUserOwner && <Crown className="h-3 w-3" />}
                     {badgeLabel}
                   </span>
                 </div>
@@ -236,7 +237,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
                               setRoleMenuId(null);
                               setConfirmTransfer(user.memberId);
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-medium text-primary transition-colors hover:bg-accent"
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent"
                           >
                             <Crown className="h-3.5 w-3.5" />
                             {t.transferOwnership}
@@ -264,7 +265,7 @@ export default function UserManagement({ users, currentUserId, groupId, ownerId 
 
       {/* Transfer ownership modal */}
       {confirmTransfer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setConfirmTransfer(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm" onClick={() => setConfirmTransfer(null)}>
           <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-2">
               <Crown className="h-5 w-5 text-primary" />

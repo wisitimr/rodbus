@@ -1413,7 +1413,7 @@ export default function HistoryContent({
       {/* Edit Trip Modal */}
       {editModalTrip && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) handleTripEditCancel(); }}
         >
           <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-4 shadow-lg animate-scale-in">
