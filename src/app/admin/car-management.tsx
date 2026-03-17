@@ -23,6 +23,19 @@ export default function CarManagement({ cars }: CarManagementProps) {
   const [defaultGas, setDefaultGas] = useState("0");
   const [status, setStatus] = useState<"idle" | "error">("idle");
 
+  // Clear add form when cars prop updates (new car appeared)
+  useEffect(() => {
+    if (loadingAction === "add") {
+      setLoadingAction(null);
+      setShowAddForm(false);
+      setName("");
+      setLicensePlate("");
+      setDefaultGas("0");
+      setStatus("idle");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cars.length]);
+
   // Edit car state
   const [editingCarId, setEditingCarId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -95,12 +108,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
     setLoadingAction("add");
     try {
       await addCar(name, licensePlate || null, parseFloat(defaultGas) || 0);
-      setName("");
-      setLicensePlate("");
-      setDefaultGas("0");
-      setShowAddForm(false);
-      setStatus("idle");
-      // Don't clear loading — revalidation will re-render with updated props
+      // Don't hide form or clear loading — wait for revalidation to re-render with new car
     } catch {
       setStatus("error");
       setLoadingAction(null);
@@ -226,7 +234,8 @@ export default function CarManagement({ cars }: CarManagementProps) {
               <button
                 type="button"
                 onClick={() => { setShowAddForm(false); setName(""); setLicensePlate(""); setDefaultGas("0"); setStatus("idle"); }}
-                className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent"
+                disabled={loadingAction === "add"}
+                className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent disabled:opacity-50"
               >
                 {t.cancel}
               </button>
