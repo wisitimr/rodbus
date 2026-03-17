@@ -184,6 +184,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                 placeholder="e.g. Toyota HiAce"
                 className={inputClass}
                 required
+                maxLength={20}
                 autoFocus
               />
             </div>
@@ -297,6 +298,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                         onChange={(e) => setEditName(e.target.value)}
                         className={inputClass}
                         required
+                        maxLength={20}
                         autoFocus
                       />
                     </div>
