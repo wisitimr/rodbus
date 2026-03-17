@@ -418,7 +418,31 @@ function SummaryCard({
       {/* Expanded content */}
       {isExpanded && (
         <div className="mt-3 space-y-2 animate-fade-in">
-          {group.entries.map((e) => {
+          {group.entries.length === 1 ? (
+            /* Single user: show trip entries directly without user header */
+            (userEntriesMap.get(group.entries[0].userId) ?? []).map((entry) => {
+              const e = group.entries[0];
+              const entryKey = `${group.key}_${e.userId}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
+              const tripKey = `${entry.carId}-${entry.date}-${entry.tripNumber}`;
+              const userPaid = perUserPaidKeys.get(e.userId);
+              const entrySettled = userPaid ? userPaid.has(tripKey) : false;
+              const entryPaidAmount = entrySettled ? undefined : perUserPaidAmounts.get(e.userId)?.get(tripKey);
+              return (
+                <SummaryEntryCard
+                  key={entryKey}
+                  entry={entry}
+                  settled={entrySettled}
+                  paidAmount={entryPaidAmount}
+                  isExpanded={expandedSubPeriods.has(entryKey)}
+                  onToggle={() => toggleSubPeriod(entryKey)}
+                  locale={locale}
+                  t={t}
+                />
+              );
+            })
+          ) : (
+            /* Multi-user: show user headers with expandable details */
+            group.entries.map((e) => {
               const isUserOpen = expandedUserIds.has(e.userId);
               const userEntries = userEntriesMap.get(e.userId) ?? [];
               const initial = (e.userName ?? "?")[0].toUpperCase();
@@ -452,8 +476,7 @@ function SummaryCard({
                   {/* User expanded details */}
                   {isUserOpen && (
                     <div className="border-t border-border px-3 pb-3 pt-2 space-y-2 animate-fade-in">
-                      {/* User's trip breakdown entries */}
-                      {userEntries.map((entry, i) => {
+                      {userEntries.map((entry) => {
                         const entryKey = `${group.key}_${e.userId}_${entry.date}_${entry.carId}_${entry.tripNumber}`;
                         const tripKey = `${entry.carId}-${entry.date}-${entry.tripNumber}`;
                         const userPaid = perUserPaidKeys.get(e.userId);
@@ -476,7 +499,8 @@ function SummaryCard({
                   )}
                 </div>
               );
-            })}
+            })
+          )}
         </div>
       )}
     </div>
