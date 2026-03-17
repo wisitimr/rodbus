@@ -1294,6 +1294,7 @@ export default function HistoryContent({
                       <p className="truncate text-sm font-semibold text-foreground">
                         {p.userName}
                         {isAdmin && p.userId === currentUserId && <span className="font-normal text-muted-foreground"> ({t.you})</span>}
+                        {p.note && <span className="ml-1 font-normal text-muted-foreground">&middot; {p.note}</span>}
                       </p>
                       <span className="shrink-0 text-sm font-bold text-settled">
                         ฿{p.amount.toFixed(2)}
@@ -1301,7 +1302,7 @@ export default function HistoryContent({
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] text-muted-foreground">
-                        {p.carName} &middot; {p.date} &middot; {t.tripNumber} #{p.tripNumber}
+                        {p.carName} &middot; {p.date} &middot; <span className="font-medium text-primary">{t.tripNumber} #{p.tripNumber}</span>
                       </p>
                       <p className="shrink-0 text-[11px] text-muted-foreground">
                         {t.paid} {p.paidAt}

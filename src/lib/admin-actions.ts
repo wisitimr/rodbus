@@ -136,6 +136,9 @@ export async function recordPayment(
   if (amount <= 0) {
     throw new Error("Payment amount must be positive");
   }
+  if (note && note.length > 30) {
+    throw new Error("Note must be 30 characters or less");
+  }
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
   const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);
@@ -174,6 +177,9 @@ export async function recordPayment(
 /** Clear the pending balance for a user. If tripIds provided, settle only those trips. */
 export async function markAsSettled(userId: string, carId: string, partyGroupId: string, note?: string, tripIds?: string[]) {
   await requireGroupAdmin(partyGroupId);
+  if (note && note.length > 30) {
+    throw new Error("Note must be 30 characters or less");
+  }
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
   const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);

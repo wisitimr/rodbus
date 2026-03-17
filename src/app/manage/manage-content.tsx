@@ -573,6 +573,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                                 type="text"
                                 value={settleNote}
                                 onChange={(e) => setSettleNote(e.target.value)}
+                                maxLength={30}
                                 placeholder={t.settlementNotePlaceholder}
                                 className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm"
                               />
