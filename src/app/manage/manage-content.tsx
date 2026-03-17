@@ -123,7 +123,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const [confirmingUserId, setConfirmingUserId] = useState<string | null>(null);
   const [settleNote, setSettleNote] = useState("");
   // Per-user selected tripIds for selective settlement (auto-check all)
@@ -192,9 +192,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
         setConfirmingUserId(null);
         setSettleNote("");
       } catch {
-        // error — clear immediately
+        setLoadingAction(null);
       }
-      setLoadingAction(null);
     });
   }
 
@@ -413,7 +412,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                 const isUserExpanded = expandedUsers.has(d.userId);
                 const pendingBreakdown = getPendingBreakdown(d);
                 const isConfirming = confirmingUserId === d.userId;
-                const isSettleLoading = loadingAction === `settle-${d.userId}`;
+                const isSettleLoading = isPending && loadingAction === `settle-${d.userId}`;
                 const initial = (d.userName ?? "?")[0].toUpperCase();
 
                 return (
