@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp, Link2, Check, Loader2 } from "lucide-react";
 import { markAsSettled } from "@/lib/admin-actions";
@@ -123,6 +123,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
   const [confirmingUserId, setConfirmingUserId] = useState<string | null>(null);
   const [settleNote, setSettleNote] = useState("");
   // Per-user selected tripIds for selective settlement (auto-check all)
@@ -183,16 +184,18 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     });
   }
 
-  async function handleSettle(userId: string, tripIds?: string[]) {
+  function handleSettle(userId: string, tripIds?: string[]) {
     setLoadingAction(`settle-${userId}`);
-    try {
-      await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined, tripIds);
-      setConfirmingUserId(null);
-      setSettleNote("");
-    } catch {
-      // only clear on error — success will re-render via revalidation
-    }
-    setLoadingAction(null);
+    startTransition(async () => {
+      try {
+        await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined, tripIds);
+        setConfirmingUserId(null);
+        setSettleNote("");
+      } catch {
+        // error — clear immediately
+      }
+      setLoadingAction(null);
+    });
   }
 
   const usersWithDebt = debts.filter((d) => d.pendingDebt > 0);
