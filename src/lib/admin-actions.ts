@@ -50,6 +50,7 @@ export async function updateCar(
   if (!user) throw new Error("Not authenticated");
 
   if (!data.name.trim()) throw new Error("Car name is required");
+  if (data.name.trim().length > 20) throw new Error("Car name must be 20 characters or less");
 
   const car = await prisma.car.findUnique({ where: { id: carId } });
   if (!car) throw new Error("Car not found");
@@ -81,6 +82,9 @@ export async function addCar(name: string, licensePlate: string | null, defaultG
 
   if (!name.trim()) {
     throw new Error("Car name is required");
+  }
+  if (name.trim().length > 20) {
+    throw new Error("Car name must be 20 characters or less");
   }
 
   await prisma.car.create({

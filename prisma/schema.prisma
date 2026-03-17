@@ -60,7 +60,7 @@ model PartyGroupMember {
 
 model Car {
   id             String    @id @default(cuid())
-  name           String
+  name           String    @db.VarChar(20)
   licensePlate   String?
   defaultGasCost Float     @default(0)
   ownerId        String
