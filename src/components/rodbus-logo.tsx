@@ -29,27 +29,42 @@ export default function RodBusLogo({ className }: { className?: string }) {
 export function RodBusWordmark({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 120 32"
+      viewBox="0 0 100 36"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-label="รถบัส"
     >
-      {/* "รถบัส" hand-tuned Thai wordmark */}
-      <text
-        x="0"
-        y="25"
-        className="fill-foreground"
-        style={{
-          fontSize: "22px",
-          fontWeight: 800,
-          fontFamily: "'Inter', sans-serif",
-          letterSpacing: "1px",
-        }}
+      {/* รถ — yellow hand-drawn style */}
+      <g
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-yellow-500"
+        fill="none"
       >
-        <tspan className="fill-yellow-500">รถ</tspan>
-        <tspan className="fill-primary">บัส</tspan>
-      </text>
+        {/* ร — stem with rounded head loop */}
+        <path d="M 6 33 V 20 C 6 10 18 10 18 18 C 18 24 8 24 6 20" />
+        {/* ถ — oval body */}
+        <ellipse cx="32" cy="23" rx="8" ry="10" />
+        {/* ถ — ascending stroke */}
+        <path d="M 38 14 V 5" />
+      </g>
+      {/* บัส — primary blue */}
+      <g
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-primary"
+        fill="none"
+      >
+        {/* บ — rounded arch */}
+        <path d="M 50 33 V 16 Q 50 6 58 6 Q 66 6 66 16 V 33" />
+        {/* ั — mai han akat mark */}
+        <path d="M 58 3.5 V 1" />
+        {/* ส — serpentine curve */}
+        <path d="M 74 33 C 74 22 90 26 90 16 C 90 6 76 5 74 14" />
+      </g>
     </svg>
   );
 }
