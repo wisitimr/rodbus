@@ -123,6 +123,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [settlingTripIds, setSettlingTripIds] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
   const [confirmingUserId, setConfirmingUserId] = useState<string | null>(null);
   const [settleNote, setSettleNote] = useState("");
@@ -186,6 +187,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
 
   function handleSettle(userId: string, tripIds?: string[]) {
     setLoadingAction(`settle-${userId}`);
+    if (tripIds) setSettlingTripIds(new Set(tripIds));
     startTransition(async () => {
       try {
         await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined, tripIds);
@@ -193,6 +195,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
         setSettleNote("");
       } catch {
         setLoadingAction(null);
+        setSettlingTripIds(new Set());
       }
     });
   }
@@ -416,7 +419,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                 const initial = (d.userName ?? "?")[0].toUpperCase();
 
                 return (
-                  <div key={d.userId} className={`rounded-2xl border border-border bg-card p-4 shadow-sm animate-fade-in transition-opacity ${isSettleLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}>
+                  <div key={d.userId} className="rounded-2xl border border-border bg-card p-4 shadow-sm animate-fade-in transition-opacity">
                     {/* User header */}
                     <button
                       type="button"
@@ -462,8 +465,9 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                         {pendingBreakdown.length > 1 && (
                           <button
                             type="button"
+                            disabled={isSettleLoading}
                             onClick={() => toggleAllSettleTrips(d.userId, pendingBreakdown)}
-                            className="flex items-center gap-3 py-1 pl-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-3 py-1 pl-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                           >
                             <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                               allSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
@@ -478,18 +482,20 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           const entryKey = `${d.userId}_${b.dateISO ?? b.date}_${i}`;
                           const isEntryExpanded = expandedEntries.has(entryKey);
                           const isChecked = selected.has(b.tripId);
+                          const isTripSettling = isSettleLoading && settlingTripIds.has(b.tripId);
                           const dateLabel = b.dateISO
                             ? new Date(b.dateISO + "T00:00:00").toLocaleDateString(loc, { month: "short", day: "numeric", year: "numeric" })
                             : b.date;
 
                           return (
+                            <div key={entryKey} className={`transition-opacity ${isTripSettling ? "animate-pulse opacity-50 pointer-events-none" : ""}`}>
                                 <TripBreakdownCard
-                                  key={entryKey}
                                   leading={pendingBreakdown.length > 1 ? (
                                     <button
                                       type="button"
+                                      disabled={isSettleLoading}
                                       onClick={(e) => { e.stopPropagation(); toggleSettleTrip(d.userId, b.tripId, pendingBreakdown); }}
-                                      className="shrink-0"
+                                      className="shrink-0 disabled:opacity-50"
                                     >
                                       <div className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
                                         isChecked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
@@ -532,6 +538,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                                     uniquePeople: t.uniquePeople,
                                   }}
                                 />
+                            </div>
                           );
                         })}
 
