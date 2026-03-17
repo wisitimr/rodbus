@@ -191,8 +191,6 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     startTransition(async () => {
       try {
         await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined, tripIds);
-        setConfirmingUserId(null);
-        setSettleNote("");
       } catch {
         setLoadingAction(null);
         setSettlingTripIds(new Set());
