@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
-import RodBusLogo from "@/components/rodbus-logo";
+import RodBusLogo, { RodBusWordmark } from "@/components/rodbus-logo";
 import ProfileMenu from "../profile-menu";
 import { getActiveGroupOrRedirect, getGroupRole, getUserActiveGroups } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
@@ -32,14 +32,14 @@ export default async function OverviewLayout({
           <div className="flex items-center gap-2.5">
             <RodBusLogo className="h-9 w-9" />
             <div>
-              <h1 className="text-lg font-bold text-foreground">
-                RodBus
+              <div className="flex items-center gap-1.5">
+                <RodBusWordmark className="h-6 w-auto" />
                 {activeGroupName && (
-                  <span className="ml-1.5 text-sm font-medium text-muted-foreground">
+                  <span className="text-sm font-medium text-muted-foreground">
                     · {activeGroupName}
                   </span>
                 )}
-              </h1>
+              </div>
               <p className="text-xs text-muted-foreground">
                 {t.welcome}, {user.name ?? user.email}
               </p>

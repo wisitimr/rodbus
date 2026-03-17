@@ -25,3 +25,31 @@ export default function RodBusLogo({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function RodBusWordmark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 120 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label="รถบัส"
+    >
+      {/* "รถบัส" hand-tuned Thai wordmark */}
+      <text
+        x="0"
+        y="25"
+        className="fill-foreground"
+        style={{
+          fontSize: "22px",
+          fontWeight: 800,
+          fontFamily: "'Inter', sans-serif",
+          letterSpacing: "1px",
+        }}
+      >
+        <tspan className="fill-yellow-500">รถ</tspan>
+        <tspan className="fill-primary">บัส</tspan>
+      </text>
+    </svg>
+  );
+}
