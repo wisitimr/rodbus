@@ -861,15 +861,15 @@ export default function HistoryContent({
     });
   }
 
-  function handleTripDelete(trip: Trip) {
+  async function handleTripDelete(trip: Trip) {
     closeSwipe();
     setDeletingTripId(trip.id);
-    startTransition(async () => {
-      try {
-        await deleteTrip(trip.id);
-      } catch { /* ignore */ }
+    try {
+      await deleteTrip(trip.id);
+      // Don't clear loading — revalidation will re-render with updated props
+    } catch {
       setDeletingTripId(null);
-    });
+    }
   }
 
   // Close swipe when tapping outside
