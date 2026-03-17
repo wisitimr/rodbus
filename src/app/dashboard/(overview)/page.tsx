@@ -134,8 +134,8 @@ export default async function DashboardPage() {
     headcount: b.headcount,
     parkingHeadcount: b.parkingHeadcount,
     tripNumber: b.tripNumber,
-    passengerNames: b.passengerNames,
-    driverName: b.driverName,
+    passengers: b.passengers,
+    driver: b.driver,
     paidAmount: pendingEntries.paidAmounts.get(idx),
     sharedParking: b.sharedParking ? {
       trips: b.sharedParking.trips.map((d) => ({

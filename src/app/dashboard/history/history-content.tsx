@@ -55,8 +55,8 @@ interface BreakdownEntry {
   headcount: number;
   parkingHeadcount?: number;
   tripNumber: number;
-  passengerNames: string[];
-  driverName: string | null;
+  passengers: { id: string; name: string }[];
+  driver: { id: string; name: string };
   time?: string;
   sharedParking?: {
     trips: { carName: string; date: string; parkingCost: number; headcount: number }[];
@@ -1319,7 +1319,7 @@ export default function HistoryContent({
                   perUserPaidAmounts={perUserPaidAmounts}
                   locale={locale}
                   t={t}
-                  allDebts={isAdmin && !onlyMe ? allDebts : undefined}
+                  allDebts={isAdmin && !onlyMe ? allDebts : allDebts.filter((d) => d.userId === currentUserId)}
                 />
               ))}
               {hasSummaryMore && (

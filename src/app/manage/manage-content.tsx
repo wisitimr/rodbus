@@ -24,8 +24,8 @@ interface BreakdownItem {
   headcount: number;
   parkingHeadcount: number;
   tripNumber: number;
-  passengerNames: string[];
-  driverName: string | null;
+  passengers: { id: string; name: string }[];
+  driver: { id: string; name: string };
   paidAmount?: number;
   sharedParking?: {
     trips: { carName: string; date: string; parkingCost: number; headcount: number }[];
@@ -511,8 +511,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                                     headcount: b.headcount,
                                     parkingHeadcount: b.parkingHeadcount,
                                     tripNumber: b.tripNumber,
-                                    passengerNames: b.passengerNames,
-                                    driverName: b.driverName,
+                                    passengers: b.passengers,
+                                    driver: b.driver,
                                     sharedParking: b.sharedParking ?? null,
                                     paidAmount: b.paidAmount,
                                   }}
