@@ -1294,7 +1294,7 @@ export default function HistoryContent({
                       <p className="truncate text-sm font-semibold text-foreground">
                         {p.userName}
                         {isAdmin && p.userId === currentUserId && <span className="font-normal text-muted-foreground"> ({t.you})</span>}
-                        {p.note && <span className="ml-1 font-normal text-muted-foreground">&middot; {p.note.length > 20 ? p.note.slice(0, 20) + "…" : p.note}</span>}
+                        {p.note && <span className="ml-1 font-normal text-muted-foreground">&middot; {p.note}</span>}
                       </p>
                       <span className="shrink-0 text-sm font-bold text-settled">
                         ฿{p.amount.toFixed(2)}

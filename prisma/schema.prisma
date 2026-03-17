@@ -109,7 +109,7 @@ model Payment {
   userId    String
   tripId    String
   amount    Float
-  note      String?
+  note      String?  @db.VarChar(30)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

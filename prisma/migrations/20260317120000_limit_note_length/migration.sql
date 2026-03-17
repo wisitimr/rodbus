@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Payment" ALTER COLUMN "note" SET DATA TYPE VARCHAR(30);
