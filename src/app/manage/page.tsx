@@ -70,8 +70,8 @@ export default async function ManagePage() {
           headcount: b.headcount,
           parkingHeadcount: b.parkingHeadcount,
           tripNumber: b.tripNumber,
-          passengerNames: b.passengerNames,
-          driverName: b.driverName,
+          passengers: b.passengers,
+          driver: b.driver,
           sharedParking: b.sharedParking ? {
             trips: b.sharedParking.trips.map((d) => ({
               carName: d.carName,

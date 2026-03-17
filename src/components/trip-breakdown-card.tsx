@@ -29,8 +29,8 @@ export interface BreakdownCardEntry {
   headcount: number;
   parkingHeadcount?: number;
   tripNumber: number;
-  passengerNames: string[];
-  driverName: string | null;
+  passengers: { id: string; name: string }[];
+  driver: { id: string; name: string };
   time?: string;
   sharedParking?: SharedParkingInfo | null;
   paidAmount?: number;
@@ -73,8 +73,8 @@ export default function TripBreakdownCard({
   const sp = entry.sharedParking;
   const hasSharedParking = sp != null && sp.trips.length > 0;
 
-  // Driver is already included in passengerNames (deduped by userId in cost-splitting)
-  const allNames = entry.passengerNames;
+  // Build display list: passengers + driver (always separate)
+  const allParticipants = [...entry.passengers, entry.driver];
 
   return (
     <div className={
@@ -152,10 +152,10 @@ export default function TripBreakdownCard({
             <span className="font-medium">{entry.headcount} {t.people}</span>
           </div>
           <div className={`ml-6 space-y-0.5 text-muted-foreground ${compact ? "text-[11px]" : "text-xs"}`}>
-            {allNames.map((n, i) => (
-              <span key={i}>
-                {n === entry.driverName ? `${n} (${t.driver ?? "Driver"})` : n}
-                {i < allNames.length - 1 ? ", " : ""}
+            {allParticipants.map((p, i) => (
+              <span key={p.id}>
+                {p.id === entry.driver.id ? `${p.name} (${t.driver ?? "Driver"})` : p.name}
+                {i < allParticipants.length - 1 ? ", " : ""}
               </span>
             ))}
           </div>
