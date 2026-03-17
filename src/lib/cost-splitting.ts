@@ -153,12 +153,15 @@ export async function calculateDebts(
     const perPerson = gasPerPerson + parkingPerPerson;
     const totalCost = trip.gasCost + trip.parkingCost;
 
-    // Collect unique passenger names (from check-ins only, not driver)
+    // Collect unique participant names (passengers + driver, dedup by userId)
     const nameSet = new Map<string, string>();
     for (const ci of linkedCheckIns) {
       if (!nameSet.has(ci.userId)) {
         nameSet.set(ci.userId, ci.user.name || "Unknown");
       }
+    }
+    if (!nameSet.has(trip.car.ownerId)) {
+      nameSet.set(trip.car.ownerId, trip.car.owner.name || "Unknown");
     }
 
     // Build consolidated shared parking info (computed once, shared across entries)
