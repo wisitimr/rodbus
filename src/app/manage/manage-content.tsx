@@ -189,12 +189,10 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined, tripIds);
       setConfirmingUserId(null);
       setSettleNote("");
-      setSelectedSettleTripIds((prev) => { const next = new Map(prev); next.delete(userId); return next; });
-      // Don't clear loading or call router.refresh() — revalidation from
-      // markAsSettled will re-render with updated props automatically
     } catch {
-      setLoadingAction(null);
+      // only clear on error — success will re-render via revalidation
     }
+    setLoadingAction(null);
   }
 
   const usersWithDebt = debts.filter((d) => d.pendingDebt > 0);
