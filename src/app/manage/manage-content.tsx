@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp, Link2, Check, Loader2 } from "lucide-react";
 import { markAsSettled } from "@/lib/admin-actions";
@@ -129,6 +129,15 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [settleNote, setSettleNote] = useState("");
   // Per-user selected tripIds for selective settlement (auto-check all)
   const [selectedSettleTripIds, setSelectedSettleTripIds] = useState<Map<string, Set<string>>>(new Map());
+
+  // Reset settle UI state when debts prop changes (after revalidation)
+  useEffect(() => {
+    setConfirmingUserId(null);
+    setSettleNote("");
+    setLoadingAction(null);
+    setSettlingTripIds(new Set());
+    setSelectedSettleTripIds(new Map());
+  }, [debts]);
 
   function toggleSet(set: Set<string>, id: string): Set<string> {
     const next = new Set(set);
