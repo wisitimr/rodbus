@@ -1319,7 +1319,7 @@ export default function HistoryContent({
                   perUserPaidAmounts={perUserPaidAmounts}
                   locale={locale}
                   t={t}
-                  allDebts={isAdmin && !onlyMe ? allDebts : undefined}
+                  allDebts={isAdmin && !onlyMe ? allDebts : allDebts.filter((d) => d.userId === currentUserId)}
                 />
               ))}
               {hasSummaryMore && (
