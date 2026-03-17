@@ -28,36 +28,8 @@ export default function RodBusLogo({ className }: { className?: string }) {
 
 export function RodBusWordmark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 240 100"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-label="รถบัส"
-    >
-      <defs>
-        <linearGradient id="rodbus-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FFD54F" />
-          <stop offset="50%" stopColor="#4FC3F7" />
-          <stop offset="100%" stopColor="#81C784" />
-        </linearGradient>
-        <filter id="rodbus-shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#90CAF9" floodOpacity="0.6" />
-        </filter>
-      </defs>
-      <text
-        x="10"
-        y="65"
-        fontFamily="Prompt, Nunito, sans-serif"
-        fontSize="48"
-        fontWeight="700"
-        fill="url(#rodbus-grad)"
-        stroke="#ffffff"
-        strokeWidth="6"
-        paintOrder="stroke"
-        filter="url(#rodbus-shadow)"
-      >
-        รถบัส
-      </text>
-    </svg>
+    <span className={`font-bold uppercase tracking-wide ${className ?? ""}`}>
+      RODBUS
+    </span>
   );
 }
