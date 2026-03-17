@@ -99,8 +99,11 @@ export default async function HistoryPage() {
     };
   });
 
+  // Filter debts: member sees only own data, admin sees all
+  const filteredDebts = isAdmin ? allDebts : allDebts.filter((d) => d.userId === userId);
+
   // Serialize debts with breakdown dates as ISO strings
-  const serializedDebts = allDebts.map((d) => ({
+  const serializedDebts = filteredDebts.map((d) => ({
     userId: d.userId,
     userName: d.userName,
     userImage: d.userImage,
