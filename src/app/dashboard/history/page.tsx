@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations, formatDateShort, formatDateMedium, type Locale } from "@/lib/i18n";
+import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
 import HistoryContent from "./history-content";
 import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
@@ -82,7 +82,7 @@ export default async function HistoryPage() {
       carId: trip.carId,
       carName: trip.car.name,
       licensePlate: trip.car.licensePlate ?? null,
-      date: formatDateShort(trip.date, locale),
+      date: formatDateMedium(trip.date, locale as Locale),
       dateISO: trip.date.toISOString().split("T")[0],
       time: trip.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
         hour: "2-digit",
@@ -177,9 +177,9 @@ export default async function HistoryPage() {
       userName: p.user.name,
       carName: p.trip.car.name,
       licensePlate: p.trip.car.licensePlate ?? null,
-      date: formatDateShort(p.trip.date, locale),
+      date: formatDateMedium(p.trip.date, locale as Locale),
       dateISO: p.trip.date.toISOString().split("T")[0],
-      paidAt: formatDateShort(p.createdAt, locale),
+      paidAt: formatDateMedium(p.createdAt, locale as Locale),
       amount: p.amount,
       note: p.note,
       tripNumber,

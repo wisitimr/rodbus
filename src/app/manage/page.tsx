@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations, formatDateShort, formatDateMedium, type Locale } from "@/lib/i18n";
+import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
 import ManageContent from "./manage-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 import { getActiveGroupOrRedirect } from "@/lib/party-group";
@@ -59,7 +59,7 @@ export default async function ManagePage() {
           tripId: b.tripId,
           carName: b.carName,
           licensePlate: b.licensePlate,
-          date: formatDateShort(b.date, locale),
+          date: formatDateMedium(b.date, locale as Locale),
           dateISO: b.date.toISOString().split("T")[0],
           share: b.share,
           gasShare: b.gasShare,
