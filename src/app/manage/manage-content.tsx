@@ -465,8 +465,9 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                         {pendingBreakdown.length > 1 && (
                           <button
                             type="button"
+                            disabled={isSettleLoading}
                             onClick={() => toggleAllSettleTrips(d.userId, pendingBreakdown)}
-                            className="flex items-center gap-3 py-1 pl-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-3 py-1 pl-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                           >
                             <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                               allSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
@@ -489,11 +490,12 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           return (
                             <div key={entryKey} className={`transition-opacity ${isTripSettling ? "animate-pulse opacity-50 pointer-events-none" : ""}`}>
                                 <TripBreakdownCard
-                                  leading={!isSettleLoading && pendingBreakdown.length > 1 ? (
+                                  leading={pendingBreakdown.length > 1 ? (
                                     <button
                                       type="button"
+                                      disabled={isSettleLoading}
                                       onClick={(e) => { e.stopPropagation(); toggleSettleTrip(d.userId, b.tripId, pendingBreakdown); }}
-                                      className="shrink-0"
+                                      className="shrink-0 disabled:opacity-50"
                                     >
                                       <div className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
                                         isChecked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
@@ -540,8 +542,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                           );
                         })}
 
-                        {/* Mark as Settled / Confirm — hidden during loading */}
-                        {isSettleLoading ? null : !isConfirming ? (
+                        {/* Mark as Settled / Confirm */}
+                        {!isConfirming ? (
                           <button
                             type="button"
                             onClick={() => { setConfirmingUserId(d.userId); setSettleNote(""); }}
