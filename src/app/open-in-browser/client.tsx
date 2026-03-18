@@ -1,43 +1,116 @@
 "use client";
 
-import { useEffect } from "react";
-import { ExternalLink } from "lucide-react";
-
-const messages = {
-  en: {
-    title: "Open in Browser",
-    desc: "This link doesn't work in the in-app browser. Please open it in Chrome or Safari instead.",
-    button: "Open in Browser",
-    manual: "If the button doesn't work, copy this URL and paste it in your browser:",
-  },
-  th: {
-    title: "เปิดในเบราว์เซอร์",
-    desc: "ลิงก์นี้ไม่สามารถใช้งานในเบราว์เซอร์ภายในแอปได้ กรุณาเปิดใน Chrome หรือ Safari",
-    button: "เปิดในเบราว์เซอร์",
-    manual: "หากปุ่มไม่ทำงาน ให้คัดลอก URL นี้แล้ววางในเบราว์เซอร์:",
-  },
-} as const;
+import { useEffect, useState, useCallback } from "react";
+import { ExternalLink, Copy, Check, Smartphone } from "lucide-react";
+import type { Locale } from "@/lib/i18n";
+import { getTranslations } from "@/lib/i18n";
 
 export default function OpenInBrowserClient({
   targetUrl,
   locale,
 }: {
   targetUrl: string;
-  locale: "en" | "th";
+  locale: Locale;
 }) {
-  const t = messages[locale];
-  const fullUrl = typeof window !== "undefined"
-    ? `${window.location.origin}${targetUrl}`
-    : targetUrl;
+  const t = getTranslations(locale);
+  const [fullUrl, setFullUrl] = useState(targetUrl);
+  const [copied, setCopied] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
-  // Try to auto-open in external browser via Android Intent
+  // Auto-open in default browser on mount
   useEffect(() => {
+    const origin = window.location.origin;
+    const url = `${origin}${targetUrl}`;
+    setFullUrl(url);
+
     const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/i.test(ua);
+    setIsIos(ios);
+
+    let opened = false;
+
+    // Android: use Intent to launch default browser
     if (/Android/i.test(ua)) {
       const intentUrl = `intent://${window.location.host}${targetUrl}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
       window.location.href = intentUrl;
+      opened = true;
     }
+
+    // LINE in-app browser: supports openExternalBrowser param
+    if (/Line/i.test(ua)) {
+      const sep = url.includes("?") ? "&" : "?";
+      window.location.href = `${url}${sep}openExternalBrowser=1`;
+      opened = true;
+    }
+
+    // Facebook/Instagram on iOS: try googlechrome scheme
+    if (ios && /FBAN|FBAV|Instagram/i.test(ua)) {
+      const chromeUrl = url.replace(/^https?:\/\//, "googlechrome://");
+      window.location.href = chromeUrl;
+      opened = true;
+    }
+
+    // General fallback: try window.open
+    if (!opened) {
+      try {
+        const w = window.open(url, "_system");
+        if (w) opened = true;
+      } catch {
+        // ignore
+      }
+    }
+
+    // Show manual instructions after a delay if user is still on this page
+    const timer = setTimeout(() => setShowManual(true), 1500);
+    return () => clearTimeout(timer);
   }, [targetUrl]);
+
+  const handleOpen = useCallback(() => {
+    const ua = navigator.userAgent;
+
+    // Android Intent
+    if (/Android/i.test(ua)) {
+      const intentUrl = `intent://${window.location.host}${targetUrl}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
+      window.location.href = intentUrl;
+      return;
+    }
+
+    // LINE
+    if (/Line/i.test(ua)) {
+      const sep = fullUrl.includes("?") ? "&" : "?";
+      window.location.href = `${fullUrl}${sep}openExternalBrowser=1`;
+      return;
+    }
+
+    // iOS Facebook/Instagram → Chrome scheme
+    if (isIos && /FBAN|FBAV|Instagram/i.test(ua)) {
+      const chromeUrl = fullUrl.replace(/^https?:\/\//, "googlechrome://");
+      window.location.href = chromeUrl;
+      return;
+    }
+
+    // Fallback
+    window.open(fullUrl, "_system") || (window.location.href = fullUrl);
+  }, [targetUrl, fullUrl, isIos]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for browsers that don't support clipboard API
+      const input = document.createElement("input");
+      input.value = fullUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [fullUrl]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 pb-24">
@@ -47,26 +120,68 @@ export default function OpenInBrowserClient({
         </div>
 
         <div>
-          <h1 className="text-xl font-bold text-foreground">{t.title}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t.desc}</p>
+          <h1 className="text-xl font-bold text-foreground">
+            {t.openInBrowser}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t.openInBrowserDesc}
+          </p>
         </div>
 
-        <a
-          href={fullUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
-        >
-          <ExternalLink className="h-4 w-4" />
-          {t.button}
-        </a>
+        {/* Loading spinner while auto-redirect attempts */}
+        {!showManual && (
+          <div className="flex justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          </div>
+        )}
 
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">{t.manual}</p>
-          <code className="block rounded-lg bg-muted px-3 py-2 text-xs text-foreground select-all break-all">
-            {fullUrl}
-          </code>
-        </div>
+        {/* Manual controls shown after delay */}
+        {showManual && (
+          <>
+            <button
+              onClick={handleOpen}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {t.openInBrowserButton}
+            </button>
+
+            <button
+              onClick={handleCopy}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted active:scale-[0.98]"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4 text-green-500" />
+                  {t.copiedUrl}
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  {t.copyUrl}
+                </>
+              )}
+            </button>
+
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {t.openInBrowserManual}
+              </p>
+              <code className="block rounded-lg bg-muted px-3 py-2 text-xs text-foreground select-all break-all">
+                {fullUrl}
+              </code>
+            </div>
+
+            {isIos && (
+              <div className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2 text-left">
+                <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">
+                  {t.openInBrowserIosHint}
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </main>
   );
