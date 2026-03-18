@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Bus, Crown, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check } from "lucide-react";
+import { Bus, Crown, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Pencil, Trash2, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check, Users, X } from "lucide-react";
 import { deleteCheckIn, updateTrip, deleteTrip } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 import ConfirmModal from "@/components/confirm-modal";
@@ -25,6 +25,8 @@ interface Trip {
   sharedParkingTripIds: string[];
   isOwner: boolean;
   isMyTrip: boolean;
+  passengers: { id: string; name: string }[];
+  driverName: string;
 }
 
 interface PaymentRecord {
@@ -138,6 +140,7 @@ interface HistoryContentProps {
     total?: string;
     shareParkingWithTrips?: string;
     loadMore?: string;
+    driver?: string;
   };
 }
 
@@ -812,6 +815,7 @@ export default function HistoryContent({
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
   const [confirmDeleteTrip, setConfirmDeleteTrip] = useState<Trip | null>(null);
   const [confirmDeleteCheckInId, setConfirmDeleteCheckInId] = useState<string | null>(null);
+  const [detailTrip, setDetailTrip] = useState<Trip | null>(null);
 
   // Edit trip modal state
   const [editModalTrip, setEditModalTrip] = useState<Trip | null>(null);
@@ -1214,6 +1218,7 @@ export default function HistoryContent({
                               const cardEl = e.currentTarget as HTMLDivElement;
                               handleSwipeTouchEnd(e, trip.id, cardEl);
                             } : undefined}
+                            onClick={() => { if (!swipedTripId) setDetailTrip(trip); }}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${trip.isOwner ? "bg-amber-500/10" : "bg-primary/10"}`}>
@@ -1520,6 +1525,67 @@ export default function HistoryContent({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Trip Detail Modal */}
+      {detailTrip && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/25 p-4 sm:items-center"
+          onClick={(e) => { if (e.target === e.currentTarget) setDetailTrip(null); }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-lg animate-scale-in">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {detailTrip.carName}
+                  {detailTrip.licensePlate && <span className="ml-1 font-normal text-muted-foreground">({detailTrip.licensePlate})</span>}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {detailTrip.date} · {detailTrip.time} · <span className="font-medium text-primary">{t.tripNumber} #{detailTrip.tripNumber}</span>
+                </p>
+              </div>
+              <button onClick={() => setDetailTrip(null)} className="rounded-lg p-1 text-muted-foreground hover:bg-accent">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 px-5 py-4">
+              {/* People */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span className="font-medium">{detailTrip.riderCount} {t.people}</span>
+              </div>
+              <div className="ml-6 text-xs text-muted-foreground">
+                {detailTrip.driverName} ({t.driver ?? "Driver"})
+                {detailTrip.passengers.length > 0 && `, ${detailTrip.passengers.map((p) => p.name).join(", ")}`}
+              </div>
+
+              {/* Costs */}
+              <div className="space-y-1.5 border-t border-border/50 pt-3">
+                {detailTrip.gasCost > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Fuel className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">{t.gas}</span>
+                    <span className="ml-auto font-mono text-foreground">&#3647;{detailTrip.gasCost.toFixed(2)}</span>
+                  </div>
+                )}
+                {detailTrip.parkingCost > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <ParkingCircle className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">{t.parking}</span>
+                    <span className="ml-auto font-mono text-foreground">&#3647;{detailTrip.parkingCost.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Total */}
+              <div className="flex items-center justify-between border-t border-border/50 pt-2 text-sm font-bold">
+                <span className="text-foreground">{t.total ?? "Total"}</span>
+                <span className="font-mono text-foreground">&#3647;{(detailTrip.gasCost + detailTrip.parkingCost).toFixed(2)}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

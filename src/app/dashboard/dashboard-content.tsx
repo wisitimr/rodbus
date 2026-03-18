@@ -18,6 +18,8 @@ interface RecentTrip {
   tripNumber: number;
   sharedParkingTripIds: string[];
   isOwner: boolean;
+  passengers: { id: string; name: string }[];
+  driverName: string;
   paymentStatus: "paid" | "pending" | "no_passengers";
 }
 
@@ -194,6 +196,7 @@ export default function DashboardContent({
                   shareParkingWithTrips: t.shareParkingWithTrips,
                   confirmDeleteTrip: t.confirmDeleteTrip,
                   confirmDeleteAction: t.confirmDeleteAction,
+                  driver: t.driver,
                 }}
               />
             )}
