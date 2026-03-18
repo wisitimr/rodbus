@@ -28,7 +28,7 @@ interface BreakdownItem {
   driver: { id: string; name: string };
   paidAmount?: number;
   sharedParking?: {
-    trips: { carName: string; date: string; parkingCost: number; headcount: number }[];
+    trips: { carName: string; date: string; parkingCost: number; headcount: number; tripNumber: number }[];
     uniqueNames: string[];
     totalParking: number;
     parkingHeadcount: number;
