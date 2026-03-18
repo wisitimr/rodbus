@@ -102,13 +102,8 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   );
   const [tripsExpanded, setTripsExpanded] = useState(false);
 
-  // Clear loading once the new trip appears in allTrips
-  useEffect(() => {
-    if (pendingNewTripId && allTrips.some((t) => t.id === pendingNewTripId)) {
-      setFormStatus("idle");
-      setPendingNewTripId(null);
-    }
-  }, [allTrips, pendingNewTripId]);
+  // Derived: still creating if saving and new trip hasn't arrived yet
+  const isCreating = formStatus === "saving" || (!!pendingNewTripId && !allTrips.some((t) => t.id === pendingNewTripId));
 
   // --- Trip list state ---
   const [expandedQrId, setExpandedQrId] = useState<string | null>(allTrips[0]?.id ?? null);
@@ -397,14 +392,16 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
         <div className="space-y-4">
           {/* Add New Trip button / Form */}
           {!showAddForm ? (
-            <button
-              type="button"
-              onClick={() => setShowAddForm(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
-            >
-              <Plus className="h-4 w-4" />
-              {t.addNewTrip}
-            </button>
+            !isCreating && (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
+              >
+                <Plus className="h-4 w-4" />
+                {t.addNewTrip}
+              </button>
+            )
           ) : (
             <div className="rounded-2xl border-2 border-primary/30 bg-card p-4 shadow-sm animate-fade-in">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -577,7 +574,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
           )}
 
           {/* Loading placeholder while waiting for new trip */}
-          {formStatus === "saving" && (
+          {isCreating && (
             <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm animate-pulse">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
               <span className="text-sm text-muted-foreground">{t.creating}</span>
