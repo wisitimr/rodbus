@@ -94,12 +94,16 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [selectedCarId, setSelectedCarId] = useState(cars[0]?.id ?? "");
   const car = cars.find((c) => c.id === selectedCarId);
   const [gasCost, setGasCost] = useState(() => car?.defaultGasCost ? car.defaultGasCost.toString() : "");
-  const [parkingCost, setParkingCost] = useState("0");
+  const [parkingCost, setParkingCost] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [pendingNewTripId, setPendingNewTripId] = useState<string | null>(null);
   const [selectedTripIds, setSelectedTripIds] = useState<string[]>(
     recentTrips.length > 0 ? [recentTrips[0].id] : []
   );
   const [tripsExpanded, setTripsExpanded] = useState(false);
+
+  // Derived: still creating if saving and new trip hasn't arrived yet
+  const isCreating = formStatus === "saving" || (!!pendingNewTripId && !allTrips.some((t) => t.id === pendingNewTripId));
 
   // --- Trip list state ---
   const [expandedQrId, setExpandedQrId] = useState<string | null>(allTrips[0]?.id ?? null);
@@ -245,10 +249,10 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       if (!res.ok) throw new Error("Failed to save");
       const newTrip = await res.json();
       setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
-      setParkingCost("0");
-      setFormStatus("idle");
+      setParkingCost("");
       setShowAddForm(false);
       setExpandedQrId(newTrip.id);
+      setPendingNewTripId(newTrip.id);
       router.refresh();
     } catch {
       setFormStatus("error");
@@ -388,14 +392,16 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
         <div className="space-y-4">
           {/* Add New Trip button / Form */}
           {!showAddForm ? (
-            <button
-              type="button"
-              onClick={() => setShowAddForm(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 py-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
-            >
-              <Plus className="h-5 w-5" />
-              {t.addNewTrip}
-            </button>
+            !isCreating && (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
+              >
+                <Plus className="h-4 w-4" />
+                {t.addNewTrip}
+              </button>
+            )
           ) : (
             <div className="rounded-2xl border-2 border-primary/30 bg-card p-4 shadow-sm animate-fade-in">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -414,7 +420,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                       setSelectedCarId(e.target.value);
                       const c = cars.find((c) => c.id === e.target.value);
                       setGasCost(c?.defaultGasCost ? c.defaultGasCost.toString() : "");
-                      setParkingCost("0");
+                      setParkingCost("");
                     }}
                     className={inputClass}
                   >
@@ -452,7 +458,13 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                       step="0.01"
                       min="0"
                       value={parkingCost}
-                      onChange={(e) => setParkingCost(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setParkingCost(val);
+                        if ((parseFloat(val) || 0) > 0 && selectedTripIds.length === 0 && recentTrips.length > 0) {
+                          setSelectedTripIds([recentTrips[0].id]);
+                        }
+                      }}
                       placeholder="0"
                       className={inputClass}
                     />
@@ -561,11 +573,19 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
             </div>
           )}
 
+          {/* Loading placeholder while waiting for new trip */}
+          {isCreating && (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm animate-pulse">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">{t.creating}</span>
+            </div>
+          )}
+
           {/* Trip list with accordion QR */}
           {allTrips.length > 0 && (
             <div className="space-y-2">
               {allTrips.slice(0, visibleCount).map((trip) => {
-                const tapUrl = `${baseUrl}/api/tap?carId=${trip.carId}`;
+                const tapUrl = `${baseUrl}/api/tap?tripId=${trip.id}`;
                 const isQrOpen = expandedQrId === trip.id;
                 const isSwiped = swipedTripId === trip.id;
                 const isDeleting = deletingTripId === trip.id;

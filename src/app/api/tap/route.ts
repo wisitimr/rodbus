@@ -96,9 +96,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(joinUrl);
   }
 
-  const carId = request.nextUrl.searchParams.get("carId");
+  let carId = request.nextUrl.searchParams.get("carId");
+  const tripId = request.nextUrl.searchParams.get("tripId");
+
+  // Resolve carId from tripId if only tripId is provided
+  if (!carId && tripId) {
+    const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { carId: true } });
+    if (trip) carId = trip.carId;
+  }
+
   if (!carId) {
-    return NextResponse.json({ error: "Missing carId parameter" }, { status: 400 }, );
+    return NextResponse.json({ error: "Missing carId or tripId parameter" }, { status: 400 });
   }
 
   const result = await validateTap(user, carId);
@@ -110,10 +118,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(successUrl);
   }
 
+  // If tripId is specified and available, filter trips to just that one
+  const filteredTrips = tripId && result.trips.some((t) => t.id === tripId)
+    ? result.trips.filter((t) => t.id === tripId)
+    : result.trips;
+
   const confirmUrl = new URL("/tap-confirm", request.url);
   confirmUrl.searchParams.set("carId", carId);
   confirmUrl.searchParams.set("car", result.car);
-  confirmUrl.searchParams.set("trips", JSON.stringify(result.trips));
+  confirmUrl.searchParams.set("trips", JSON.stringify(filteredTrips));
   return NextResponse.redirect(confirmUrl);
 }
 
@@ -133,9 +146,16 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { carId, tripId } = body;
+  let { carId, tripId } = body;
+
+  // Resolve carId from tripId if only tripId is provided
+  if (!carId && tripId) {
+    const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { carId: true } });
+    if (trip) carId = trip.carId;
+  }
+
   if (!carId) {
-    return NextResponse.json({ error: "Missing carId" }, { status: 400 });
+    return NextResponse.json({ error: "Missing carId or tripId" }, { status: 400 });
   }
 
   // Re-validate to prevent race conditions
