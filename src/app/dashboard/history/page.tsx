@@ -74,6 +74,16 @@ export default async function HistoryPage() {
     carDateTripIds.get(key)!.push(t.id);
   }
 
+  // Build shared parking lookup from debt breakdowns (keyed by tripId)
+  const sharedParkingByTripId = new Map<string, typeof allDebts[number]["breakdown"][number]["sharedParking"]>();
+  for (const debt of allDebts) {
+    for (const b of debt.breakdown) {
+      if (b.sharedParking && !sharedParkingByTripId.has(b.tripId)) {
+        sharedParkingByTripId.set(b.tripId, b.sharedParking);
+      }
+    }
+  }
+
   const trips = recentTrips.map((trip) => {
     const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
     const idx = (carDateTripIds.get(cdKey) ?? []).indexOf(trip.id);
@@ -100,6 +110,22 @@ export default async function HistoryPage() {
         .filter((c) => c.userId !== trip.car.ownerId)
         .map((c) => ({ id: c.userId, name: c.user.name || "Unknown" })),
       driverName: trip.car.owner.name || "Unknown",
+      sharedParking: (() => {
+        const sp = sharedParkingByTripId.get(trip.id);
+        if (!sp) return null;
+        return {
+          trips: sp.trips.map((d) => ({
+            carName: d.carName,
+            date: formatDateMedium(new Date(d.date), locale as Locale),
+            parkingCost: d.parkingCost,
+            headcount: d.headcount,
+            tripNumber: d.tripNumber,
+          })),
+          uniqueNames: sp.uniqueNames,
+          totalParking: sp.totalParking,
+          parkingHeadcount: sp.parkingHeadcount,
+        };
+      })(),
     };
   });
 

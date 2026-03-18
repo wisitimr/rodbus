@@ -187,6 +187,16 @@ export default async function DashboardPage() {
     if (allPaid) fullySettledTripKeys.add(tripKey);
   }
 
+  // Build shared parking lookup from debt breakdowns (keyed by tripId)
+  const sharedParkingByTripId = new Map<string, typeof debts[number]["breakdown"][number]["sharedParking"]>();
+  for (const debt of debts) {
+    for (const b of debt.breakdown) {
+      if (b.sharedParking && !sharedParkingByTripId.has(b.tripId)) {
+        sharedParkingByTripId.set(b.tripId, b.sharedParking);
+      }
+    }
+  }
+
   // Format recent trips for client component
   const formattedRecentTrips = recentTrips.map((trip) => {
     const dateISO = new Date(trip.date).toISOString().split("T")[0];
@@ -211,6 +221,22 @@ export default async function DashboardPage() {
         .filter((c) => c.userId !== trip.car.ownerId)
         .map((c) => ({ id: c.userId, name: c.user.name || "Unknown" })),
       driverName: trip.car.owner.name || "Unknown",
+      sharedParking: (() => {
+        const sp = sharedParkingByTripId.get(trip.id);
+        if (!sp) return null;
+        return {
+          trips: sp.trips.map((d) => ({
+            carName: d.carName,
+            date: formatDateMedium(new Date(d.date), locale),
+            parkingCost: d.parkingCost,
+            headcount: d.headcount,
+            tripNumber: d.tripNumber,
+          })),
+          uniqueNames: sp.uniqueNames,
+          totalParking: sp.totalParking,
+          parkingHeadcount: sp.parkingHeadcount,
+        };
+      })(),
       paymentStatus: trip.checkIns.length === 0
         ? "no_passengers" as const
         : trip.car.ownerId === userId

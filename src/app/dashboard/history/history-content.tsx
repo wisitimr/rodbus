@@ -27,6 +27,12 @@ interface Trip {
   isMyTrip: boolean;
   passengers: { id: string; name: string }[];
   driverName: string;
+  sharedParking?: {
+    trips: { carName: string; date: string; parkingCost: number; headcount: number; tripNumber: number }[];
+    uniqueNames: string[];
+    totalParking: number;
+    parkingHeadcount: number;
+  } | null;
 }
 
 interface PaymentRecord {
@@ -1576,6 +1582,28 @@ export default function HistoryContent({
                     <ParkingCircle className="h-4 w-4 text-primary" />
                     <span className="text-muted-foreground">{t.parking}</span>
                     <span className="ml-auto font-mono text-foreground">&#3647;{detailTrip.parkingCost.toFixed(2)}</span>
+                  </div>
+                )}
+                {detailTrip.sharedParking && detailTrip.sharedParking.trips.length > 0 && (
+                  <div className="space-y-1 rounded-lg bg-primary/5 p-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <Link2 className="h-3 w-3" />
+                      {t.sharedParkingAcross ?? "Shared parking across"} {detailTrip.sharedParking.trips.length} {t.tripNumber.toLowerCase()}
+                    </div>
+                    {detailTrip.sharedParking.trips.map((detail, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{detail.carName} · {detail.date} · {t.tripNumber} #{detail.tripNumber}</span>
+                        <span className="font-mono">&#3647;{detail.parkingCost.toFixed(2)} · {detail.headcount} {t.people}</span>
+                      </div>
+                    ))}
+                    {detailTrip.sharedParking.uniqueNames.length > 0 && (
+                      <div className="mt-1 border-t border-border/30 pt-1 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          {detailTrip.sharedParking.uniqueNames.length} {t.uniquePeople ?? "unique people"}:
+                        </span>{" "}
+                        {detailTrip.sharedParking.uniqueNames.join(", ")}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
