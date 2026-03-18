@@ -332,7 +332,7 @@ function SummaryCard({
   dayBreakdownMap,
   expandedSubPeriods,
   toggleSubPeriod,
-  forceMultiUser,
+  isAdmin,
   paidTripKeys,
   perUserPaidKeys,
   perUserPaidAmounts,
@@ -353,7 +353,7 @@ function SummaryCard({
   locale: string;
   t: HistoryContentProps["t"];
   allDebts?: DebtWithBreakdown[];
-  forceMultiUser?: boolean;
+  isAdmin?: boolean;
 }) {
   const totalDebt = group.entries.reduce((sum, e) => sum + e.totalDebt, 0);
   const totalPaid = group.entries.reduce((sum, e) => sum + e.totalPaid, 0);
@@ -420,7 +420,7 @@ function SummaryCard({
       {/* Expanded content */}
       {isExpanded && (
         <div className="mt-3 space-y-2 animate-fade-in">
-          {group.entries.length === 1 && !forceMultiUser ? (
+          {group.entries.length === 1 && !isAdmin ? (
             /* Single user: show trip entries directly without user header */
             (userEntriesMap.get(group.entries[0].userId) ?? []).map((entry) => {
               const e = group.entries[0];
@@ -1347,7 +1347,7 @@ export default function HistoryContent({
                   locale={locale}
                   t={t}
                   allDebts={isAdmin && !onlyMe ? allDebts : allDebts.filter((d) => d.userId === currentUserId)}
-                  forceMultiUser={isAdmin && !onlyMe}
+                  isAdmin={isAdmin && !onlyMe}
                 />
               ))}
               {hasSummaryMore && (
