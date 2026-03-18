@@ -96,10 +96,19 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [gasCost, setGasCost] = useState(() => car?.defaultGasCost ? car.defaultGasCost.toString() : "");
   const [parkingCost, setParkingCost] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [pendingNewTripId, setPendingNewTripId] = useState<string | null>(null);
   const [selectedTripIds, setSelectedTripIds] = useState<string[]>(
     recentTrips.length > 0 ? [recentTrips[0].id] : []
   );
   const [tripsExpanded, setTripsExpanded] = useState(false);
+
+  // Clear loading once the new trip appears in allTrips
+  useEffect(() => {
+    if (pendingNewTripId && allTrips.some((t) => t.id === pendingNewTripId)) {
+      setFormStatus("idle");
+      setPendingNewTripId(null);
+    }
+  }, [allTrips, pendingNewTripId]);
 
   // --- Trip list state ---
   const [expandedQrId, setExpandedQrId] = useState<string | null>(allTrips[0]?.id ?? null);
@@ -248,7 +257,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setParkingCost("");
       setShowAddForm(false);
       setExpandedQrId(newTrip.id);
-      setFormStatus("idle");
+      setPendingNewTripId(newTrip.id);
       router.refresh();
     } catch {
       setFormStatus("error");
@@ -564,6 +573,14 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                   <p className="text-sm font-medium text-debt">{t.failedToSave}</p>
                 )}
               </form>
+            </div>
+          )}
+
+          {/* Loading placeholder while waiting for new trip */}
+          {formStatus === "saving" && (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm animate-pulse">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">{t.creating}</span>
             </div>
           )}
 
