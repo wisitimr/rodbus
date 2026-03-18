@@ -329,7 +329,7 @@ export async function calculateDebts(
         // Add deficit to their first breakdown entry in the group
         const target = groupBreakdowns[0];
         target.parkingShare = Math.round((target.parkingShare + deficit) * 100) / 100;
-        target.share = Math.round((target.share + deficit) * 100) / 100;
+        target.share = target.gasShare + target.parkingShare;
         entry.totalDebt += deficit;
       }
     }
