@@ -20,6 +20,7 @@ function TapConfirm() {
   const carId = searchParams.get("carId");
   const car = searchParams.get("car");
   const tripsParam = searchParams.get("trips");
+  const tripIdParam = searchParams.get("tripId");
   const [loading, setLoading] = useState(false);
 
   const trips: AvailableTrip[] = useMemo(() => {
@@ -32,9 +33,13 @@ function TapConfirm() {
   }, [tripsParam]);
 
   const hasMultipleTrips = trips.length > 1;
-  const [selectedTripId, setSelectedTripId] = useState<string>(
-    trips[0]?.id ?? ""
-  );
+  const [selectedTripId, setSelectedTripId] = useState<string>(() => {
+    // Prefer the tripId from the URL param if it exists in available trips
+    if (tripIdParam && trips.some((t) => t.id === tripIdParam)) return tripIdParam;
+    return trips[0]?.id ?? "";
+  });
+
+  const selectedTrip = trips.find((t) => t.id === selectedTripId);
 
   async function handleConfirm() {
     if (!carId) return;
@@ -76,10 +81,17 @@ function TapConfirm() {
           {t.confirmCheckInDesc}
         </p>
 
-        {/* Car name */}
+        {/* Car name + Trip number */}
         {car && (
           <div className="mt-4 rounded-xl bg-accent/50 p-4">
-            <p className="text-lg font-semibold text-foreground">{car}</p>
+            <p className="text-lg font-semibold text-foreground">
+              {car}
+              {selectedTrip && (
+                <span className="ml-2 text-primary">
+                  {t.tripNumber} #{selectedTrip.tripNumber}
+                </span>
+              )}
+            </p>
           </div>
         )}
 

@@ -127,6 +127,7 @@ export async function GET(request: NextRequest) {
   confirmUrl.searchParams.set("carId", carId);
   confirmUrl.searchParams.set("car", result.car);
   confirmUrl.searchParams.set("trips", JSON.stringify(filteredTrips));
+  if (tripId) confirmUrl.searchParams.set("tripId", tripId);
   return NextResponse.redirect(confirmUrl);
 }
 
