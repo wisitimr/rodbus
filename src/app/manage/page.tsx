@@ -115,6 +115,19 @@ export default async function ManagePage() {
       tripNumber: tripNumberMap.get(trip.id) ?? 1,
     }));
 
+  const allTrips = [...recentTripsRaw].reverse().map((trip) => ({
+    id: trip.id,
+    carId: trip.carId,
+    carName: trip.car.name,
+    licensePlate: trip.car.licensePlate,
+    date: formatDateMedium(trip.date, locale),
+    gasCost: trip.gasCost,
+    parkingCost: trip.parkingCost,
+    headcount: trip.checkIns.length + 1,
+    tripNumber: tripNumberMap.get(trip.id) ?? 1,
+    sharedParkingTripIds: trip.sharedParkingTripIds,
+  }));
+
   return (
     <main className="mx-auto max-w-lg space-y-4 p-4">
       <ManageContent
@@ -128,6 +141,7 @@ export default async function ManagePage() {
         carId={ownedCarId}
         locale={locale}
         recentTrips={recentTripsForSharing}
+        allTrips={allTrips}
         partyGroupId={activeGroupId}
       />
     </main>

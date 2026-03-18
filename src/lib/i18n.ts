@@ -109,6 +109,7 @@ const translations = {
     deleteUserAction: "Delete",
     add: "Add",
     addNewCar: "Add New Car",
+    addNewTrip: "Add New Trip",
 
     // Admin
     settings: "Settings",
@@ -370,6 +371,7 @@ const translations = {
     deleteUserAction: "ลบ",
     add: "เพิ่ม",
     addNewCar: "เพิ่มรถใหม่",
+    addNewTrip: "เพิ่มเที่ยวใหม่",
 
     // Admin
     settings: "ตั้งค่า",
