@@ -20,6 +20,12 @@ interface RecentTrip {
   isOwner: boolean;
   passengers: { id: string; name: string }[];
   driverName: string;
+  sharedParking?: {
+    trips: { carName: string; date: string; parkingCost: number; headcount: number; tripNumber: number }[];
+    uniqueNames: string[];
+    totalParking: number;
+    parkingHeadcount: number;
+  } | null;
   paymentStatus: "paid" | "pending" | "no_passengers";
 }
 
@@ -197,6 +203,8 @@ export default function DashboardContent({
                   confirmDeleteTrip: t.confirmDeleteTrip,
                   confirmDeleteAction: t.confirmDeleteAction,
                   driver: t.driver,
+                  sharedParkingAcross: t.sharedParkingAcross,
+                  uniquePeople: t.uniquePeople,
                 }}
               />
             )}
