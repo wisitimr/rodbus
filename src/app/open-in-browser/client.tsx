@@ -146,30 +146,21 @@ export default function OpenInBrowserClient({
               {t.openInBrowserButton}
             </button>
 
-            <button
-              onClick={handleCopy}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted active:scale-[0.98]"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 text-green-500" />
-                  {t.copiedUrl}
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  {t.copyUrl}
-                </>
-              )}
-            </button>
-
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                {t.openInBrowserManual}
-              </p>
-              <code className="block rounded-lg bg-muted px-3 py-2 text-xs text-foreground select-all break-all">
+            <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2">
+              <code className="text-xs text-muted-foreground select-all break-all">
                 {fullUrl}
               </code>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-green-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </button>
             </div>
 
             {isIos && (

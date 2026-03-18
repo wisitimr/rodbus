@@ -261,9 +261,6 @@ const translations = {
     openInBrowser: "Open in Browser",
     openInBrowserDesc: "This link works best in your default browser. Redirecting you now…",
     openInBrowserButton: "Open in Browser",
-    openInBrowserManual: "If it didn't open automatically, tap the button above or copy this URL:",
-    copyUrl: "Copy URL",
-    copiedUrl: "Copied!",
     openInBrowserIosHint: "On iPhone: tap ··· or the share icon ↗ then \"Open in Safari\"",
   },
   th: {
@@ -526,9 +523,6 @@ const translations = {
     openInBrowser: "เปิดในเบราว์เซอร์",
     openInBrowserDesc: "ลิงก์นี้ใช้งานได้ดีที่สุดในเบราว์เซอร์หลัก กำลังเปิดให้อัตโนมัติ…",
     openInBrowserButton: "เปิดในเบราว์เซอร์",
-    openInBrowserManual: "หากไม่เปิดอัตโนมัติ ให้กดปุ่มด้านบน หรือคัดลอก URL นี้:",
-    copyUrl: "คัดลอก URL",
-    copiedUrl: "คัดลอกแล้ว!",
     openInBrowserIosHint: "บน iPhone: กด ··· หรือไอคอนแชร์ ↗ แล้วเลือก \"เปิดใน Safari\"",
   },
 } as const;
