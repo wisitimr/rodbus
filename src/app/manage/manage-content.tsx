@@ -102,8 +102,14 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   );
   const [tripsExpanded, setTripsExpanded] = useState(false);
 
-  // Derived: still creating if saving and new trip hasn't arrived yet
-  const isCreating = formStatus === "saving" || (!!pendingNewTripId && !allTrips.some((t) => t.id === pendingNewTripId));
+  // Clear pendingNewTripId once trip arrives in props
+  const pendingArrived = !!pendingNewTripId && allTrips.some((t) => t.id === pendingNewTripId);
+  useEffect(() => {
+    if (pendingArrived) setPendingNewTripId(null);
+  }, [pendingArrived]);
+
+  // Derived: still creating while API call in progress OR waiting for new trip to appear in props
+  const isCreating = formStatus === "saving" || (!!pendingNewTripId && !pendingArrived);
 
   // --- Trip list state ---
   const [expandedQrId, setExpandedQrId] = useState<string | null>(allTrips[0]?.id ?? null);
@@ -250,6 +256,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       const newTrip = await res.json();
       setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
       setParkingCost("");
+      setFormStatus("idle");
       setShowAddForm(false);
       setExpandedQrId(newTrip.id);
       setPendingNewTripId(newTrip.id);
