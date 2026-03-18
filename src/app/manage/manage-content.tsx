@@ -263,7 +263,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setParkingCost("");
       setExpandedQrId(newTrip.id);
       setPendingNewTripId(newTrip.id);
-      router.refresh();
+      startEditTransition(() => { router.refresh(); });
     } catch {
       setFormStatus("error");
     }
