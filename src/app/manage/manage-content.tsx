@@ -571,7 +571,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
           {allTrips.length > 0 && (
             <div className="space-y-2">
               {allTrips.slice(0, visibleCount).map((trip) => {
-                const tapUrl = `${baseUrl}/api/tap?carId=${trip.carId}&tripId=${trip.id}`;
+                const tapUrl = `${baseUrl}/api/tap?tripId=${trip.id}`;
                 const isQrOpen = expandedQrId === trip.id;
                 const isSwiped = swipedTripId === trip.id;
                 const isDeleting = deletingTripId === trip.id;
