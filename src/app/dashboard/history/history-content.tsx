@@ -1532,7 +1532,7 @@ export default function HistoryContent({
       {/* Trip Detail Modal */}
       {detailTrip && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/25 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailTrip(null); }}
         >
           <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-lg animate-scale-in">
