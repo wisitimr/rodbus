@@ -444,7 +444,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost}
+                      <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost} <span className="text-debt">*</span>
                     </label>
                     <input
                       type="number"
@@ -752,7 +752,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost}
+                      <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost} <span className="text-debt">*</span>
                     </label>
                     <input
                       type="number"
