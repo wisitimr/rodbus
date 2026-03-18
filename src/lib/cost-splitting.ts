@@ -249,7 +249,9 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
-      const roundedShare = Math.round(perPerson * 100) / 100;
+      const roundedGasShare = Math.round(gasPerPerson * 100) / 100;
+      const roundedParkingShare = Math.round(parkingPerPerson * 100) / 100;
+      const roundedShare = roundedGasShare + roundedParkingShare;
       entry.totalDebt += roundedShare;
       entry.breakdown.push({
         tripId: trip.id,
@@ -257,9 +259,9 @@ export async function calculateDebts(
         carName: trip.car.name,
         licensePlate: trip.car.licensePlate,
         date: trip.date,
-        share: Math.round(perPerson * 100) / 100,
-        gasShare: Math.round(gasPerPerson * 100) / 100,
-        parkingShare: Math.round(parkingPerPerson * 100) / 100,
+        share: roundedShare,
+        gasShare: roundedGasShare,
+        parkingShare: roundedParkingShare,
         gasCost: trip.gasCost,
         parkingCost: trip.parkingCost,
         totalCost,
@@ -441,7 +443,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
 
     const gasPerPerson = trip.gasCost / headcount;
     const parkingPerPerson = trip.parkingCost > 0 ? trip.parkingCost / parkingHeadcount : 0;
-    const share = Math.round((gasPerPerson + parkingPerPerson) * 100) / 100;
+    const share = Math.round(gasPerPerson * 100) / 100 + Math.round(parkingPerPerson * 100) / 100;
     if (share > 0) {
       dateShares.push({ date: trip.date, amount: share, tripId: trip.id });
     }
