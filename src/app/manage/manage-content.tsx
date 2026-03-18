@@ -102,13 +102,17 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   );
   const [tripsExpanded, setTripsExpanded] = useState(false);
 
-  // Clear pendingNewTripId once trip arrives in props
+  // Once new trip arrives in props: hide form, clear loading
   const pendingArrived = !!pendingNewTripId && allTrips.some((t) => t.id === pendingNewTripId);
   useEffect(() => {
-    if (pendingArrived) setPendingNewTripId(null);
+    if (pendingArrived) {
+      setPendingNewTripId(null);
+      setFormStatus("idle");
+      setShowAddForm(false);
+    }
   }, [pendingArrived]);
 
-  // Derived: still creating while API call in progress OR waiting for new trip to appear in props
+  // Derived: still creating while API call in progress OR waiting for new trip data
   const isCreating = formStatus === "saving" || (!!pendingNewTripId && !pendingArrived);
 
   // --- Trip list state ---
@@ -159,6 +163,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     if (finalOffset < -SWIPE_THRESHOLD) {
       cardEl.style.transform = `translateX(-${ACTION_WIDTH}px)`;
       setSwipedTripId(tripId);
+      setExpandedQrId(null);
     } else {
       cardEl.style.transform = "translateX(0)";
       setSwipedTripId(null);
@@ -256,8 +261,6 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       const newTrip = await res.json();
       setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
       setParkingCost("");
-      setFormStatus("idle");
-      setShowAddForm(false);
       setExpandedQrId(newTrip.id);
       setPendingNewTripId(newTrip.id);
       router.refresh();
@@ -399,16 +402,14 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
         <div className="space-y-4">
           {/* Add New Trip button / Form */}
           {!showAddForm ? (
-            !isCreating && (
-              <button
-                type="button"
-                onClick={() => setShowAddForm(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
-              >
-                <Plus className="h-4 w-4" />
-                {t.addNewTrip}
-              </button>
-            )
+            <button
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" />
+              {t.addNewTrip}
+            </button>
           ) : (
             <div className="rounded-2xl border-2 border-primary/30 bg-card p-4 shadow-sm animate-fade-in">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -577,14 +578,6 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                   <p className="text-sm font-medium text-debt">{t.failedToSave}</p>
                 )}
               </form>
-            </div>
-          )}
-
-          {/* Loading placeholder while waiting for new trip */}
-          {isCreating && (
-            <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm animate-pulse">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">{t.creating}</span>
             </div>
           )}
 
