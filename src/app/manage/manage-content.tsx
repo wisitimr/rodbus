@@ -119,7 +119,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const isCreating = formStatus === "saving" || (!!pendingNewTripId && !pendingArrived);
 
   // --- Trip list state ---
-  const [expandedQrId, setExpandedQrId] = useState<string | null>(allTrips[0]?.id ?? null);
+  const [expandedQrId, setExpandedQrId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(5);
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
