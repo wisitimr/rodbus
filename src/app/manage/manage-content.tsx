@@ -109,6 +109,9 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setPendingNewTripId(null);
       setFormStatus("idle");
       setShowAddForm(false);
+      setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
+      setParkingCost("");
+      setSelectedTripIds(recentTrips.length > 0 ? [recentTrips[0].id] : []);
     }
   }, [pendingArrived]);
 
@@ -116,7 +119,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const isCreating = formStatus === "saving" || (!!pendingNewTripId && !pendingArrived);
 
   // --- Trip list state ---
-  const [expandedQrId, setExpandedQrId] = useState<string | null>(allTrips[0]?.id ?? null);
+  const [expandedQrId, setExpandedQrId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(5);
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -259,8 +262,6 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       });
       if (!res.ok) throw new Error("Failed to save");
       const newTrip = await res.json();
-      setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
-      setParkingCost("");
       setExpandedQrId(newTrip.id);
       setPendingNewTripId(newTrip.id);
       startEditTransition(() => { router.refresh(); });
