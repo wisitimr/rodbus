@@ -261,7 +261,6 @@ const translations = {
     openInBrowser: "Open in Browser",
     openInBrowserDesc: "This link works best in your default browser. Redirecting you now…",
     openInBrowserButton: "Open in Browser",
-    openInBrowserIosHint: "On iPhone: tap ··· or the share icon ↗ then \"Open in Safari\"",
   },
   th: {
     // Landing
@@ -523,7 +522,6 @@ const translations = {
     openInBrowser: "เปิดในเบราว์เซอร์",
     openInBrowserDesc: "ลิงก์นี้ใช้งานได้ดีที่สุดในเบราว์เซอร์หลัก กำลังเปิดให้อัตโนมัติ…",
     openInBrowserButton: "เปิดในเบราว์เซอร์",
-    openInBrowserIosHint: "บน iPhone: กด ··· หรือไอคอนแชร์ ↗ แล้วเลือก \"เปิดใน Safari\"",
   },
 } as const;
 

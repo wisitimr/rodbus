@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ExternalLink, Copy, Check, Smartphone } from "lucide-react";
+import { ExternalLink, Copy, Check } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 import { getTranslations } from "@/lib/i18n";
 
@@ -16,8 +16,6 @@ export default function OpenInBrowserClient({
   const [fullUrl, setFullUrl] = useState(targetUrl);
   const [copied, setCopied] = useState(false);
   const [showManual, setShowManual] = useState(false);
-  const [isIos, setIsIos] = useState(false);
-
   // Auto-open in default browser on mount
   useEffect(() => {
     const origin = window.location.origin;
@@ -26,7 +24,6 @@ export default function OpenInBrowserClient({
 
     const ua = navigator.userAgent;
     const ios = /iPhone|iPad|iPod/i.test(ua);
-    setIsIos(ios);
 
     let opened = false;
 
@@ -84,7 +81,7 @@ export default function OpenInBrowserClient({
     }
 
     // iOS Facebook/Instagram → Chrome scheme
-    if (isIos && /FBAN|FBAV|Instagram/i.test(ua)) {
+    if (/iPhone|iPad|iPod/i.test(ua) && /FBAN|FBAV|Instagram/i.test(ua)) {
       const chromeUrl = fullUrl.replace(/^https?:\/\//, "googlechrome://");
       window.location.href = chromeUrl;
       return;
@@ -92,7 +89,7 @@ export default function OpenInBrowserClient({
 
     // Fallback
     window.open(fullUrl, "_system") || (window.location.href = fullUrl);
-  }, [targetUrl, fullUrl, isIos]);
+  }, [targetUrl, fullUrl]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -162,15 +159,6 @@ export default function OpenInBrowserClient({
                 )}
               </button>
             </div>
-
-            {isIos && (
-              <div className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2 text-left">
-                <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">
-                  {t.openInBrowserIosHint}
-                </p>
-              </div>
-            )}
           </>
         )}
       </div>
