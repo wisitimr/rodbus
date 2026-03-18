@@ -132,6 +132,7 @@ export default async function HistoryPage() {
           date: formatDateMedium(d.date, locale as Locale),
           parkingCost: d.parkingCost,
           headcount: d.headcount,
+          tripNumber: d.tripNumber,
         })),
         uniqueNames: b.sharedParking.uniqueNames,
         totalParking: b.sharedParking.totalParking,

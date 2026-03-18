@@ -7,6 +7,7 @@ export interface SharedParkingEntry {
   date: string;
   parkingCost: number;
   headcount: number;
+  tripNumber: number;
 }
 
 export interface SharedParkingInfo {
@@ -187,14 +188,14 @@ export default function TripBreakdownCard({
                   )}
                 </div>
                 {hasSharedParking && (
-                  <div className={`ml-6 space-y-1 rounded-lg bg-primary/5 ${compact ? "p-1.5" : "p-2"}`}>
+                  <div className={`space-y-1 rounded-lg bg-primary/5 ${compact ? "p-1.5" : "p-2"}`}>
                     <div className={`flex items-center gap-1.5 font-medium text-primary ${compact ? "text-[10px]" : "text-xs"}`}>
                       <Link2 className="h-3 w-3" />
                       {t.sharedParkingAcross ?? "Shared parking across"} {sp!.trips.length} {t.tripNumber?.toLowerCase() ?? "trips"}
                     </div>
                     {sp!.trips.map((detail, i) => (
                       <div key={i} className={`flex items-center justify-between text-muted-foreground ${compact ? "text-[10px]" : "text-xs"}`}>
-                        <span>{detail.carName} · {detail.date}</span>
+                        <span>{detail.carName} · {detail.date} · {t.tripNumber} #{detail.tripNumber}</span>
                         <span className="font-mono">&#3647;{detail.parkingCost.toFixed(2)} · {detail.headcount} {t.people}</span>
                       </div>
                     ))}

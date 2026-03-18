@@ -7,6 +7,7 @@ export interface SharedParkingInfo {
     date: Date;
     parkingCost: number;
     headcount: number;
+    tripNumber: number;
   }[];
   uniqueNames: string[];
   totalParking: number;
@@ -184,6 +185,7 @@ export async function calculateDebts(
         date: trip.date,
         parkingCost: trip.parkingCost,
         headcount,
+        tripNumber: tripNumberMap.get(trip.id) ?? 1,
       });
 
       // Add linked trips
@@ -215,6 +217,7 @@ export async function calculateDebts(
           date: linkedTrip.date,
           parkingCost: linkedTrip.parkingCost,
           headcount: linkedHeadcount,
+          tripNumber: tripNumberMap.get(linkedTripId) ?? 1,
         });
       }
 
