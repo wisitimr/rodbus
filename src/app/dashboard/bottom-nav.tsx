@@ -30,11 +30,11 @@ export default function BottomNav({ isAdmin, hasCars, hasTrips }: BottomNavProps
 
   const tabs = [
     { label: t.dashboard, href: "/dashboard", icon: Home },
-    ...(isAdmin && hasCars
-      ? [{ label: t.manage, href: "/manage", icon: ClipboardList }]
-      : []),
     ...(hasTrips
       ? [{ label: t.history, href: "/dashboard/history", icon: Clock }]
+      : []),
+    ...(isAdmin && hasCars
+      ? [{ label: t.manage, href: "/manage", icon: ClipboardList }]
       : []),
     ...(isAdmin
       ? [{ label: t.settings, href: "/admin", icon: Settings }]

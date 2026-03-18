@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
   }
 
   const carId = request.nextUrl.searchParams.get("carId");
+  const tripId = request.nextUrl.searchParams.get("tripId");
   if (!carId) {
     return NextResponse.json({ error: "Missing carId parameter" }, { status: 400 }, );
   }
@@ -110,10 +111,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(successUrl);
   }
 
+  // If tripId is specified and available, filter trips to just that one
+  const filteredTrips = tripId && result.trips.some((t) => t.id === tripId)
+    ? result.trips.filter((t) => t.id === tripId)
+    : result.trips;
+
   const confirmUrl = new URL("/tap-confirm", request.url);
   confirmUrl.searchParams.set("carId", carId);
   confirmUrl.searchParams.set("car", result.car);
-  confirmUrl.searchParams.set("trips", JSON.stringify(result.trips));
+  confirmUrl.searchParams.set("trips", JSON.stringify(filteredTrips));
   return NextResponse.redirect(confirmUrl);
 }
 

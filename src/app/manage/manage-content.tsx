@@ -94,7 +94,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [selectedCarId, setSelectedCarId] = useState(cars[0]?.id ?? "");
   const car = cars.find((c) => c.id === selectedCarId);
   const [gasCost, setGasCost] = useState(() => car?.defaultGasCost ? car.defaultGasCost.toString() : "");
-  const [parkingCost, setParkingCost] = useState("0");
+  const [parkingCost, setParkingCost] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "saving" | "error">("idle");
   const [selectedTripIds, setSelectedTripIds] = useState<string[]>(
     recentTrips.length > 0 ? [recentTrips[0].id] : []
@@ -245,10 +245,10 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       if (!res.ok) throw new Error("Failed to save");
       const newTrip = await res.json();
       setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
-      setParkingCost("0");
-      setFormStatus("idle");
+      setParkingCost("");
       setShowAddForm(false);
       setExpandedQrId(newTrip.id);
+      setFormStatus("idle");
       router.refresh();
     } catch {
       setFormStatus("error");
@@ -391,9 +391,9 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
             <button
               type="button"
               onClick={() => setShowAddForm(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 py-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="h-4 w-4" />
               {t.addNewTrip}
             </button>
           ) : (
@@ -414,7 +414,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                       setSelectedCarId(e.target.value);
                       const c = cars.find((c) => c.id === e.target.value);
                       setGasCost(c?.defaultGasCost ? c.defaultGasCost.toString() : "");
-                      setParkingCost("0");
+                      setParkingCost("");
                     }}
                     className={inputClass}
                   >
@@ -452,7 +452,13 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                       step="0.01"
                       min="0"
                       value={parkingCost}
-                      onChange={(e) => setParkingCost(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setParkingCost(val);
+                        if ((parseFloat(val) || 0) > 0 && selectedTripIds.length === 0 && recentTrips.length > 0) {
+                          setSelectedTripIds([recentTrips[0].id]);
+                        }
+                      }}
                       placeholder="0"
                       className={inputClass}
                     />
@@ -565,7 +571,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
           {allTrips.length > 0 && (
             <div className="space-y-2">
               {allTrips.slice(0, visibleCount).map((trip) => {
-                const tapUrl = `${baseUrl}/api/tap?carId=${trip.carId}`;
+                const tapUrl = `${baseUrl}/api/tap?carId=${trip.carId}&tripId=${trip.id}`;
                 const isQrOpen = expandedQrId === trip.id;
                 const isSwiped = swipedTripId === trip.id;
                 const isDeleting = deletingTripId === trip.id;
