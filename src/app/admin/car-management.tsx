@@ -38,9 +38,9 @@ export default function CarManagement({ cars }: CarManagementProps) {
       setLicensePlate("");
       setDefaultGas("");
       setStatus("idle");
-      // Auto-expand the newly created car (last in list)
+      // Auto-expand the newly created car (first in list, sorted newest-first)
       if (cars.length > prevCarsLengthRef.current) {
-        setExpandedQrId(cars[cars.length - 1]?.id ?? null);
+        setExpandedQrId(cars[0]?.id ?? null);
       }
     }
     prevCarsLengthRef.current = cars.length;
@@ -366,7 +366,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                     <div className="flex gap-2">
                       <button
                         type="submit"
-                        disabled={isAnyLoading || !editName.trim()}
+                        disabled={isAnyLoading || !editName.trim() || (editName === car.name && (editLicensePlate || null) === (car.licensePlate ?? null) && (parseFloat(editGasCost) || 0) === car.defaultGasCost)}
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
                       >
                         <Check className="h-4 w-4" />
