@@ -25,6 +25,9 @@ export default function CarManagement({ cars }: CarManagementProps) {
 
   // Track previous car count to detect newly added car
   const prevCarsLengthRef = useRef(cars.length);
+  // Track pending edit to clear after revalidation
+  const [pendingEditCarId, setPendingEditCarId] = useState<string | null>(null);
+  const prevCarsRef = useRef<CarManagementProps["cars"]>(cars);
 
   // Clear add form when cars prop updates (new car appeared)
   useEffect(() => {
@@ -43,6 +46,21 @@ export default function CarManagement({ cars }: CarManagementProps) {
     prevCarsLengthRef.current = cars.length;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cars.length]);
+
+  // Clear edit mode after revalidation delivers updated car data
+  useEffect(() => {
+    if (pendingEditCarId) {
+      const prev = prevCarsRef.current.find((c) => c.id === pendingEditCarId);
+      const curr = cars.find((c) => c.id === pendingEditCarId);
+      if (prev && curr && (prev.name !== curr.name || prev.licensePlate !== curr.licensePlate || prev.defaultGasCost !== curr.defaultGasCost)) {
+        setEditingCarId(null);
+        setPendingEditCarId(null);
+        setLoadingAction(null);
+      }
+    }
+    prevCarsRef.current = cars;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cars]);
 
   // Edit car state
   const [editingCarId, setEditingCarId] = useState<string | null>(null);
@@ -157,8 +175,8 @@ export default function CarManagement({ cars }: CarManagementProps) {
         licensePlate: editLicensePlate || null,
         defaultGasCost: parseFloat(editGasCost) || 0,
       });
-      setEditingCarId(null);
-      // Don't clear loading — revalidation will re-render with updated props
+      // Don't exit edit mode — wait for revalidation to deliver updated data
+      setPendingEditCarId(editingCarId);
     } catch {
       setLoadingAction(null);
     }

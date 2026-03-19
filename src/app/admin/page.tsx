@@ -20,6 +20,7 @@ export default async function AdminPage() {
     prisma.car.findMany({
       where: { ownerId: userId },
       select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
+      orderBy: { createdAt: "desc" },
     }),
     prisma.partyGroup.findUnique({
       where: { id: activeGroupId },
