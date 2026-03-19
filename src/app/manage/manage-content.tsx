@@ -115,6 +115,22 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     }
   }, [pendingArrived]);
 
+  // Sync selectedTripIds when recentTrips changes (e.g. after trip deletion)
+  useEffect(() => {
+    setSelectedTripIds((prev) => {
+      const validIds = prev.filter((id) => recentTrips.some((t) => t.id === id));
+      if (validIds.length > 0) return validIds;
+      return recentTrips.length > 0 ? [recentTrips[0].id] : [];
+    });
+  }, [recentTrips]);
+
+  // Clear deletingTripId when trip is removed from list
+  useEffect(() => {
+    if (deletingTripId && !allTrips.some((t) => t.id === deletingTripId)) {
+      setDeletingTripId(null);
+    }
+  }, [allTrips, deletingTripId]);
+
   // Derived: still creating while API call in progress OR waiting for new trip data
   const isCreating = formStatus === "saving" || (!!pendingNewTripId && !pendingArrived);
 
