@@ -47,7 +47,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cars.length]);
 
-  // Clear edit mode after revalidation delivers updated car data
+  // Clear edit/delete loading after revalidation delivers updated car data
   useEffect(() => {
     if (pendingEditCarId) {
       const prev = prevCarsRef.current.find((c) => c.id === pendingEditCarId);
@@ -55,6 +55,13 @@ export default function CarManagement({ cars }: CarManagementProps) {
       if (prev && curr && (prev.name !== curr.name || prev.licensePlate !== curr.licensePlate || prev.defaultGasCost !== curr.defaultGasCost)) {
         setEditingCarId(null);
         setPendingEditCarId(null);
+        setLoadingAction(null);
+      }
+    }
+    // Clear delete loading when car is removed from list
+    if (loadingAction?.startsWith("delete-")) {
+      const deletedId = loadingAction.slice(7);
+      if (!cars.some((c) => c.id === deletedId)) {
         setLoadingAction(null);
       }
     }
@@ -260,7 +267,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
               </button>
               <button
                 type="button"
-                onClick={() => { setShowAddForm(false); setName(""); setLicensePlate(""); setDefaultGas("0"); setStatus("idle"); }}
+                onClick={() => { setShowAddForm(false); setName(""); setLicensePlate(""); setDefaultGas(""); setStatus("idle"); }}
                 disabled={loadingAction === "add"}
                 className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent disabled:opacity-50"
               >
