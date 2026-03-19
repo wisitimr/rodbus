@@ -132,12 +132,14 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
   const [confirmDeleteTripItem, setConfirmDeleteTripItem] = useState<TripListItem | null>(null);
 
-  // --- Trip list edit modal state ---
-  const [editModalTrip, setEditModalTrip] = useState<TripListItem | null>(null);
+  // --- Trip list inline edit state ---
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [editGasCost, setEditGasCost] = useState("");
   const [editParkingCost, setEditParkingCost] = useState("");
   const [editSharedParkingIds, setEditSharedParkingIds] = useState<string[]>([]);
   const [editStatus, setEditStatus] = useState<"idle" | "saving">("idle");
+  const [pendingEditTripId, setPendingEditTripId] = useState<string | null>(null);
+  const prevTripsRef = useRef<TripListItem[]>(allTrips);
   const [, startEditTransition] = useTransition();
 
   const SWIPE_THRESHOLD = 40;
@@ -191,8 +193,23 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     return () => document.removeEventListener("touchstart", handleTap);
   }, [swipedTripId]);
 
+  // Clear edit mode after revalidation delivers updated trip data
+  useEffect(() => {
+    if (pendingEditTripId) {
+      const prev = prevTripsRef.current.find((t) => t.id === pendingEditTripId);
+      const curr = allTrips.find((t) => t.id === pendingEditTripId);
+      if (prev && curr && (prev.gasCost !== curr.gasCost || prev.parkingCost !== curr.parkingCost || JSON.stringify(prev.sharedParkingTripIds) !== JSON.stringify(curr.sharedParkingTripIds))) {
+        setEditingTripId(null);
+        setPendingEditTripId(null);
+        setEditStatus("idle");
+      }
+    }
+    prevTripsRef.current = allTrips;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTrips]);
+
   function handleTripEditStart(trip: TripListItem) {
-    setEditModalTrip(trip);
+    setEditingTripId(trip.id);
     setEditGasCost(trip.gasCost.toString());
     setEditParkingCost(trip.parkingCost.toString());
     setEditSharedParkingIds(trip.sharedParkingTripIds);
@@ -201,22 +218,24 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   }
 
   function handleTripEditCancel() {
-    setEditModalTrip(null);
+    setEditingTripId(null);
   }
 
   function handleTripEditSave() {
-    if (!editModalTrip) return;
+    if (!editingTripId) return;
     setEditStatus("saving");
     startEditTransition(async () => {
       try {
-        await updateTrip(editModalTrip.id, {
+        await updateTrip(editingTripId, {
           gasCost: parseFloat(editGasCost) || 0,
           parkingCost: parseFloat(editParkingCost) || 0,
           sharedParkingTripIds: editSharedParkingIds,
         });
-        setEditModalTrip(null);
-      } catch { /* ignore */ }
-      setEditStatus("idle");
+        // Don't exit edit mode — wait for revalidation
+        setPendingEditTripId(editingTripId);
+      } catch {
+        setEditStatus("idle");
+      }
     });
   }
 
@@ -590,13 +609,15 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                 const isQrOpen = expandedQrId === trip.id;
                 const isSwiped = swipedTripId === trip.id;
                 const isDeleting = deletingTripId === trip.id;
+                const isEditing = editingTripId === trip.id;
+                const isTripLoading = isEditing && editStatus === "saving";
                 const tripTotal = trip.gasCost + trip.parkingCost;
 
                 return (
                   <div
                     key={trip.id}
                     data-swipe-id={trip.id}
-                    className={`relative overflow-hidden rounded-2xl bg-secondary animate-fade-in transition-opacity ${isDeleting ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
+                    className={`relative overflow-hidden rounded-2xl bg-secondary animate-fade-in transition-opacity ${isDeleting || isTripLoading ? "animate-pulse opacity-50 pointer-events-none" : ""}`}
                   >
                     {/* Action buttons behind the card */}
                     <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-evenly">
@@ -622,46 +643,186 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                         transform: isSwiped ? `translateX(-${ACTION_WIDTH}px)` : "translateX(0)",
                         transition: "transform 0.2s ease-out",
                       }}
-                      onTouchStart={(e) => handleSwipeTouchStart(e, trip.id)}
-                      onTouchMove={(e) => {
+                      onTouchStart={!isEditing ? (e) => handleSwipeTouchStart(e, trip.id) : undefined}
+                      onTouchMove={!isEditing ? (e) => {
                         const cardEl = e.currentTarget as HTMLDivElement;
                         handleSwipeTouchMove(e, trip.id, cardEl);
-                      }}
-                      onTouchEnd={(e) => {
+                      } : undefined}
+                      onTouchEnd={!isEditing ? (e) => {
                         const cardEl = e.currentTarget as HTMLDivElement;
                         handleSwipeTouchEnd(e, trip.id, cardEl);
-                      }}
+                      } : undefined}
                     >
-                      {/* Trip header — clickable to toggle QR */}
-                      <button
-                        type="button"
-                        onClick={() => { if (!swipedTripId) setExpandedQrId(isQrOpen ? null : trip.id); }}
-                        className="flex w-full items-center gap-3 p-4 text-left"
-                      >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                          <Bus className="h-5 w-5 text-primary" />
+                      {isEditing ? (
+                        /* Inline edit form */
+                        <div className="p-4 space-y-3 animate-fade-in">
+                          <h3 className="text-sm font-semibold text-foreground">
+                            {t.editTrip}
+                          </h3>
+                          <form onSubmit={(e) => { e.preventDefault(); handleTripEditSave(); }} className="space-y-3">
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                <Bus className="mr-1 inline h-3 w-3" /> {t.car}
+                              </label>
+                              <div className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-medium text-muted-foreground">
+                                {trip.carName}
+                                {trip.licensePlate && ` (${trip.licensePlate})`}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                  <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost} <span className="text-debt">*</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  required
+                                  value={editGasCost}
+                                  onChange={(e) => setEditGasCost(e.target.value)}
+                                  placeholder="0"
+                                  className={inputClass}
+                                  autoFocus
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                  <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost}
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={editParkingCost}
+                                  onChange={(e) => setEditParkingCost(e.target.value)}
+                                  placeholder="0"
+                                  className={inputClass}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Share Parking with Other Trips */}
+                            {(parseFloat(editParkingCost) || 0) > 0 && (() => {
+                              const otherTrips = allTrips.filter((tr) => tr.id !== trip.id);
+                              if (otherTrips.length === 0) return null;
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <Link2 className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      {t.shareParkingWithTrips}
+                                    </span>
+                                  </div>
+                                  <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-border bg-accent/30 p-2.5">
+                                    {otherTrips.map((tr) => {
+                                      const isSelected = editSharedParkingIds.includes(tr.id);
+                                      return (
+                                        <button
+                                          key={tr.id}
+                                          type="button"
+                                          onClick={() => {
+                                            setEditSharedParkingIds((prev) =>
+                                              isSelected ? prev.filter((id) => id !== tr.id) : [...prev, tr.id]
+                                            );
+                                          }}
+                                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                                            isSelected
+                                              ? "bg-primary/10 text-foreground"
+                                              : "text-muted-foreground hover:bg-accent"
+                                          }`}
+                                        >
+                                          <div
+                                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                                              isSelected
+                                                ? "border-primary bg-primary text-primary-foreground"
+                                                : "border-input bg-background"
+                                            }`}
+                                          >
+                                            {isSelected && <Check className="h-3 w-3" />}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-medium text-foreground truncate">{tr.carName}</span>
+                                              <span className="text-[10px] font-medium text-primary whitespace-nowrap">
+                                                {t.tripNumber} #{tr.tripNumber}
+                                              </span>
+                                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                                {tr.date}
+                                              </span>
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                              {tr.headcount} {t.people} · {t.gas} ฿{tr.gasCost.toFixed(2)}
+                                              {tr.parkingCost > 0 && ` · ${t.parking} ฿${tr.parkingCost.toFixed(2)}`}
+                                            </div>
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
+                            {((parseFloat(editGasCost) || 0) + (parseFloat(editParkingCost) || 0)) > 0 && (
+                              <div className="rounded-lg bg-accent/50 p-2 text-xs text-muted-foreground">
+                                {t.total}: <strong className="text-foreground">฿{((parseFloat(editGasCost) || 0) + (parseFloat(editParkingCost) || 0)).toFixed(2)}</strong>
+                              </div>
+                            )}
+
+                            <div className="flex gap-2">
+                              <button
+                                type="submit"
+                                disabled={editStatus === "saving"}
+                                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+                              >
+                                <Check className="h-4 w-4" />
+                                {t.save}
+                                {editStatus === "saving" && "..."}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleTripEditCancel}
+                                className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent"
+                              >
+                                {t.cancel}
+                              </button>
+                            </div>
+                          </form>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-foreground truncate">{trip.carName}</span>
-                            {trip.licensePlate && <span className="text-xs font-normal text-muted-foreground">({trip.licensePlate})</span>}
-                            <span className="text-[10px] font-medium text-primary whitespace-nowrap">
-                              {t.tripNumber} #{trip.tripNumber}
-                            </span>
+                      ) : (
+                        /* Trip header — clickable to toggle QR */
+                        <button
+                          type="button"
+                          onClick={() => { if (!swipedTripId) setExpandedQrId(isQrOpen ? null : trip.id); }}
+                          className="flex w-full items-center gap-3 p-4 text-left"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                            <Bus className="h-5 w-5 text-primary" />
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {trip.date} · {trip.headcount} {t.people} · ฿{tripTotal.toFixed(2)}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-foreground truncate">{trip.carName}</span>
+                              {trip.licensePlate && <span className="text-xs font-normal text-muted-foreground">({trip.licensePlate})</span>}
+                              <span className="text-[10px] font-medium text-primary whitespace-nowrap">
+                                {t.tripNumber} #{trip.tripNumber}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {trip.date} · {trip.headcount} {t.people} · ฿{tripTotal.toFixed(2)}
+                            </div>
                           </div>
-                        </div>
-                        {isQrOpen ? (
-                          <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        )}
-                      </button>
+                          {isQrOpen ? (
+                            <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          )}
+                        </button>
+                      )}
 
                       {/* QR Code content */}
-                      {isQrOpen && (
+                      {isQrOpen && !isEditing && (
                         <div className="px-4 pb-5 text-center animate-fade-in">
                           <div className="mx-auto rounded-xl border-2 border-dashed border-border bg-muted p-4">
                             <QRCodeSVG
@@ -722,157 +883,6 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Edit Trip Modal */}
-      {editModalTrip && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) handleTripEditCancel(); }}
-        >
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-lg animate-scale-in">
-            <div className="border-b border-border px-6 py-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                {t.editTrip}
-              </h3>
-            </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); handleTripEditSave(); }}>
-              <div className="space-y-3 px-6 py-4">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    <Bus className="mr-1 inline h-3 w-3" /> {t.car}
-                  </label>
-                  <div className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-medium text-muted-foreground">
-                    {editModalTrip.carName}
-                    {editModalTrip.licensePlate && ` (${editModalTrip.licensePlate})`}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      <Fuel className="mr-1 inline h-3 w-3" /> {t.gasCost} <span className="text-debt">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      required
-                      value={editGasCost}
-                      onChange={(e) => setEditGasCost(e.target.value)}
-                      placeholder="0"
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={editParkingCost}
-                      onChange={(e) => setEditParkingCost(e.target.value)}
-                      placeholder="0"
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                {/* Share Parking with Other Trips */}
-                {(parseFloat(editParkingCost) || 0) > 0 && (() => {
-                  const otherTrips = allTrips.filter((tr) => tr.id !== editModalTrip.id);
-                  if (otherTrips.length === 0) return null;
-                  return (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Link2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {t.shareParkingWithTrips}
-                        </span>
-                      </div>
-                      <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-border bg-accent/30 p-2.5">
-                        {otherTrips.map((tr) => {
-                          const isSelected = editSharedParkingIds.includes(tr.id);
-                          return (
-                            <button
-                              key={tr.id}
-                              type="button"
-                              onClick={() => {
-                                setEditSharedParkingIds((prev) =>
-                                  isSelected ? prev.filter((id) => id !== tr.id) : [...prev, tr.id]
-                                );
-                              }}
-                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
-                                isSelected
-                                  ? "bg-primary/10 text-foreground"
-                                  : "text-muted-foreground hover:bg-accent"
-                              }`}
-                            >
-                              <div
-                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                                  isSelected
-                                    ? "border-primary bg-primary text-primary-foreground"
-                                    : "border-input bg-background"
-                                }`}
-                              >
-                                {isSelected && <Check className="h-3 w-3" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-medium text-foreground truncate">{tr.carName}</span>
-                                  <span className="text-[10px] font-medium text-primary whitespace-nowrap">
-                                    {t.tripNumber} #{tr.tripNumber}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    {tr.date}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {tr.headcount} {t.people} · {t.gas} ฿{tr.gasCost.toFixed(2)}
-                                  {tr.parkingCost > 0 && ` · ${t.parking} ฿${tr.parkingCost.toFixed(2)}`}
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {((parseFloat(editGasCost) || 0) + (parseFloat(editParkingCost) || 0)) > 0 && (
-                  <div className="rounded-lg bg-accent/50 p-2 text-xs text-muted-foreground">
-                    {t.total}: <strong className="text-foreground">฿{((parseFloat(editGasCost) || 0) + (parseFloat(editParkingCost) || 0)).toFixed(2)}</strong>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2 border-t border-border px-6 py-4">
-                <button
-                  type="submit"
-                  disabled={editStatus === "saving"}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
-                >
-                  {editStatus === "saving" ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> {t.editing}</>
-                  ) : (
-                    <><Pencil className="h-4 w-4" /> {t.edit}</>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleTripEditCancel}
-                  className="flex-1 rounded-xl border border-border py-3 text-sm font-medium text-muted-foreground transition hover:bg-accent"
-                >
-                  {t.cancel}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
 
