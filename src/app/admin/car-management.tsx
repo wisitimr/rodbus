@@ -20,8 +20,11 @@ export default function CarManagement({ cars }: CarManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
-  const [defaultGas, setDefaultGas] = useState("0");
+  const [defaultGas, setDefaultGas] = useState("");
   const [status, setStatus] = useState<"idle" | "error">("idle");
+
+  // Track previous car count to detect newly added car
+  const prevCarsLengthRef = useRef(cars.length);
 
   // Clear add form when cars prop updates (new car appeared)
   useEffect(() => {
@@ -30,9 +33,14 @@ export default function CarManagement({ cars }: CarManagementProps) {
       setShowAddForm(false);
       setName("");
       setLicensePlate("");
-      setDefaultGas("0");
+      setDefaultGas("");
       setStatus("idle");
+      // Auto-expand the newly created car (last in list)
+      if (cars.length > prevCarsLengthRef.current) {
+        setExpandedQrId(cars[cars.length - 1]?.id ?? null);
+      }
     }
+    prevCarsLengthRef.current = cars.length;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cars.length]);
 
@@ -43,7 +51,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
   const [editGasCost, setEditGasCost] = useState("");
 
   // QR accordion — only one open at a time
-  const [expandedQrId, setExpandedQrId] = useState<string | null>(cars[0]?.id ?? null);
+  const [expandedQrId, setExpandedQrId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Delete confirmation state
@@ -132,7 +140,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
     setEditingCarId(car.id);
     setEditName(car.name);
     setEditLicensePlate(car.licensePlate ?? "");
-    setEditGasCost(car.defaultGasCost.toString());
+    setEditGasCost(car.defaultGasCost ? car.defaultGasCost.toString() : "");
   }
 
   function cancelEdit() {
@@ -218,6 +226,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                 min="0"
                 value={defaultGas}
                 onChange={(e) => setDefaultGas(e.target.value)}
+                placeholder="0"
                 className={inputClass}
               />
             </div>
@@ -332,6 +341,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                         min="0"
                         value={editGasCost}
                         onChange={(e) => setEditGasCost(e.target.value)}
+                        placeholder="0"
                         className={inputClass}
                       />
                     </div>
