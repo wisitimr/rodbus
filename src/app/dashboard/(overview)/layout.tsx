@@ -32,7 +32,7 @@ export default async function OverviewLayout({
           <div className="flex items-center gap-2.5">
             <RodBusLogo className="h-9 w-9" />
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-baseline gap-1.5">
                 <RodBusWordmark className="text-base" />
                 {activeGroupName && (
                   <span className="text-sm font-medium text-muted-foreground">
