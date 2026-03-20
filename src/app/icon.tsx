@@ -21,7 +21,7 @@ export default function Icon() {
         {/* Door */}
         <rect x="24" y="12" width="5" height="10" rx="1.5" fill="white" opacity="0.7" />
         {/* Skirt (red lower body panel) */}
-        <rect x="5" y="23" width="26" height="3" rx="1" fill="#ef4444" />
+        <rect x="3" y="23" width="30" height="3" rx="1" fill="#ef4444" />
         {/* Headlight */}
         <rect x="5" y="20" width="3" height="2" rx="1" fill="#fef08a" />
         {/* Wheels */}
