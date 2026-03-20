@@ -155,3 +155,13 @@ body {
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* Extra bottom spacing only in standalone (PWA) mode */
+@media (display-mode: standalone) {
+  .standalone-pb-extra {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+  .safe-area-bottom .standalone-nav-spacing {
+    padding-bottom: 0.5rem;
+  }
+}
