@@ -28,7 +28,7 @@ export default function RodBusLogo({ className }: { className?: string }) {
 
 export function RodBusWordmark({ className }: { className?: string }) {
   return (
-    <span className={`font-bold uppercase tracking-wide ${className ?? ""}`}>
+    <span className={`font-bokthang font-bold uppercase tracking-wide ${className ?? ""}`}>
       RODBUS
     </span>
   );
