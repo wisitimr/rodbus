@@ -8,6 +8,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "RodBus NFC Tracker",
   description: "Track rides via NFC and split costs fairly",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RodBus",
+  },
 };
 
 export const viewport: Viewport = {
