@@ -32,7 +32,7 @@ export default function AppleIcon() {
           {/* Door */}
           <rect x="24" y="12" width="5" height="10" rx="1.5" fill="white" opacity="0.7" />
           {/* Skirt (red lower body panel) */}
-          <rect x="4" y="23" width="28" height="3" fill="#ef4444" />
+          <path d="M4,23 H32 V24 A2,2,0,0,1,30,26 H6 A2,2,0,0,1,4,24 Z" fill="#ef4444" />
           {/* Headlight */}
           <rect x="5" y="20" width="3" height="2" rx="1" fill="#fef08a" />
           {/* Wheels */}
