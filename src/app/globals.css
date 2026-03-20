@@ -161,7 +161,8 @@ body {
   .standalone-pb-extra {
     padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
   }
-  .safe-area-bottom .standalone-nav-spacing {
-    padding-bottom: 0.5rem;
+  .standalone-nav-spacing {
+    padding-bottom: 0.75rem;
+    padding-top: 0.5rem;
   }
 }
