@@ -30,7 +30,9 @@ export default async function OverviewLayout({
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <RodBusLogo className="h-9 w-9" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+              <RodBusLogo className="h-6 w-6" />
+            </div>
             <div>
               <div className="flex items-baseline gap-1.5">
                 <RodBusWordmark className="text-2xl" />
