@@ -25,7 +25,7 @@ export default async function DashboardLayout({
   const isAdmin = role === GroupRole.ADMIN;
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}>
       {children}
       <BottomNav isAdmin={isAdmin} hasCars={carCount > 0} hasTrips={tripCount > 0} />
     </div>
