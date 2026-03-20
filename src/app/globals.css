@@ -151,16 +151,13 @@ body {
 .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(7) { animation-delay: 360ms; }
 
-/* Safe area for mobile bottom nav - only in standalone/PWA mode */
+/* Safe area for mobile bottom nav */
 .safe-area-bottom {
-  padding-bottom: 0px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Extra bottom spacing only in standalone (PWA) mode */
 @media (display-mode: standalone) {
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
   .standalone-pb-extra {
     padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
   }
