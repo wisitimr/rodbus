@@ -25,7 +25,7 @@ export default async function DashboardLayout({
   const isAdmin = role === GroupRole.ADMIN;
 
   return (
-    <div className="min-h-screen pb-24 standalone-pb-extra">
+    <div className="min-h-screen pb-20 standalone-pb-extra">
       {children}
       <BottomNav isAdmin={isAdmin} hasCars={carCount > 0} hasTrips={tripCount > 0} />
     </div>
