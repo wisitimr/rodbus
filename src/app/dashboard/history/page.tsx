@@ -119,16 +119,17 @@ export default async function HistoryPage() {
   }
 
   const trips = recentTrips.map((trip) => {
-    const cdKey = `${trip.carId}-${trip.date.toISOString().split("T")[0]}`;
+    const tripDate = new Date(trip.date);
+    const cdKey = `${trip.carId}-${tripDate.toISOString().split("T")[0]}`;
     const idx = (carDateTripIds.get(cdKey) ?? []).indexOf(trip.id);
     return {
       id: trip.id,
       carId: trip.carId,
       carName: trip.car.name,
       licensePlate: trip.car.licensePlate ?? null,
-      date: formatDateMedium(trip.date, locale as Locale),
-      dateISO: trip.date.toISOString().split("T")[0],
-      time: trip.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+      date: formatDateMedium(tripDate, locale as Locale),
+      dateISO: tripDate.toISOString().split("T")[0],
+      time: new Date(trip.createdAt).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
         hour: "2-digit",
         minute: "2-digit",
         timeZone: "Asia/Bangkok",
@@ -175,7 +176,7 @@ export default async function HistoryPage() {
     totalPaid: d.totalPaid,
     pendingDebt: d.pendingDebt,
     breakdown: d.breakdown.map((b) => ({
-      date: b.date.toISOString().split("T")[0],
+      date: new Date(b.date).toISOString().split("T")[0],
       carId: b.carId,
       carName: b.carName,
       licensePlate: b.licensePlate ?? null,
@@ -193,7 +194,7 @@ export default async function HistoryPage() {
       sharedParking: b.sharedParking ? {
         trips: b.sharedParking.trips.map((d) => ({
           carName: d.carName,
-          date: formatDateMedium(d.date, locale as Locale),
+          date: formatDateMedium(new Date(d.date), locale as Locale),
           parkingCost: d.parkingCost,
           headcount: d.headcount,
           tripNumber: d.tripNumber,
@@ -202,7 +203,7 @@ export default async function HistoryPage() {
         totalParking: b.sharedParking.totalParking,
         parkingHeadcount: b.sharedParking.parkingHeadcount,
       } : null,
-      time: b.createdAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
+      time: new Date(b.createdAt).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", {
         hour: "2-digit",
         minute: "2-digit",
         timeZone: "Asia/Bangkok",
@@ -211,7 +212,8 @@ export default async function HistoryPage() {
   }));
 
   const serializedPayments = allPayments.map((p) => {
-    const cdKey = `${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`;
+    const pTripDate = new Date(p.trip.date);
+    const cdKey = `${p.trip.carId}-${pTripDate.toISOString().split("T")[0]}`;
     const tripIds = carDateTripIds.get(cdKey) ?? [];
     const tripNumber = Math.max(1, tripIds.indexOf(p.tripId) + 1);
     return {
@@ -220,9 +222,9 @@ export default async function HistoryPage() {
       userName: p.user.name,
       carName: p.trip.car.name,
       licensePlate: p.trip.car.licensePlate ?? null,
-      date: formatDateMedium(p.trip.date, locale as Locale),
-      dateISO: p.trip.date.toISOString().split("T")[0],
-      paidAt: formatDateMedium(p.createdAt, locale as Locale),
+      date: formatDateMedium(pTripDate, locale as Locale),
+      dateISO: pTripDate.toISOString().split("T")[0],
+      paidAt: formatDateMedium(new Date(p.createdAt), locale as Locale),
       amount: p.amount,
       note: p.note,
       tripNumber,
