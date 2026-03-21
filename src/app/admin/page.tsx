@@ -1,16 +1,13 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getActiveGroupOrRedirect } from "@/lib/party-group";
+import { unstable_cache } from "next/cache";
 import UserManagement from "./user-management";
 import CarManagement from "./car-management";
 import InviteManagement from "./party-management";
 import SettingsTabs from "./settings-tabs";
 
-export default async function AdminPage() {
-  const user = (await getCurrentUser())!;
-  const userId = user.id;
-  const activeGroupId = await getActiveGroupOrRedirect();
-
+async function fetchAdminData(userId: string, activeGroupId: string) {
   const [groupMembers, myCars, partyGroup] = await Promise.all([
     prisma.partyGroupMember.findMany({
       where: { partyGroupId: activeGroupId },
@@ -27,6 +24,21 @@ export default async function AdminPage() {
       select: { name: true, ownerId: true },
     }),
   ]);
+  return { groupMembers, myCars, partyGroup };
+}
+
+const getCachedAdminData = unstable_cache(
+  fetchAdminData,
+  ["admin-data"],
+  { tags: ["admin"], revalidate: 60 }
+);
+
+export default async function AdminPage() {
+  const user = (await getCurrentUser())!;
+  const userId = user.id;
+  const activeGroupId = await getActiveGroupOrRedirect();
+
+  const { groupMembers, myCars, partyGroup } = await getCachedAdminData(userId, activeGroupId);
 
   const users = groupMembers.map((m) => ({
     memberId: m.id,

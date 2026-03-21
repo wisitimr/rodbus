@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { requireGroupAdmin, requireGroupMembership, setActiveGroupId } from "@/lib/party-group";
 import { GroupRole, MemberStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 
 // ---------------------------------------------------------------------------
 // Group CRUD
@@ -42,7 +42,11 @@ export async function createGroup(name: string) {
   });
 
   await setActiveGroupId(group.id);
-  revalidatePath("/");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
   return group;
 }
 
@@ -57,8 +61,8 @@ export async function updateGroupName(groupId: string, name: string) {
     data: { name: name.trim() },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 // ---------------------------------------------------------------------------
@@ -100,7 +104,7 @@ export async function joinViaGroupId(groupId: string) {
     },
   });
 
-  revalidatePath("/admin");
+  revalidateTag("admin");
   return { status: "pending" as const, groupName: group.name };
 }
 
@@ -117,10 +121,11 @@ export async function approveJoinRequest(memberId: string, groupId: string) {
     data: { status: MemberStatus.ACTIVE },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
-  revalidatePath("/join");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 /** Reject a pending join request (deletes the membership). */
@@ -131,9 +136,11 @@ export async function rejectJoinRequest(memberId: string, groupId: string) {
     where: { id: memberId, partyGroupId: groupId },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 /** Remove an active member from the group (kick). Admins can remove members, but not the party owner. */
@@ -160,9 +167,11 @@ export async function removeGroupMember(memberId: string, groupId: string) {
     where: { id: memberId },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 /** Change a member's role (admin only). Prevents demoting the last admin. */
@@ -207,9 +216,11 @@ export async function setGroupMemberRole(
     data: { role },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
   return {};
 }
 
@@ -249,9 +260,11 @@ export async function transferOwnership(
       : []),
   ]);
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
   return {};
 }
 
@@ -276,7 +289,11 @@ export async function leaveGroup(groupId: string) {
     where: { id: membership.id },
   });
 
-  revalidatePath("/");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 /** Delete a party group and all its data (creator only).
@@ -309,7 +326,11 @@ export async function deleteGroup(groupId: string): Promise<{ remainingGroups: {
     await setActiveGroupId(remainingGroups[0].id);
   }
 
-  revalidatePath("/");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
   return { remainingGroups };
 }
 
@@ -328,5 +349,9 @@ export async function switchActiveGroup(groupId: string) {
   }
 
   await setActiveGroupId(groupId);
-  revalidatePath("/");
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }

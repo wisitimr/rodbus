@@ -6,20 +6,9 @@ import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/
 import HistoryContent from "./history-content";
 import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 
-export default async function HistoryPage() {
-  const user = (await getCurrentUser())!;
-
-  const headersList = await headers();
-  const locale = detectLocale(headersList.get("accept-language"));
-  const t = getTranslations(locale);
-
-  const userId = user.id;
-  const activeGroupId = await getActiveGroupOrRedirect();
-  const role = await getGroupRole(user.id, activeGroupId);
-  const isAdmin = role === GroupRole.ADMIN;
-
-  // Fetch data scoped to 1 year back for summary
+async function fetchHistoryData(userId: string, isAdmin: boolean, activeGroupId: string) {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   oneYearAgo.setDate(1);
@@ -73,6 +62,51 @@ export default async function HistoryPage() {
     if (!carDateTripIds.has(key)) carDateTripIds.set(key, []);
     carDateTripIds.get(key)!.push(t.id);
   }
+
+  // Fetch extra trip orders for payments
+  const paymentTripCarDatePairs = [...new Map(
+    allPayments
+      .filter(p => !carDateTripIds.has(`${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`))
+      .map(p => [`${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`, { carId: p.trip.carId, date: p.trip.date }])
+  ).values()];
+
+  const extraTripOrders = paymentTripCarDatePairs.length > 0
+    ? await prisma.trip.findMany({
+        where: { OR: paymentTripCarDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, carId: true, date: true },
+      })
+    : [];
+
+  for (const t of extraTripOrders) {
+    const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
+    if (!carDateTripIds.has(key)) carDateTripIds.set(key, []);
+    carDateTripIds.get(key)!.push(t.id);
+  }
+
+  return { recentTrips, allDebts, allPayments, carDateTripIds: Object.fromEntries(carDateTripIds) };
+}
+
+const getCachedHistoryData = unstable_cache(
+  fetchHistoryData,
+  ["history-data"],
+  { tags: ["history"], revalidate: 60 }
+);
+
+export default async function HistoryPage() {
+  const user = (await getCurrentUser())!;
+
+  const headersList = await headers();
+  const locale = detectLocale(headersList.get("accept-language"));
+  const t = getTranslations(locale);
+
+  const userId = user.id;
+  const activeGroupId = await getActiveGroupOrRedirect();
+  const role = await getGroupRole(user.id, activeGroupId);
+  const isAdmin = role === GroupRole.ADMIN;
+
+  const { recentTrips, allDebts, allPayments, carDateTripIds: carDateTripIdsObj } = await getCachedHistoryData(userId, isAdmin, activeGroupId);
+  const carDateTripIds = new Map<string, string[]>(Object.entries(carDateTripIdsObj));
 
   // Build shared parking lookup from debt breakdowns (keyed by tripId)
   const sharedParkingByTripId = new Map<string, typeof allDebts[number]["breakdown"][number]["sharedParking"]>();
@@ -175,28 +209,6 @@ export default async function HistoryPage() {
       }),
     })),
   }));
-
-  // Compute trip number for each payment from its linked trip
-  // Fetch trip order data for payment trips not already in carDateTripIds
-  const paymentTripCarDatePairs = [...new Map(
-    allPayments
-      .filter(p => !carDateTripIds.has(`${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`))
-      .map(p => [`${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`, { carId: p.trip.carId, date: p.trip.date }])
-  ).values()];
-
-  const extraTripOrders = paymentTripCarDatePairs.length > 0
-    ? await prisma.trip.findMany({
-        where: { OR: paymentTripCarDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
-        orderBy: { createdAt: "asc" },
-        select: { id: true, carId: true, date: true },
-      })
-    : [];
-
-  for (const t of extraTripOrders) {
-    const key = `${t.carId}-${t.date.toISOString().split("T")[0]}`;
-    if (!carDateTripIds.has(key)) carDateTripIds.set(key, []);
-    carDateTripIds.get(key)!.push(t.id);
-  }
 
   const serializedPayments = allPayments.map((p) => {
     const cdKey = `${p.trip.carId}-${p.trip.date.toISOString().split("T")[0]}`;

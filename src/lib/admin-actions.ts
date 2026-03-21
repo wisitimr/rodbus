@@ -3,7 +3,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireGroupAdmin } from "@/lib/party-group";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { bangkokDateToUTC, todayBangkokUTC } from "@/lib/timezone";
 
 // ---------------------------------------------------------------------------
@@ -32,10 +32,11 @@ export async function createTrip(
     data: { carId, partyGroupId, date: parsedDate, gasCost, parkingCost },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 // ---------------------------------------------------------------------------
@@ -65,10 +66,11 @@ export async function updateCar(
     },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 // ---------------------------------------------------------------------------
@@ -96,10 +98,11 @@ export async function addCar(name: string, licensePlate: string | null, defaultG
     },
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 /** Delete a car and all associated data */
@@ -113,10 +116,11 @@ export async function deleteCar(carId: string) {
 
   await prisma.car.delete({ where: { id: carId } });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 // ---------------------------------------------------------------------------
@@ -168,10 +172,11 @@ export async function recordPayment(
     })),
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }
 
 /** Clear the pending balance for a user. If tripIds provided, settle only those trips. */
@@ -202,8 +207,9 @@ export async function markAsSettled(userId: string, carId: string, partyGroupId:
     })),
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("admin");
+  revalidateTag("nav");
 }

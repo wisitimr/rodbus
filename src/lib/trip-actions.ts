@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 /** Delete a check-in. User can delete own check-ins; group admin can delete any. */
 export async function deleteCheckIn(checkInId: string) {
   const user = await getCurrentUser();
@@ -24,10 +24,10 @@ export async function deleteCheckIn(checkInId: string) {
 
   await prisma.checkIn.delete({ where: { id: checkInId } });
 
-  revalidatePath("/dashboard/history");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("nav");
 }
 
 /** Update a trip's gas, parking costs, and shared parking links. Only the car owner can edit. */
@@ -121,10 +121,10 @@ export async function updateTrip(
     data: updateData,
   });
 
-  revalidatePath("/dashboard/history");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("nav");
 }
 
 /** Delete a trip. Only the car owner can delete. */
@@ -145,8 +145,8 @@ export async function deleteTrip(tripId: string) {
   // Payments and CheckIns cascade-deleted via DB ON DELETE CASCADE
   await prisma.trip.delete({ where: { id: tripId } });
 
-  revalidatePath("/dashboard/history");
-  revalidatePath("/dashboard");
-  revalidatePath("/manage");
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("nav");
 }
