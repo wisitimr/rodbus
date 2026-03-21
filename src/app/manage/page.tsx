@@ -71,8 +71,8 @@ export default async function ManagePage() {
           tripId: b.tripId,
           carName: b.carName,
           licensePlate: b.licensePlate,
-          date: formatDateMedium(b.date, locale as Locale),
-          dateISO: b.date.toISOString().split("T")[0],
+          date: formatDateMedium(new Date(b.date), locale as Locale),
+          dateISO: new Date(b.date).toISOString().split("T")[0],
           share: b.share,
           gasShare: b.gasShare,
           gasCost: b.gasCost,
@@ -87,7 +87,7 @@ export default async function ManagePage() {
           sharedParking: b.sharedParking ? {
             trips: b.sharedParking.trips.map((d) => ({
               carName: d.carName,
-              date: formatDateMedium(d.date, locale as Locale),
+              date: formatDateMedium(new Date(d.date), locale as Locale),
               parkingCost: d.parkingCost,
               headcount: d.headcount,
               tripNumber: d.tripNumber,
@@ -104,7 +104,7 @@ export default async function ManagePage() {
   // Compute trip numbers per car+date
   const carDateGroups = new Map<string, string[]>();
   for (const trip of recentTripsRaw) {
-    const key = `${trip.carId}-${trip.date.toISOString()}`;
+    const key = `${trip.carId}-${new Date(trip.date).toISOString()}`;
     if (!carDateGroups.has(key)) carDateGroups.set(key, []);
     carDateGroups.get(key)!.push(trip.id);
   }
@@ -120,7 +120,7 @@ export default async function ManagePage() {
       id: trip.id,
       carName: trip.car.name,
       licensePlate: trip.car.licensePlate,
-      date: formatDateMedium(trip.date, locale),
+      date: formatDateMedium(new Date(trip.date), locale),
       gasCost: trip.gasCost,
       parkingCost: trip.parkingCost,
       headcount: trip.checkIns.length + 1,
@@ -132,7 +132,7 @@ export default async function ManagePage() {
     carId: trip.carId,
     carName: trip.car.name,
     licensePlate: trip.car.licensePlate,
-    date: formatDateMedium(trip.date, locale),
+    date: formatDateMedium(new Date(trip.date), locale),
     gasCost: trip.gasCost,
     parkingCost: trip.parkingCost,
     headcount: trip.checkIns.length + 1,
