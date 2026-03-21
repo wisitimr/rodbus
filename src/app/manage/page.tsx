@@ -6,17 +6,9 @@ import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/
 import ManageContent from "./manage-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 import { getActiveGroupOrRedirect } from "@/lib/party-group";
+import { unstable_cache } from "next/cache";
 
-export default async function ManagePage() {
-  const user = (await getCurrentUser())!;
-
-  const headersList = await headers();
-  const locale = detectLocale(headersList.get("accept-language"));
-  const t = getTranslations(locale);
-
-  const userId = user.id;
-  const activeGroupId = await getActiveGroupOrRedirect();
-
+async function fetchManageData(userId: string, activeGroupId: string) {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
@@ -40,6 +32,26 @@ export default async function ManagePage() {
       orderBy: { createdAt: "asc" },
     }),
   ]);
+  return { allCars, debts, recentTripsRaw };
+}
+
+const getCachedManageData = unstable_cache(
+  fetchManageData,
+  ["manage-data"],
+  { tags: ["manage"], revalidate: 60 }
+);
+
+export default async function ManagePage() {
+  const user = (await getCurrentUser())!;
+
+  const headersList = await headers();
+  const locale = detectLocale(headersList.get("accept-language"));
+  const t = getTranslations(locale);
+
+  const userId = user.id;
+  const activeGroupId = await getActiveGroupOrRedirect();
+
+  const { allCars, debts, recentTripsRaw } = await getCachedManageData(userId, activeGroupId);
 
   const carIds = allCars.map((c) => c.id);
   const ownedCarId = allCars[0]?.id ?? "";

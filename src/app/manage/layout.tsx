@@ -3,10 +3,26 @@ import { getCurrentUser } from "@/lib/auth";
 import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import { ClipboardList } from "lucide-react";
 import BottomNav from "@/app/dashboard/bottom-nav";
+
+async function fetchNavData(userId: string, groupId: string) {
+  const [role, carCount, tripCount] = await Promise.all([
+    getGroupRole(userId, groupId),
+    prisma.car.count({ where: { ownerId: userId } }),
+    prisma.trip.count({ where: { partyGroupId: groupId }, take: 1 }),
+  ]);
+  return { role, carCount, tripCount };
+}
+
+const getCachedNavData = unstable_cache(
+  fetchNavData,
+  ["nav-data"],
+  { tags: ["nav"], revalidate: 60 }
+);
 
 export default async function ManageLayout({
   children,
@@ -17,11 +33,7 @@ export default async function ManageLayout({
   if (!user) redirect("/sign-in");
 
   const activeGroupId = await getActiveGroupOrRedirect();
-  const [role, carCount, tripCount] = await Promise.all([
-    getGroupRole(user.id, activeGroupId),
-    prisma.car.count({ where: { ownerId: user.id } }),
-    prisma.trip.count({ where: { partyGroupId: activeGroupId }, take: 1 }),
-  ]);
+  const { role, carCount, tripCount } = await getCachedNavData(user.id, activeGroupId);
   if (role !== GroupRole.ADMIN) redirect("/dashboard");
 
   const headersList = await headers();

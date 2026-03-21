@@ -136,5 +136,8 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("nav");
   return NextResponse.json(trip);
 }
