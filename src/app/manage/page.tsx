@@ -32,7 +32,21 @@ async function fetchManageData(userId: string, activeGroupId: string) {
       orderBy: { createdAt: "asc" },
     }),
   ]);
-  return { allCars, debts, recentTripsRaw };
+
+  // Fetch payments only for trips from this owner's cars (not all group trips)
+  const myTripIds = recentTripsRaw.map((t) => t.id);
+  const myCarPayments = myTripIds.length > 0
+    ? await prisma.payment.findMany({
+        where: { tripId: { in: myTripIds } },
+        select: { userId: true, amount: true },
+      })
+    : [];
+  const myCarPaidPerUser: Record<string, number> = {};
+  for (const p of myCarPayments) {
+    myCarPaidPerUser[p.userId] = (myCarPaidPerUser[p.userId] ?? 0) + p.amount;
+  }
+
+  return { allCars, debts, recentTripsRaw, myCarPaidPerUser };
 }
 
 const getCachedManageData = unstable_cache(
@@ -51,7 +65,7 @@ export default async function ManagePage() {
   const userId = user.id;
   const activeGroupId = await getActiveGroupOrRedirect();
 
-  const { allCars, debts, recentTripsRaw } = await getCachedManageData(userId, activeGroupId);
+  const { allCars, debts, recentTripsRaw, myCarPaidPerUser } = await getCachedManageData(userId, activeGroupId);
 
   const carIds = allCars.map((c) => c.id);
   const ownedCarId = allCars[0]?.id ?? "";
@@ -60,13 +74,16 @@ export default async function ManagePage() {
     .map((d) => {
       const myCarBreakdown = d.breakdown.filter((b) => carIds.includes(b.carId));
       const myCarDebt = Math.round(myCarBreakdown.reduce((s, b) => s + b.share, 0) * 100) / 100;
+      // Use car-specific payments instead of global totalPaid to avoid
+      // payments for other owners' trips incorrectly offsetting this owner's debt
+      const myCarPaid = Math.round((myCarPaidPerUser[d.userId] ?? 0) * 100) / 100;
       return {
         userId: d.userId,
         userName: d.userName,
         userImage: d.userImage,
-        pendingDebt: Math.round((myCarDebt - d.totalPaid) * 100) / 100,
+        pendingDebt: Math.round((myCarDebt - myCarPaid) * 100) / 100,
         totalDebt: myCarDebt,
-        totalPaid: d.totalPaid,
+        totalPaid: myCarPaid,
         breakdown: myCarBreakdown.map((b) => ({
           tripId: b.tripId,
           carName: b.carName,
