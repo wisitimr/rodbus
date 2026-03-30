@@ -103,7 +103,7 @@ export async function calculateDebts(
   const debtMap = new Map<string, UserDebt>();
 
   for (const trip of trips) {
-    if (trip.gasCost === 0 && trip.parkingCost === 0) continue;
+    if (trip.gasCost === 0 && trip.parkingCost === 0 && trip.sharedParkingTripIds.length === 0) continue;
 
     // Find check-ins linked to this Trip (or legacy match by carId+date)
     const linkedCheckIns = allCheckIns.filter(
@@ -405,7 +405,7 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
   const dateShares: { date: Date; amount: number; tripId: string }[] = [];
 
   for (const trip of tripsToProcess) {
-    if (trip.gasCost === 0 && trip.parkingCost === 0) continue;
+    if (trip.gasCost === 0 && trip.parkingCost === 0 && trip.sharedParkingTripIds.length === 0) continue;
 
     // Skip if user is the car owner
     if (userId === trip.car.ownerId) continue;
