@@ -244,6 +244,7 @@ export default async function HistoryPage() {
           trips: t.trips,
           payments: t.payments,
           summary: t.summary,
+          carSummary: t.carSummary,
           day: t.day,
           month: t.month,
           year: t.year,

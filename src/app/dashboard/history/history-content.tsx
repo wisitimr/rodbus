@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Bus, Crown, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check, Users, X } from "lucide-react";
+import { Bus, Car, Crown, Clock, CreditCard, BarChart3, ChevronDown, ChevronUp, Fuel, ParkingCircle, Loader2, CircleCheck, CircleAlert, Link2, Check, Users, X } from "lucide-react";
 import { deleteCheckIn } from "@/lib/trip-actions";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 import ConfirmModal from "@/components/confirm-modal";
@@ -90,6 +90,16 @@ interface GroupedPeriod {
   entries: { userId: string; userName: string | null; userImage: string | null; totalDebt: number; totalPaid: number; pendingDebt: number; gasTotal: number; parkingTotal: number }[];
 }
 
+interface CarPeriodSummary {
+  carId: string;
+  carName: string;
+  licensePlate: string | null;
+  tripCount: number;
+  totalGasCost: number;
+  totalParkingCost: number;
+  totalCost: number;
+}
+
 interface HistoryContentProps {
   checkIns: Trip[];
   allDebts: DebtWithBreakdown[];
@@ -101,6 +111,7 @@ interface HistoryContentProps {
     trips: string;
     payments: string;
     summary: string;
+    carSummary?: string;
     day: string;
     month: string;
     year: string;
@@ -348,6 +359,7 @@ function SummaryCard({
   locale,
   t,
   allDebts,
+  carSummaries,
 }: {
   group: GroupedPeriod;
   period: SummaryPeriod;
@@ -363,6 +375,7 @@ function SummaryCard({
   t: HistoryContentProps["t"];
   allDebts?: DebtWithBreakdown[];
   isAdmin?: boolean;
+  carSummaries?: CarPeriodSummary[];
 }) {
   const totalDebt = group.entries.reduce((sum, e) => sum + e.totalDebt, 0);
   const totalPaid = group.entries.reduce((sum, e) => sum + e.totalPaid, 0);
@@ -429,6 +442,44 @@ function SummaryCard({
       {/* Expanded content */}
       {isExpanded && (
         <div className="mt-3 space-y-2 animate-fade-in">
+          {/* Car Summary Section */}
+          {carSummaries && carSummaries.length > 0 && (
+            <div className="rounded-xl border border-border bg-accent/20 p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Car className="h-3.5 w-3.5" />
+                {t.carSummary ?? "By Car"}
+              </div>
+              {carSummaries.map((car) => (
+                <div key={car.carId} className="flex items-center justify-between gap-2 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-medium text-foreground">{car.carName}</span>
+                    {car.licensePlate && (
+                      <span className="ml-1 text-xs text-muted-foreground">({car.licensePlate})</span>
+                    )}
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      {car.tripCount} {t.trip}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2 text-xs">
+                    {car.totalGasCost > 0 && (
+                      <span className="flex items-center gap-0.5 text-muted-foreground">
+                        <Fuel className="h-3 w-3" />
+                        ฿{car.totalGasCost.toFixed(2)}
+                      </span>
+                    )}
+                    {car.totalParkingCost > 0 && (
+                      <span className="flex items-center gap-0.5 text-muted-foreground">
+                        <ParkingCircle className="h-3 w-3" />
+                        ฿{car.totalParkingCost.toFixed(2)}
+                      </span>
+                    )}
+                    <span className="font-bold text-foreground">฿{car.totalCost.toFixed(2)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {group.entries.length === 1 && !isAdmin ? (
             /* Single user: show trip entries directly without user header */
             (userEntriesMap.get(group.entries[0].userId) ?? []).map((entry) => {
@@ -727,6 +778,75 @@ function groupByPeriod(
   return groups;
 }
 
+function groupCarsByPeriod(
+  allDebts: DebtWithBreakdown[],
+  period: SummaryPeriod
+): Map<string, CarPeriodSummary[]> {
+  function getKey(isoDate: string): string {
+    if (period === "day") return isoDate;
+    if (period === "month") return isoDate.slice(0, 7);
+    return isoDate.slice(0, 4);
+  }
+
+  const periodCarMap = new Map<string, Map<string, {
+    carName: string;
+    licensePlate: string | null;
+    tripCount: number;
+    totalGasCost: number;
+    totalParkingCost: number;
+    seenTrips: Set<string>;
+  }>>();
+
+  for (const debt of allDebts) {
+    for (const b of debt.breakdown) {
+      const periodKey = getKey(b.date);
+      const tripKey = `${b.carId}-${b.date}-${b.tripNumber}`;
+
+      if (!periodCarMap.has(periodKey)) periodCarMap.set(periodKey, new Map());
+      const carMap = periodCarMap.get(periodKey)!;
+
+      if (!carMap.has(b.carId)) {
+        carMap.set(b.carId, {
+          carName: b.carName,
+          licensePlate: b.licensePlate,
+          tripCount: 0,
+          totalGasCost: 0,
+          totalParkingCost: 0,
+          seenTrips: new Set(),
+        });
+      }
+
+      const acc = carMap.get(b.carId)!;
+      if (!acc.seenTrips.has(tripKey)) {
+        acc.seenTrips.add(tripKey);
+        acc.tripCount++;
+        acc.totalGasCost += b.gasCost;
+        acc.totalParkingCost += b.parkingCost;
+      }
+    }
+  }
+
+  const result = new Map<string, CarPeriodSummary[]>();
+  for (const [periodKey, carMap] of periodCarMap) {
+    const summaries: CarPeriodSummary[] = [];
+    for (const [carId, acc] of carMap) {
+      summaries.push({
+        carId,
+        carName: acc.carName,
+        licensePlate: acc.licensePlate,
+        tripCount: acc.tripCount,
+        totalGasCost: Math.round(acc.totalGasCost * 100) / 100,
+        totalParkingCost: Math.round(acc.totalParkingCost * 100) / 100,
+        totalCost: Math.round((acc.totalGasCost + acc.totalParkingCost) * 100) / 100,
+      });
+    }
+    summaries.sort((a, b) => b.totalCost - a.totalCost);
+    result.set(periodKey, summaries);
+  }
+
+  return result;
+}
+
 export default function HistoryContent({
   checkIns: trips,
   allDebts,
@@ -980,6 +1100,11 @@ export default function HistoryContent({
       .filter((g) => g.entries.length > 0);
   }, [allDebts, allPayments, summaryPeriod, locale, currentUserId, isAdmin, onlyMe]);
 
+  const carSummaryByPeriod = useMemo(() => {
+    const debtsToUse = isAdmin && !onlyMe ? allDebts : allDebts.filter((d) => d.userId === currentUserId);
+    return groupCarsByPeriod(debtsToUse, summaryPeriod);
+  }, [allDebts, summaryPeriod, currentUserId, isAdmin, onlyMe]);
+
   const SUMMARY_PAGE_SIZE = 3;
   const [summaryVisibleCount, setSummaryVisibleCount] = useState(SUMMARY_PAGE_SIZE);
   // Reset visible count when summaryGroups changes
@@ -1212,6 +1337,7 @@ export default function HistoryContent({
                   t={t}
                   allDebts={isAdmin && !onlyMe ? allDebts : allDebts.filter((d) => d.userId === currentUserId)}
                   isAdmin={isAdmin && !onlyMe}
+                  carSummaries={carSummaryByPeriod.get(group.key) ?? []}
                 />
               ))}
               {hasSummaryMore && (
