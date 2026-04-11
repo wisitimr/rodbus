@@ -3,7 +3,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getGroupRole } from "@/lib/party-group";
-import { GroupRole } from "@prisma/client";
+import { GroupRole, MemberStatus } from "@prisma/client";
 import { revalidateTag } from "next/cache";
 /** Delete a check-in. User can delete own check-ins; group admin can delete any. */
 export async function deleteCheckIn(checkInId: string) {
@@ -144,6 +144,45 @@ export async function deleteTrip(tripId: string) {
 
   // Payments and CheckIns cascade-deleted via DB ON DELETE CASCADE
   await prisma.trip.delete({ where: { id: tripId } });
+
+  revalidateTag("dashboard");
+  revalidateTag("history");
+  revalidateTag("manage");
+  revalidateTag("nav");
+}
+
+/** Add a passenger (check-in) to a trip. Only the car owner can add passengers. */
+export async function addCheckIn(tripId: string, userId: string) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    include: { car: { select: { ownerId: true } } },
+  });
+  if (!trip) throw new Error("Trip not found");
+
+  // Only the car owner can manually add passengers
+  if (trip.car.ownerId !== user.id) throw new Error("Forbidden");
+
+  // Owner cannot be added as a passenger
+  if (userId === trip.car.ownerId) throw new Error("Owner cannot check in");
+
+  // Verify target user is an active group member
+  const membership = await prisma.partyGroupMember.findUnique({
+    where: { userId_partyGroupId: { userId, partyGroupId: trip.partyGroupId } },
+  });
+  if (!membership || membership.status !== MemberStatus.ACTIVE) {
+    throw new Error("User is not an active group member");
+  }
+
+  // Prevent duplicate check-in
+  const existing = await prisma.checkIn.findFirst({
+    where: { userId, tripId },
+  });
+  if (existing) throw new Error("Already checked in");
+
+  await prisma.checkIn.create({ data: { userId, tripId } });
 
   revalidateTag("dashboard");
   revalidateTag("history");

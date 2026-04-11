@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp, Link2, Check, Loader2, Bus, Pencil, Trash2, Copy } from "lucide-react";
+import { Plus, Wallet, Fuel, ParkingCircle, Car, CheckCircle2, ChevronDown, ChevronUp, Link2, Check, Loader2, Bus, Pencil, Trash2, Copy, CalendarDays, UserPlus } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { markAsSettled } from "@/lib/admin-actions";
-import { updateTrip, deleteTrip } from "@/lib/trip-actions";
+import { updateTrip, deleteTrip, addCheckIn } from "@/lib/trip-actions";
 import { useT } from "@/lib/i18n-context";
 import TripBreakdownCard from "@/components/trip-breakdown-card";
 import ConfirmModal from "@/components/confirm-modal";
@@ -70,6 +70,7 @@ interface TripListItem {
   headcount: number;
   tripNumber: number;
   sharedParkingTripIds: string[];
+  checkInUserIds: string[];
 }
 
 interface ManageContentProps {
@@ -80,11 +81,13 @@ interface ManageContentProps {
   recentTrips: RecentTrip[];
   allTrips: TripListItem[];
   partyGroupId: string;
+  groupMembers: { id: string; name: string | null; image: string | null }[];
+  currentUserId: string;
 }
 
 const VISIBLE_TRIPS = 2;
 
-export default function ManageContent({ cars, debts, carId, locale, recentTrips, allTrips, partyGroupId }: ManageContentProps) {
+export default function ManageContent({ cars, debts, carId, locale, recentTrips, allTrips, partyGroupId, groupMembers, currentUserId }: ManageContentProps) {
   const { t } = useT();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("trips");
@@ -96,6 +99,17 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [gasCost, setGasCost] = useState(() => car?.defaultGasCost ? car.defaultGasCost.toString() : "");
   const [parkingCost, setParkingCost] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "saving" | "error">("idle");
+
+  // Date picker for backdated trips
+  const todayBkkISO = useMemo(() => {
+    const bkk = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+    return `${bkk.getFullYear()}-${String(bkk.getMonth() + 1).padStart(2, "0")}-${String(bkk.getDate()).padStart(2, "0")}`;
+  }, []);
+  const [tripDate, setTripDate] = useState(() => todayBkkISO);
+
+  // Add passenger state
+  const [addPassengerTripId, setAddPassengerTripId] = useState<string | null>(null);
+  const [addingPassengerId, setAddingPassengerId] = useState<string | null>(null);
   const [pendingNewTripId, setPendingNewTripId] = useState<string | null>(null);
   const [selectedTripIds, setSelectedTripIds] = useState<string[]>(
     recentTrips.length > 0 ? [recentTrips[0].id] : []
@@ -111,6 +125,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setShowAddForm(false);
       setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
       setParkingCost("");
+      setTripDate(todayBkkISO);
       setSelectedTripIds(recentTrips.length > 0 ? [recentTrips[0].id] : []);
     }
   }, [pendingArrived]);
@@ -280,15 +295,13 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   async function handleCreateTrip(e: React.FormEvent) {
     e.preventDefault();
     setFormStatus("saving");
-    const bkk = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
-    const today = `${bkk.getFullYear()}-${String(bkk.getMonth() + 1).padStart(2, "0")}-${String(bkk.getDate()).padStart(2, "0")}`;
     try {
       const res = await fetch("/api/costs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           carId: selectedCarId,
-          date: today,
+          date: tripDate,
           gasCost: parseFloat(gasCost) || 0,
           parkingCost: parseFloat(parkingCost) || 0,
           sharedParkingTripIds: (parseFloat(parkingCost) || 0) > 0 ? selectedTripIds : [],
@@ -474,6 +487,20 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Date picker */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    <CalendarDays className="mr-1 inline h-3 w-3" /> {t.date}
+                  </label>
+                  <input
+                    type="date"
+                    value={tripDate}
+                    max={todayBkkISO}
+                    onChange={(e) => setTripDate(e.target.value)}
+                    className={inputClass}
+                  />
                 </div>
 
                 {/* Gas & Parking */}
@@ -864,6 +891,67 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                                 <Copy className="h-3.5 w-3.5" />
                               )}
                             </button>
+                          </div>
+
+                          {/* Add Passenger */}
+                          <div className="mt-4 w-full text-left">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setAddPassengerTripId(addPassengerTripId === trip.id ? null : trip.id); }}
+                              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm font-medium text-primary transition hover:bg-primary/10"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                              {t.addPassenger}
+                            </button>
+
+                            {addPassengerTripId === trip.id && (() => {
+                              const eligible = groupMembers.filter(
+                                (m) => m.id !== currentUserId && !trip.checkInUserIds.includes(m.id)
+                              );
+                              return (
+                                <div className="mt-2 space-y-1.5 rounded-xl border border-border bg-accent/30 p-2.5 animate-fade-in">
+                                  {eligible.length === 0 ? (
+                                    <p className="py-2 text-center text-xs text-muted-foreground">{t.noEligibleMembers}</p>
+                                  ) : (
+                                    eligible.map((member) => {
+                                      const isAdding = addingPassengerId === member.id;
+                                      const initial = (member.name ?? "?")[0].toUpperCase();
+                                      return (
+                                        <button
+                                          key={member.id}
+                                          type="button"
+                                          disabled={isAdding}
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            setAddingPassengerId(member.id);
+                                            try {
+                                              await addCheckIn(trip.id, member.id);
+                                              router.refresh();
+                                            } catch { /* ignore */ }
+                                            setAddingPassengerId(null);
+                                          }}
+                                          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-accent disabled:opacity-50"
+                                        >
+                                          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                            {member.image ? (
+                                              <img src={member.image} alt={member.name ?? ""} className="h-full w-full object-cover" />
+                                            ) : (
+                                              initial
+                                            )}
+                                          </div>
+                                          <span className="flex-1 truncate font-medium text-foreground">{member.name ?? "—"}</span>
+                                          {isAdding ? (
+                                            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+                                          ) : (
+                                            <Plus className="h-4 w-4 shrink-0 text-primary" />
+                                          )}
+                                        </button>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}
