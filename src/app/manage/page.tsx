@@ -161,6 +161,7 @@ export default async function ManagePage() {
     tripNumber: tripNumberMap.get(trip.id) ?? 1,
     sharedParkingTripIds: trip.sharedParkingTripIds,
     checkInUserIds: trip.checkIns.map((ci) => ci.userId),
+    parkingPaidById: trip.parkingPaidById,
   }));
 
   const groupMembers = groupMembersRaw.map((m) => ({

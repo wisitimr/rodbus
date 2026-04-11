@@ -33,7 +33,7 @@ export async function deleteCheckIn(checkInId: string) {
 /** Update a trip's gas, parking costs, and shared parking links. Only the car owner can edit. */
 export async function updateTrip(
   tripId: string,
-  data: { gasCost: number; parkingCost: number; sharedParkingTripIds?: string[] }
+  data: { gasCost: number; parkingCost: number; sharedParkingTripIds?: string[]; parkingPaidById?: string | null }
 ) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
@@ -48,9 +48,10 @@ export async function updateTrip(
     throw new Error("Forbidden");
   }
 
-  const updateData: { gasCost: number; parkingCost: number; sharedParkingTripIds?: string[] } = {
+  const updateData: { gasCost: number; parkingCost: number; sharedParkingTripIds?: string[]; parkingPaidById?: string | null } = {
     gasCost: data.gasCost,
     parkingCost: data.parkingCost,
+    parkingPaidById: data.parkingPaidById !== undefined ? data.parkingPaidById : undefined,
   };
 
   // Handle shared parking link changes

@@ -71,6 +71,7 @@ interface TripListItem {
   tripNumber: number;
   sharedParkingTripIds: string[];
   checkInUserIds: string[];
+  parkingPaidById: string | null;
 }
 
 interface ManageContentProps {
@@ -98,6 +99,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const car = cars.find((c) => c.id === selectedCarId);
   const [gasCost, setGasCost] = useState(() => car?.defaultGasCost ? car.defaultGasCost.toString() : "");
   const [parkingCost, setParkingCost] = useState("");
+  const [parkingPaidById, setParkingPaidById] = useState<string>("");
   const [formStatus, setFormStatus] = useState<"idle" | "saving" | "error">("idle");
 
   // Date picker for backdated trips
@@ -125,6 +127,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
       setShowAddForm(false);
       setGasCost(car?.defaultGasCost ? car.defaultGasCost.toString() : "");
       setParkingCost("");
+      setParkingPaidById("");
       setTripDate(todayBkkISO);
       setSelectedTripIds(recentTrips.length > 0 ? [recentTrips[0].id] : []);
     }
@@ -167,6 +170,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [editGasCost, setEditGasCost] = useState("");
   const [editParkingCost, setEditParkingCost] = useState("");
+  const [editParkingPaidById, setEditParkingPaidById] = useState<string>("");
   const [editSharedParkingIds, setEditSharedParkingIds] = useState<string[]>([]);
   const [editStatus, setEditStatus] = useState<"idle" | "saving">("idle");
   const [pendingEditTripId, setPendingEditTripId] = useState<string | null>(null);
@@ -243,6 +247,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     setEditingTripId(trip.id);
     setEditGasCost(trip.gasCost.toString());
     setEditParkingCost(trip.parkingCost ? trip.parkingCost.toString() : "");
+    setEditParkingPaidById(trip.parkingPaidById ?? "");
     setEditSharedParkingIds(trip.sharedParkingTripIds);
     setEditStatus("idle");
     closeSwipe();
@@ -260,6 +265,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
         await updateTrip(editingTripId, {
           gasCost: parseFloat(editGasCost) || 0,
           parkingCost: parseFloat(editParkingCost) || 0,
+          parkingPaidById: (parseFloat(editParkingCost) || 0) > 0 && editParkingPaidById ? editParkingPaidById : null,
           sharedParkingTripIds: editSharedParkingIds,
         });
         // Don't exit edit mode — wait for revalidation
@@ -305,6 +311,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
           gasCost: parseFloat(gasCost) || 0,
           parkingCost: parseFloat(parkingCost) || 0,
           sharedParkingTripIds: (parseFloat(parkingCost) || 0) > 0 ? selectedTripIds : [],
+          parkingPaidById: (parseFloat(parkingCost) || 0) > 0 && parkingPaidById ? parkingPaidById : null,
           partyGroupId,
         }),
       });
@@ -542,6 +549,25 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                   </div>
                 </div>
 
+                {/* Parking paid by */}
+                {(parseFloat(parkingCost) || 0) > 0 && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingPaidBy}
+                    </label>
+                    <select
+                      value={parkingPaidById}
+                      onChange={(e) => setParkingPaidById(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">{cars.find((c) => c.id === selectedCarId)?.name ?? t.driver} ({t.driver})</option>
+                      {groupMembers.filter((m) => m.id !== currentUserId).map((m) => (
+                        <option key={m.id} value={m.id}>{m.name ?? "—"}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Share Parking with Previous Trips */}
                 {(parseFloat(parkingCost) || 0) > 0 && recentTrips.length > 0 && (
                   <div className="space-y-2">
@@ -745,6 +771,25 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                                 />
                               </div>
                             </div>
+
+                            {/* Parking paid by (edit) */}
+                            {(parseFloat(editParkingCost) || 0) > 0 && (
+                              <div>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                  <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingPaidBy}
+                                </label>
+                                <select
+                                  value={editParkingPaidById}
+                                  onChange={(e) => setEditParkingPaidById(e.target.value)}
+                                  className={inputClass}
+                                >
+                                  <option value="">{trip.carName} ({t.driver})</option>
+                                  {groupMembers.filter((m) => m.id !== currentUserId).map((m) => (
+                                    <option key={m.id} value={m.id}>{m.name ?? "—"}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
 
                             {/* Share Parking with Other Trips */}
                             {(parseFloat(editParkingCost) || 0) > 0 && (() => {

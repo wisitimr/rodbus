@@ -90,6 +90,7 @@ model Trip {
   date                  DateTime    @db.Date
   gasCost               Float       @default(0)
   parkingCost           Float       @default(0)
+  parkingPaidById       String?
   label                 String?
   sharedParkingTripIds  String[]    @default([])
   car                   Car         @relation(fields: [carId], references: [id], onDelete: Cascade)
