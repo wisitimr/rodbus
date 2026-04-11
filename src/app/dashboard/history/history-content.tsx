@@ -444,8 +444,8 @@ function SummaryCard({
         <div className="mt-3 space-y-2 animate-fade-in">
           {/* Car Summary Section */}
           {carSummaries && carSummaries.length > 0 && (
-            <div className="rounded-xl border border-border bg-accent/20 p-3 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary uppercase tracking-wider">
                 <Car className="h-3.5 w-3.5" />
                 {t.carSummary ?? "By Car"}
               </div>
