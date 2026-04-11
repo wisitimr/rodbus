@@ -817,11 +817,12 @@ function groupCarsByPeriod(
       }
 
       const acc = carMap.get(b.carId)!;
+      // Accumulate user shares (not raw costs) so totals match the header
+      acc.totalGasCost += b.gasShare;
+      acc.totalParkingCost += b.parkingShare;
       if (!acc.seenTrips.has(tripKey)) {
         acc.seenTrips.add(tripKey);
         acc.tripCount++;
-        acc.totalGasCost += b.gasCost;
-        acc.totalParkingCost += b.parkingCost;
       }
     }
   }
