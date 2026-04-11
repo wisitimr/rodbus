@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { carId, date, gasCost, parkingCost, label, sharedParkingTripIds, partyGroupId } = body;
+  const { carId, date, gasCost, parkingCost, label, sharedParkingTripIds, partyGroupId, parkingPaidById } = body;
 
   if (!carId || !date || !partyGroupId) {
     return NextResponse.json({ error: "carId, date, and partyGroupId are required" }, { status: 400 });
@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
       date: parsedDate,
       gasCost: gasCost ?? 0,
       parkingCost: parkingCost ?? 0,
+      parkingPaidById: parkingPaidById || null,
       label: label || null,
       sharedParkingTripIds: linkedIds,
     },

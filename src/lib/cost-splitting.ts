@@ -231,10 +231,14 @@ export async function calculateDebts(
       };
     }
 
+    // Determine if someone other than the car owner paid for parking
+    const hasSeparateParkingPayer = trip.parkingPaidById && trip.parkingPaidById !== trip.car.ownerId;
+
     // Charge this trip's passengers (gas + parking)
     for (const uid of passengerIds) {
-      // Skip the car owner — they are the driver and don't owe debt
-      if (uid === trip.car.ownerId) continue;
+      // Skip the car owner — they are the driver and don't owe gas debt
+      // But if someone else paid for parking, the owner still owes parking
+      if (uid === trip.car.ownerId && !hasSeparateParkingPayer) continue;
 
       const checkIn = linkedCheckIns.find((c) => c.userId === uid);
 
@@ -252,9 +256,23 @@ export async function calculateDebts(
         debtMap.set(uid, entry);
       }
 
-      const roundedGasShare = Math.round(gasPerPerson * 100) / 100;
-      const roundedParkingShare = Math.round(parkingPerPerson * 100) / 100;
+      let roundedGasShare = Math.round(gasPerPerson * 100) / 100;
+      let roundedParkingShare = Math.round(parkingPerPerson * 100) / 100;
+
+      if (hasSeparateParkingPayer) {
+        if (uid === trip.parkingPaidById) {
+          // Parking payer: no parking debt (they paid it)
+          roundedParkingShare = 0;
+        }
+        if (uid === trip.car.ownerId) {
+          // Car owner: no gas debt (they paid gas) but owes parking
+          roundedGasShare = 0;
+        }
+      }
+
       const roundedShare = roundedGasShare + roundedParkingShare;
+      if (roundedShare === 0) continue;
+
       entry.totalDebt += roundedShare;
       entry.breakdown.push({
         tripId: trip.id,
@@ -276,6 +294,48 @@ export async function calculateDebts(
         createdAt: trip.createdAt,
         sharedParking,
       });
+    }
+
+    // If someone else paid for parking and the car owner is NOT a passenger,
+    // we still need to add the owner's parking debt
+    if (hasSeparateParkingPayer && !passengerIds.has(trip.car.ownerId)) {
+      const roundedParkingShare = Math.round(parkingPerPerson * 100) / 100;
+      if (roundedParkingShare > 0) {
+        let entry = debtMap.get(trip.car.ownerId);
+        if (!entry) {
+          entry = {
+            userId: trip.car.ownerId,
+            userName: trip.car.owner.name ?? null,
+            userImage: null,
+            totalDebt: 0,
+            totalPaid: 0,
+            pendingDebt: 0,
+            breakdown: [],
+          };
+          debtMap.set(trip.car.ownerId, entry);
+        }
+        entry.totalDebt += roundedParkingShare;
+        entry.breakdown.push({
+          tripId: trip.id,
+          carId: trip.carId,
+          carName: trip.car.name,
+          licensePlate: trip.car.licensePlate,
+          date: trip.date,
+          share: roundedParkingShare,
+          gasShare: 0,
+          parkingShare: roundedParkingShare,
+          gasCost: trip.gasCost,
+          parkingCost: trip.parkingCost,
+          totalCost,
+          headcount,
+          parkingHeadcount,
+          tripNumber: tripNumberMap.get(trip.id) ?? 1,
+          passengers: Array.from(passengerMap.values()),
+          driver: { id: trip.car.ownerId, name: trip.car.owner.name || "Unknown" },
+          createdAt: trip.createdAt,
+          sharedParking,
+        });
+      }
     }
 
   }
@@ -313,10 +373,20 @@ export async function calculateDebts(
     const groupParkingHeadcount = groupParkingUserIds.size;
     const targetPerPerson = totalParking / groupParkingHeadcount;
 
+    // Collect parking payers across group trips
+    const groupParkingPayers = new Set<string>();
+    for (const gt of groupTrips) {
+      if (gt.parkingPaidById && gt.parkingPaidById !== gt.car.ownerId) {
+        groupParkingPayers.add(gt.parkingPaidById);
+      }
+    }
+
     // For each person in the debt map, adjust their parking for this group
     for (const entry of debtMap.values()) {
-      // Skip drivers
-      if (groupDriverIds.has(entry.userId)) continue;
+      // Skip drivers (unless they owe parking to a separate payer)
+      if (groupDriverIds.has(entry.userId) && !groupParkingPayers.size) continue;
+      // Skip parking payers (they fronted parking, no parking debt)
+      if (groupParkingPayers.has(entry.userId)) continue;
       // Skip people not in this parking pool
       if (!groupParkingUserIds.has(entry.userId)) continue;
 
@@ -407,15 +477,18 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
   for (const trip of tripsToProcess) {
     if (trip.gasCost === 0 && trip.parkingCost === 0 && trip.sharedParkingTripIds.length === 0) continue;
 
-    // Skip if user is the car owner
-    if (userId === trip.car.ownerId) continue;
+    const hasSeparateParkingPayer = trip.parkingPaidById && trip.parkingPaidById !== trip.car.ownerId;
+
+    // Skip if user is the car owner (unless someone else paid for parking)
+    if (userId === trip.car.ownerId && !hasSeparateParkingPayer) continue;
 
     const linkedCheckIns = allCheckInsForUser.filter(
       (c) =>
         c.tripId === trip.id
     );
 
-    if (linkedCheckIns.length === 0) continue;
+    // For car owner with separate parking payer, they may not have a check-in
+    if (linkedCheckIns.length === 0 && userId !== trip.car.ownerId) continue;
 
     const passengerIds = new Set(linkedCheckIns.map((c) => c.userId));
     const headcount = passengerIds.size + (passengerIds.has(trip.car.ownerId) ? 0 : 1);
@@ -441,12 +514,21 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
       parkingHeadcount = allParkingUserIds.size;
     }
 
-    // Only charge if user is a direct passenger of this trip
-    if (!passengerIds.has(userId)) continue;
+    // Only charge if user is a direct passenger of this trip or the owner owing parking
+    if (!passengerIds.has(userId) && userId !== trip.car.ownerId) continue;
 
     const gasPerPerson = trip.gasCost / headcount;
     const parkingPerPerson = trip.parkingCost > 0 ? trip.parkingCost / parkingHeadcount : 0;
-    const share = Math.round(gasPerPerson * 100) / 100 + Math.round(parkingPerPerson * 100) / 100;
+
+    let roundedGas = Math.round(gasPerPerson * 100) / 100;
+    let roundedParking = Math.round(parkingPerPerson * 100) / 100;
+
+    if (hasSeparateParkingPayer) {
+      if (userId === trip.parkingPaidById) roundedParking = 0;
+      if (userId === trip.car.ownerId) roundedGas = 0;
+    }
+
+    const share = roundedGas + roundedParking;
     if (share > 0) {
       dateShares.push({ date: trip.date, amount: share, tripId: trip.id });
     }
