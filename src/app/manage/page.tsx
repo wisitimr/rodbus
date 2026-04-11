@@ -6,13 +6,14 @@ import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/
 import ManageContent from "./manage-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 import { getActiveGroupOrRedirect } from "@/lib/party-group";
+import { MemberStatus } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 
 async function fetchManageData(userId: string, activeGroupId: string) {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
-  const [allCars, debts, recentTripsRaw] = await Promise.all([
+  const [allCars, debts, recentTripsRaw, groupMembersRaw] = await Promise.all([
     prisma.car.findMany({
       where: { ownerId: userId },
       select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
@@ -27,9 +28,13 @@ async function fetchManageData(userId: string, activeGroupId: string) {
       },
       include: {
         car: { select: { name: true, licensePlate: true } },
-        checkIns: { select: { id: true } },
+        checkIns: { select: { id: true, userId: true } },
       },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.partyGroupMember.findMany({
+      where: { partyGroupId: activeGroupId, status: MemberStatus.ACTIVE },
+      include: { user: { select: { id: true, name: true, image: true } } },
     }),
   ]);
 
@@ -46,7 +51,7 @@ async function fetchManageData(userId: string, activeGroupId: string) {
     myCarPaidPerUser[p.userId] = (myCarPaidPerUser[p.userId] ?? 0) + p.amount;
   }
 
-  return { allCars, debts, recentTripsRaw, myCarPaidPerUser };
+  return { allCars, debts, recentTripsRaw, myCarPaidPerUser, groupMembersRaw };
 }
 
 const getCachedManageData = unstable_cache(
@@ -65,7 +70,7 @@ export default async function ManagePage() {
   const userId = user.id;
   const activeGroupId = await getActiveGroupOrRedirect();
 
-  const { allCars, debts, recentTripsRaw, myCarPaidPerUser } = await getCachedManageData(userId, activeGroupId);
+  const { allCars, debts, recentTripsRaw, myCarPaidPerUser, groupMembersRaw } = await getCachedManageData(userId, activeGroupId);
 
   const carIds = allCars.map((c) => c.id);
   const ownedCarId = allCars[0]?.id ?? "";
@@ -155,6 +160,13 @@ export default async function ManagePage() {
     headcount: trip.checkIns.length + 1,
     tripNumber: tripNumberMap.get(trip.id) ?? 1,
     sharedParkingTripIds: trip.sharedParkingTripIds,
+    checkInUserIds: trip.checkIns.map((ci) => ci.userId),
+  }));
+
+  const groupMembers = groupMembersRaw.map((m) => ({
+    id: m.user.id,
+    name: m.user.name,
+    image: m.user.image,
   }));
 
   return (
@@ -172,6 +184,8 @@ export default async function ManagePage() {
         recentTrips={recentTripsForSharing}
         allTrips={allTrips}
         partyGroupId={activeGroupId}
+        groupMembers={groupMembers}
+        currentUserId={userId}
       />
     </main>
   );
