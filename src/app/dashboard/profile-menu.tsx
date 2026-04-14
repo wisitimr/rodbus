@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Check, Plus, Crown } from "lucide-react";
+import { LogOut, Check, Plus, Crown, Settings } from "lucide-react";
 import Link from "next/link";
-import { SignOutButton } from "@clerk/nextjs";
+import { SignOutButton, useClerk, useUser } from "@clerk/nextjs";
 import { useT } from "@/lib/i18n-context";
 import { switchActiveGroup } from "@/lib/group-actions";
+import { syncClerkProfile } from "@/lib/user-actions";
 import { useRouter } from "next/navigation";
 
 interface GroupInfo {
@@ -34,6 +35,8 @@ const roleBadge: Record<string, string> = {
 export default function ProfileMenu({ image, name, email, role, isAdmin, groups, activeGroupId }: ProfileMenuProps) {
   const { t } = useT();
   const router = useRouter();
+  const { openUserProfile } = useClerk();
+  const { user: clerkUser, isLoaded } = useUser();
   const [open, setOpen] = useState(false);
   const roleLabel: Record<string, string> = {
     OWNER: t.partyOwner.toUpperCase(),
@@ -41,6 +44,23 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
     MEMBER: t.member.toUpperCase(),
   };
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Prefer live Clerk data so name/image update immediately after Clerk edits
+  const displayImage = isLoaded && clerkUser ? clerkUser.imageUrl : image;
+  const displayName = isLoaded && clerkUser ? (clerkUser.fullName ?? clerkUser.firstName ?? name) : name;
+
+  // When the Clerk profile diverges from what's in the DB (the `image`/`name`
+  // props reflect the server-side DB state), sync it back so other views
+  // (group member lists, trip cards, etc.) also see the update.
+  useEffect(() => {
+    if (!isLoaded || !clerkUser) return;
+    const clerkName = clerkUser.fullName ?? clerkUser.firstName ?? null;
+    if (clerkUser.imageUrl !== image || clerkName !== name) {
+      syncClerkProfile()
+        .then(() => router.refresh())
+        .catch((err) => console.error("Failed to sync profile:", err));
+    }
+  }, [isLoaded, clerkUser, image, name, router]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -51,6 +71,11 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
     if (open) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
+
+  function handleManageAccount() {
+    setOpen(false);
+    openUserProfile();
+  }
 
   async function handleSwitchGroup(groupId: string) {
     await switchActiveGroup(groupId);
@@ -74,10 +99,10 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
           </span>
         )}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary ring-2 ring-primary/20">
-          {image ? (
-            <img src={image} alt={name ?? ""} className="h-full w-full object-cover" />
+          {displayImage ? (
+            <img src={displayImage} alt={displayName ?? ""} className="h-full w-full object-cover" />
           ) : (
-            name?.charAt(0)?.toUpperCase() ?? "?"
+            displayName?.charAt(0)?.toUpperCase() ?? "?"
           )}
         </div>
       </button>
@@ -141,6 +166,13 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
             </Link>
           )}
           <div className="border-t border-border" />
+          <button
+            onClick={handleManageAccount}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent"
+          >
+            <Settings className="h-4 w-4 text-muted-foreground" />
+            {t.manageAccount}
+          </button>
           <SignOutButton>
             <button className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent">
               <LogOut className="h-4 w-4 text-muted-foreground" />

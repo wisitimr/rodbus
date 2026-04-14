@@ -10,6 +10,7 @@ const translations = {
     goToDashboard: "Go to Dashboard",
     signIn: "Sign In",
     signOut: "Sign Out",
+    manageAccount: "Manage Account",
     signInSubtitle: "Sign in to track your rides",
     signUpSubtitle: "Create an account to get started",
 
@@ -276,6 +277,7 @@ const translations = {
     goToDashboard: "ไปที่แดชบอร์ด",
     signIn: "เข้าสู่ระบบ",
     signOut: "ออกจากระบบ",
+    manageAccount: "จัดการบัญชี",
     signInSubtitle: "เข้าสู่ระบบเพื่อติดตามการเดินทาง",
     signUpSubtitle: "สร้างบัญชีเพื่อเริ่มใช้งาน",
 
