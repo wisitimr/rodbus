@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Check, Plus, Crown, Settings } from "lucide-react";
+import { LogOut, Check, Plus, Crown, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { SignOutButton, useClerk, useUser } from "@clerk/nextjs";
 import { useT } from "@/lib/i18n-context";
@@ -170,7 +170,10 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
             onClick={handleManageAccount}
             className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent"
           >
-            <Settings className="h-4 w-4 text-muted-foreground" />
+            <span className="relative flex h-4 w-4 items-center justify-center text-muted-foreground">
+              <User className="h-4 w-4" />
+              <Settings className="absolute -bottom-1 -right-1 h-2.5 w-2.5" />
+            </span>
             {t.manageAccount}
           </button>
           <SignOutButton>
