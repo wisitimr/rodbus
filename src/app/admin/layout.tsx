@@ -1,44 +1,27 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
+import { getSessionContext } from "@/lib/auth";
 import { GroupRole } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { unstable_cache } from "next/cache";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import { Settings } from "lucide-react";
 import BottomNav from "@/app/dashboard/bottom-nav";
-
-async function fetchNavData(userId: string, groupId: string) {
-  const [role, carCount, tripCount] = await Promise.all([
-    getGroupRole(userId, groupId),
-    prisma.car.count({ where: { ownerId: userId } }),
-    prisma.trip.count({ where: { partyGroupId: groupId }, take: 1 }),
-  ]);
-  return { role, carCount, tripCount };
-}
-
-const getCachedNavData = unstable_cache(
-  fetchNavData,
-  ["nav-data"],
-  { tags: ["nav"], revalidate: 60 }
-);
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-
-  const activeGroupId = await getActiveGroupOrRedirect();
-  const { role, carCount, tripCount } = await getCachedNavData(user.id, activeGroupId);
-  if (role !== GroupRole.ADMIN) redirect("/dashboard");
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/sign-in");
+  if (!ctx.activeMembership) redirect("/join");
+  if (ctx.activeMembership.role !== GroupRole.ADMIN) redirect("/dashboard");
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
   const t = getTranslations(locale);
+
+  const hasCars = ctx.carCount > 0;
+  const hasTrips = ctx.activeMembership.partyGroup.tripCount > 0;
 
   return (
     <div className="min-h-screen pb-24">
@@ -57,7 +40,7 @@ export default async function AdminLayout({
       </header>
 
       {children}
-      <BottomNav isAdmin={true} hasCars={carCount > 0} hasTrips={tripCount > 0} />
+      <BottomNav isAdmin={true} hasCars={hasCars} hasTrips={hasTrips} />
     </div>
   );
 }

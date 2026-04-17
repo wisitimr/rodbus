@@ -1,36 +1,51 @@
-import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
+import { detectLocale, formatDateMedium, type Locale } from "@/lib/i18n";
 import DashboardContent from "../dashboard-content";
 import { unstable_cache } from "next/cache";
-import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
 
 async function fetchDashboardData(userId: string, isAdmin: boolean, partyGroupId: string) {
-  // Use all-time range for debt calculation so pending debt includes all months
-  const allTimeStart = new Date(2000, 0, 1);
-  const allTimeEnd = new Date(2099, 11, 31);
+  // Bound debt calculation to ~18 months. Older unsettled debt is a rare edge
+  // case and is fully visible on the history page; scanning every trip ever on
+  // every dashboard load is the main perf bottleneck for long-lived groups.
+  const debtWindowStart = new Date();
+  debtWindowStart.setMonth(debtWindowStart.getMonth() - 18);
+  debtWindowStart.setHours(0, 0, 0, 0);
+  const debtWindowEnd = new Date(2099, 11, 31);
 
-  const [debts, recentTrips] = await Promise.all([
-    calculateDebts(allTimeStart, allTimeEnd, partyGroupId),
+  const tripInclude = {
+    car: { select: { name: true, licensePlate: true, ownerId: true, owner: { select: { name: true } } } },
+    checkIns: { select: { id: true, userId: true, user: { select: { name: true } } } },
+  };
+
+  // Split the OR condition into two separate, index-friendly queries.
+  // Each query uses `LIMIT 5` + index on the single dimension it filters by.
+  const [debts, ownerTrips, passengerTrips] = await Promise.all([
+    calculateDebts(debtWindowStart, debtWindowEnd, partyGroupId),
     prisma.trip.findMany({
-      where: {
-        partyGroupId,
-        OR: [
-          { car: { ownerId: userId } },
-          { checkIns: { some: { userId } } },
-        ],
-      },
+      where: { partyGroupId, car: { ownerId: userId } },
       orderBy: { createdAt: "desc" },
       take: 5,
-      include: {
-        car: { select: { name: true, licensePlate: true, ownerId: true, owner: { select: { name: true } } } },
-        checkIns: { select: { id: true, userId: true, user: { select: { name: true } } } },
-      },
+      include: tripInclude,
+    }),
+    prisma.trip.findMany({
+      where: { partyGroupId, checkIns: { some: { userId } } },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: tripInclude,
     }),
   ]);
+
+  const recentTripMap = new Map<string, (typeof ownerTrips)[number]>();
+  for (const t of ownerTrips) recentTripMap.set(t.id, t);
+  for (const t of passengerTrips) if (!recentTripMap.has(t.id)) recentTripMap.set(t.id, t);
+  const recentTrips = Array.from(recentTripMap.values())
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 5);
 
   // Compute trip numbers for each trip within same car+date (batch query)
   const carDatePairs = [...new Map(
@@ -69,15 +84,17 @@ const getCachedDashboardData = unstable_cache(
 );
 
 export default async function DashboardPage() {
-  const user = (await getCurrentUser())!;
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/sign-in");
+  if (!ctx.activeMembership) redirect("/join");
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
 
+  const { user } = ctx;
   const userId = user.id;
-  const activeGroupId = await getActiveGroupOrRedirect();
-  const role = await getGroupRole(user.id, activeGroupId);
-  const isAdmin = role === GroupRole.ADMIN;
+  const activeGroupId = ctx.activeMembership.partyGroupId;
+  const isAdmin = ctx.activeMembership.role === GroupRole.ADMIN;
 
   const { debts, recentTrips, tripNumbers } = await getCachedDashboardData(userId, isAdmin, activeGroupId);
 

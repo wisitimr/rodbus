@@ -1,9 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { headers } from "next/headers";
+import { Inter } from "next/font/google";
 import { detectLocale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n-context";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "RodBus NFC Tracker",
@@ -32,20 +40,8 @@ export default async function RootLayout({
   const locale = detectLocale(headersList.get("accept-language"));
 
   return (
-    <ClerkProvider dynamic>
-      <html lang={locale}>
-        <head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link
-            rel="preconnect"
-            href="https://fonts.gstatic.com"
-            crossOrigin="anonymous"
-          />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-            rel="stylesheet"
-          />
-        </head>
+    <ClerkProvider>
+      <html lang={locale} className={inter.variable}>
         <body className="min-h-screen bg-background font-sans text-foreground antialiased">
           <I18nProvider locale={locale}>{children}</I18nProvider>
         </body>

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
@@ -12,12 +11,10 @@ export default async function QRPage({
 }: {
   searchParams: Promise<{ carId?: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-
-  const activeGroupId = await getActiveGroupOrRedirect();
-  const role = await getGroupRole(user.id, activeGroupId);
-  if (role !== GroupRole.ADMIN) redirect("/dashboard");
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/sign-in");
+  if (!ctx.activeMembership) redirect("/join");
+  if (ctx.activeMembership.role !== GroupRole.ADMIN) redirect("/dashboard");
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));

@@ -1,10 +1,10 @@
-import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
 import HistoryContent from "./history-content";
-import { getActiveGroupOrRedirect, getGroupRole } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 
@@ -94,16 +94,17 @@ const getCachedHistoryData = unstable_cache(
 );
 
 export default async function HistoryPage() {
-  const user = (await getCurrentUser())!;
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/sign-in");
+  if (!ctx.activeMembership) redirect("/join");
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
   const t = getTranslations(locale);
 
-  const userId = user.id;
-  const activeGroupId = await getActiveGroupOrRedirect();
-  const role = await getGroupRole(user.id, activeGroupId);
-  const isAdmin = role === GroupRole.ADMIN;
+  const userId = ctx.user.id;
+  const activeGroupId = ctx.activeMembership.partyGroupId;
+  const isAdmin = ctx.activeMembership.role === GroupRole.ADMIN;
 
   const { recentTrips, allDebts, allPayments, carDateTripIds: carDateTripIdsObj } = await getCachedHistoryData(userId, isAdmin, activeGroupId);
   const carDateTripIds = new Map<string, string[]>(Object.entries(carDateTripIdsObj));

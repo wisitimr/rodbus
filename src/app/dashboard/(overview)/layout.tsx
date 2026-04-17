@@ -1,9 +1,9 @@
-import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getSessionContext } from "@/lib/auth";
 import { headers } from "next/headers";
 import { detectLocale, getTranslations } from "@/lib/i18n";
 import RodBusLogo, { RodBusWordmark } from "@/components/rodbus-logo";
 import ProfileMenu from "../profile-menu";
-import { getActiveGroupOrRedirect, getGroupRole, getUserActiveGroups } from "@/lib/party-group";
 import { GroupRole } from "@prisma/client";
 
 export default async function OverviewLayout({
@@ -11,19 +11,24 @@ export default async function OverviewLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = (await getCurrentUser())!;
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/sign-in");
+  if (!ctx.activeMembership) redirect("/join");
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
   const t = getTranslations(locale);
 
-  const activeGroupId = await getActiveGroupOrRedirect();
-  const role = await getGroupRole(user.id, activeGroupId);
-  const groups = await getUserActiveGroups(user.id);
-  const activeGroup = groups.find((g) => g.id === activeGroupId);
-  const activeGroupName = activeGroup?.name;
-  const isOwner = activeGroup?.ownerId === user.id;
-  const isAdmin = isOwner || role === GroupRole.ADMIN;
+  const { user, activeMembership } = ctx;
+  const activeGroupName = activeMembership.partyGroup.name;
+  const isOwner = activeMembership.partyGroup.ownerId === user.id;
+  const isAdmin = isOwner || activeMembership.role === GroupRole.ADMIN;
+  const groups = ctx.memberships.map((m) => ({
+    id: m.partyGroup.id,
+    name: m.partyGroup.name,
+    role: m.role,
+    ownerId: m.partyGroup.ownerId,
+  }));
 
   return (
     <>
@@ -52,7 +57,7 @@ export default async function OverviewLayout({
             role={isOwner ? "OWNER" : isAdmin ? "ADMIN" : "MEMBER"}
             isAdmin={isAdmin}
             groups={groups}
-            activeGroupId={activeGroupId}
+            activeGroupId={activeMembership.partyGroupId}
           />
         </div>
       </header>
