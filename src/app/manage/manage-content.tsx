@@ -421,7 +421,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                 {/* Car selection */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    <Car className="mr-1 inline h-3 w-3" /> {t.selectCar}
+                    <Car className="mr-1 inline h-3 w-3" /> {t.selectCar} <span className="text-debt">*</span>
                   </label>
                   <select
                     value={selectedCarId}
@@ -460,7 +460,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost}
+                      <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
                     </label>
                     <input
                       type="number"
@@ -768,7 +768,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost}
+                      <ParkingCircle className="mr-1 inline h-3 w-3" /> {t.parkingCost} <span className="text-xs font-normal text-muted-foreground/60">({t.optional})</span>
                     </label>
                     <input
                       type="number"

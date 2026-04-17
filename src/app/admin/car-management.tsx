@@ -20,19 +20,24 @@ export default function CarManagement({ cars }: CarManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
-  const [defaultGas, setDefaultGas] = useState("0");
+  const [defaultGas, setDefaultGas] = useState("");
   const [status, setStatus] = useState<"idle" | "error">("idle");
+
+  const prevCarIdsRef = useRef<Set<string>>(new Set(cars.map(c => c.id)));
 
   // Clear add form when cars prop updates (new car appeared)
   useEffect(() => {
     if (loadingAction === "add") {
+      const newCar = cars.find(c => !prevCarIdsRef.current.has(c.id));
+      if (newCar) setExpandedQrId(newCar.id);
       setLoadingAction(null);
       setShowAddForm(false);
       setName("");
       setLicensePlate("");
-      setDefaultGas("0");
+      setDefaultGas("");
       setStatus("idle");
     }
+    prevCarIdsRef.current = new Set(cars.map(c => c.id));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cars.length]);
 
@@ -218,6 +223,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
                 min="0"
                 value={defaultGas}
                 onChange={(e) => setDefaultGas(e.target.value)}
+                placeholder="0"
                 className={inputClass}
               />
             </div>
@@ -233,7 +239,7 @@ export default function CarManagement({ cars }: CarManagementProps) {
               </button>
               <button
                 type="button"
-                onClick={() => { setShowAddForm(false); setName(""); setLicensePlate(""); setDefaultGas("0"); setStatus("idle"); }}
+                onClick={() => { setShowAddForm(false); setName(""); setLicensePlate(""); setDefaultGas(""); setStatus("idle"); }}
                 disabled={loadingAction === "add"}
                 className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-accent disabled:opacity-50"
               >
