@@ -57,7 +57,7 @@ async function fetchManageData(userId: string, activeGroupId: string) {
 const getCachedManageData = unstable_cache(
   fetchManageData,
   ["manage-data"],
-  { tags: ["manage"], revalidate: 60 }
+  { tags: ["manage"], revalidate: 3600 }
 );
 
 export default async function ManagePage() {
