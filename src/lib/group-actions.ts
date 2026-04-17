@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaTx } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { requireGroupAdmin, requireGroupMembership, setActiveGroupId } from "@/lib/party-group";
 import { GroupRole, MemberStatus } from "@prisma/client";
@@ -246,14 +246,16 @@ export async function transferOwnership(
   if (!targetMember) return { error: "Member not found" };
   if (targetMember.status !== MemberStatus.ACTIVE) return { error: "Member is not active" };
 
-  // Transfer ownership and ensure target becomes ADMIN
-  await prisma.$transaction([
-    prisma.partyGroup.update({
+  // Transfer ownership and ensure target becomes ADMIN.
+  // Uses the WS-backed client because Neon's HTTP driver does not support
+  // multi-statement transactions.
+  await prismaTx.$transaction([
+    prismaTx.partyGroup.update({
       where: { id: groupId },
       data: { ownerId: targetMember.userId },
     }),
     ...(targetMember.role !== GroupRole.ADMIN
-      ? [prisma.partyGroupMember.update({
+      ? [prismaTx.partyGroupMember.update({
           where: { id: targetMemberId },
           data: { role: GroupRole.ADMIN },
         })]

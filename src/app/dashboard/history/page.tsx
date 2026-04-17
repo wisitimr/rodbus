@@ -90,7 +90,7 @@ async function fetchHistoryData(userId: string, isAdmin: boolean, activeGroupId:
 const getCachedHistoryData = unstable_cache(
   fetchHistoryData,
   ["history-data"],
-  { tags: ["history"], revalidate: 60 }
+  { tags: ["history"], revalidate: 3600 }
 );
 
 export default async function HistoryPage() {

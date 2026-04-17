@@ -30,7 +30,7 @@ async function fetchAdminData(userId: string, activeGroupId: string) {
 const getCachedAdminData = unstable_cache(
   fetchAdminData,
   ["admin-data"],
-  { tags: ["admin"], revalidate: 60 }
+  { tags: ["admin"], revalidate: 3600 }
 );
 
 export default async function AdminPage() {

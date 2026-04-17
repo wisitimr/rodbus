@@ -80,7 +80,7 @@ async function fetchDashboardData(userId: string, isAdmin: boolean, partyGroupId
 const getCachedDashboardData = unstable_cache(
   fetchDashboardData,
   ["dashboard-data"],
-  { tags: ["dashboard"], revalidate: 60 }
+  { tags: ["dashboard"], revalidate: 3600 }
 );
 
 export default async function DashboardPage() {
