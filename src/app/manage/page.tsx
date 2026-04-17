@@ -187,6 +187,7 @@ export default async function ManagePage() {
         partyGroupId={activeGroupId}
         groupMembers={groupMembers}
         currentUserId={userId}
+        currentUserName={user.name ?? ""}
       />
     </main>
   );
