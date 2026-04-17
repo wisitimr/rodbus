@@ -84,11 +84,12 @@ interface ManageContentProps {
   partyGroupId: string;
   groupMembers: { id: string; name: string | null; image: string | null }[];
   currentUserId: string;
+  currentUserName: string;
 }
 
 const VISIBLE_TRIPS = 2;
 
-export default function ManageContent({ cars, debts, carId, locale, recentTrips, allTrips, partyGroupId, groupMembers, currentUserId }: ManageContentProps) {
+export default function ManageContent({ cars, debts, carId, locale, recentTrips, allTrips, partyGroupId, groupMembers, currentUserId, currentUserName }: ManageContentProps) {
   const { t } = useT();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("trips");
@@ -560,7 +561,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                       onChange={(e) => setParkingPaidById(e.target.value)}
                       className={inputClass}
                     >
-                      <option value="">{cars.find((c) => c.id === selectedCarId)?.name ?? t.driver} ({t.driver})</option>
+                      <option value="">{currentUserName || t.driver} ({t.driver})</option>
                       {groupMembers.filter((m) => m.id !== currentUserId).map((m) => (
                         <option key={m.id} value={m.id}>{m.name ?? "—"}</option>
                       ))}
@@ -783,7 +784,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                                   onChange={(e) => setEditParkingPaidById(e.target.value)}
                                   className={inputClass}
                                 >
-                                  <option value="">{trip.carName} ({t.driver})</option>
+                                  <option value="">{currentUserName || t.driver} ({t.driver})</option>
                                   {groupMembers.filter((m) => m.id !== currentUserId).map((m) => (
                                     <option key={m.id} value={m.id}>{m.name ?? "—"}</option>
                                   ))}
@@ -862,7 +863,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                             <div className="flex gap-2">
                               <button
                                 type="submit"
-                                disabled={editStatus === "saving" || ((parseFloat(editGasCost) || 0) === trip.gasCost && (parseFloat(editParkingCost) || 0) === trip.parkingCost && JSON.stringify(editSharedParkingIds) === JSON.stringify(trip.sharedParkingTripIds))}
+                                disabled={editStatus === "saving" || ((parseFloat(editGasCost) || 0) === trip.gasCost && (parseFloat(editParkingCost) || 0) === trip.parkingCost && JSON.stringify(editSharedParkingIds) === JSON.stringify(trip.sharedParkingTripIds) && (editParkingPaidById || null) === (trip.parkingPaidById || null))}
                                 className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
                               >
                                 <Check className="h-4 w-4" />
