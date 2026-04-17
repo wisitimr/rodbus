@@ -1,6 +1,6 @@
-import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getActiveGroupOrRedirect } from "@/lib/party-group";
 import { unstable_cache } from "next/cache";
 import UserManagement from "./user-management";
 import CarManagement from "./car-management";
@@ -34,9 +34,12 @@ const getCachedAdminData = unstable_cache(
 );
 
 export default async function AdminPage() {
-  const user = (await getCurrentUser())!;
-  const userId = user.id;
-  const activeGroupId = await getActiveGroupOrRedirect();
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/sign-in");
+  if (!ctx.activeMembership) redirect("/join");
+
+  const userId = ctx.user.id;
+  const activeGroupId = ctx.activeMembership.partyGroupId;
 
   const { groupMembers, myCars, partyGroup } = await getCachedAdminData(userId, activeGroupId);
 

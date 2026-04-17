@@ -1,11 +1,11 @@
-import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 import { headers } from "next/headers";
-import { detectLocale, getTranslations, formatDateMedium, type Locale } from "@/lib/i18n";
+import { detectLocale, formatDateMedium, type Locale } from "@/lib/i18n";
 import ManageContent from "./manage-content";
 import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
-import { getActiveGroupOrRedirect } from "@/lib/party-group";
 import { MemberStatus } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 
@@ -61,14 +61,16 @@ const getCachedManageData = unstable_cache(
 );
 
 export default async function ManagePage() {
-  const user = (await getCurrentUser())!;
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/sign-in");
+  if (!ctx.activeMembership) redirect("/join");
 
   const headersList = await headers();
   const locale = detectLocale(headersList.get("accept-language"));
-  const t = getTranslations(locale);
 
+  const { user } = ctx;
   const userId = user.id;
-  const activeGroupId = await getActiveGroupOrRedirect();
+  const activeGroupId = ctx.activeMembership.partyGroupId;
 
   const { allCars, debts, recentTripsRaw, myCarPaidPerUser, groupMembersRaw } = await getCachedManageData(userId, activeGroupId);
 
