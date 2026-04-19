@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { LogOut, Check, Plus, Crown, UserCog } from "lucide-react";
+import { LogOut, Check, Plus, Crown, UserCog, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { SignOutButton, useClerk, useUser } from "@clerk/nextjs";
 import { useT } from "@/lib/i18n-context";
@@ -38,6 +38,7 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
   const { openUserProfile } = useClerk();
   const { user: clerkUser, isLoaded } = useUser();
   const [open, setOpen] = useState(false);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
   const roleLabel: Record<string, string> = {
     OWNER: t.partyOwner.toUpperCase(),
     ADMIN: t.coHost.toUpperCase(),
@@ -72,21 +73,44 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
+  // Clear the switching overlay once the server-side refresh has landed
+  // (activeGroupId prop changes to the target group).
+  useEffect(() => {
+    if (switchingId && activeGroupId === switchingId) {
+      setSwitchingId(null);
+      setOpen(false);
+    }
+  }, [activeGroupId, switchingId]);
+
   function handleManageAccount() {
     setOpen(false);
     openUserProfile();
   }
 
   async function handleSwitchGroup(groupId: string) {
-    await switchActiveGroup(groupId);
-    setOpen(false);
-    router.refresh();
+    if (groupId === activeGroupId || switchingId) return;
+    setSwitchingId(groupId);
+    try {
+      await switchActiveGroup(groupId);
+      router.refresh();
+      // Keep the overlay up through the refresh so the user sees the
+      // switch land; closing the menu happens as the new data arrives.
+    } catch {
+      setSwitchingId(null);
+    }
   }
 
   const activeGroup = groups?.find((g) => g.id === activeGroupId);
   const hasMultipleGroups = groups && groups.length > 1;
 
   return (
+    <>
+    {switchingId && (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-sm">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm font-medium text-foreground">{t.switchingParty}</p>
+      </div>
+    )}
     <div ref={menuRef} className="relative z-50">
       <button
         onClick={() => setOpen(!open)}
@@ -121,9 +145,12 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
                 <button
                   key={group.id}
                   onClick={() => handleSwitchGroup(group.id)}
-                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent"
+                  disabled={switchingId !== null}
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-accent disabled:opacity-60"
                 >
-                  {group.id === activeGroupId ? (
+                  {switchingId === group.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  ) : group.id === activeGroupId ? (
                     <Check className="h-4 w-4 text-primary" />
                   ) : (
                     <div className="h-4 w-4" />
@@ -182,5 +209,6 @@ export default function ProfileMenu({ image, name, email, role, isAdmin, groups,
         </div>
       )}
     </div>
+    </>
   );
 }

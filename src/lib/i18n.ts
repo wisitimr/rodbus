@@ -253,6 +253,8 @@ const translations = {
     uniquePeople: "unique people",
     create: "Create",
     creating: "Creating...",
+    creatingParty: "Creating your party…",
+    switchingParty: "Switching party…",
 
     // Pending Approval
     pendingApprovalTitle: "Pending Approval",
@@ -520,6 +522,8 @@ const translations = {
     uniquePeople: "คนรวม",
     create: "สร้าง",
     creating: "กำลังสร้าง...",
+    creatingParty: "กำลังสร้างปาร์ตี้…",
+    switchingParty: "กำลังสลับปาร์ตี้…",
 
     // Pending Approval
     pendingApprovalTitle: "รอการอนุมัติ",
