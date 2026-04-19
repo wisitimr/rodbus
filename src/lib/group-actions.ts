@@ -27,7 +27,9 @@ export async function createGroup(name: string) {
   const isOwner = existingMembership.partyGroup.ownerId === user.id;
   if (!isAdmin && !isOwner) throw new Error("Only admins can create new parties");
 
-  const group = await prisma.partyGroup.create({
+  // Nested writes run as a multi-statement transaction, which the Neon HTTP
+  // driver does not support — use the WS-backed client.
+  const group = await prismaTx.partyGroup.create({
     data: {
       name: name.trim(),
       ownerId: user.id,
