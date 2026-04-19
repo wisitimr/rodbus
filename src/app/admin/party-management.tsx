@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert, Link } from "lucide-react";
+import { Copy, Trash2, Check, UserRoundPlus, TriangleAlert, Link, Loader2 } from "lucide-react";
 import { deleteGroup, switchActiveGroup, updateGroupName } from "@/lib/group-actions";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n-context";
@@ -22,6 +22,7 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pickGroups, setPickGroups] = useState<{ id: string; name: string }[] | null>(null);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [nameValue, setNameValue] = useState(groupName);
   const [savingName, setSavingName] = useState(false);
 
@@ -149,13 +150,24 @@ export default function InviteManagement({ groupId, groupName, isOwner }: Invite
               <button
                 key={g.id}
                 onClick={async () => {
-                  await switchActiveGroup(g.id);
-                  router.push("/");
-                  router.refresh();
+                  if (switchingId) return;
+                  setSwitchingId(g.id);
+                  try {
+                    await switchActiveGroup(g.id);
+                    router.push("/");
+                    router.refresh();
+                  } catch {
+                    setSwitchingId(null);
+                  }
                 }}
-                className="flex w-full items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-medium transition hover:bg-accent"
+                disabled={switchingId !== null}
+                className="flex w-full items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-medium transition hover:bg-accent disabled:opacity-60"
               >
-                <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                {switchingId === g.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                )}
                 {g.name}
               </button>
             ))}
