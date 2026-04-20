@@ -54,7 +54,7 @@ async function fetchDashboardData(userId: string, isAdmin: boolean, partyGroupId
 
   const allRelatedTrips = carDatePairs.length > 0
     ? await prisma.trip.findMany({
-        where: { OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        where: { partyGroupId, OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
         orderBy: { createdAt: "asc" },
         select: { id: true, carId: true, date: true },
       })

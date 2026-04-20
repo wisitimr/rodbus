@@ -52,7 +52,7 @@ async function fetchHistoryData(userId: string, isAdmin: boolean, activeGroupId:
 
   const allRelatedTrips = carDatePairs.length > 0
     ? await prisma.trip.findMany({
-        where: { OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        where: { partyGroupId: activeGroupId, OR: carDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
         orderBy: { createdAt: "asc" },
         select: { id: true, carId: true, date: true },
       })
@@ -74,7 +74,7 @@ async function fetchHistoryData(userId: string, isAdmin: boolean, activeGroupId:
 
   const extraTripOrders = paymentTripCarDatePairs.length > 0
     ? await prisma.trip.findMany({
-        where: { OR: paymentTripCarDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
+        where: { partyGroupId: activeGroupId, OR: paymentTripCarDatePairs.map(p => ({ carId: p.carId, date: p.date })) },
         orderBy: { createdAt: "asc" },
         select: { id: true, carId: true, date: true },
       })
