@@ -28,7 +28,9 @@ async function fetchHistoryData(userId: string, isAdmin: boolean, activeGroupId:
     }),
     calculateDebts(oneYearAgo, farFuture, activeGroupId),
     prisma.payment.findMany({
-      where: isAdmin ? {} : { userId },
+      where: isAdmin
+        ? { trip: { partyGroupId: activeGroupId } }
+        : { userId, trip: { partyGroupId: activeGroupId } },
       include: {
         user: { select: { name: true } },
         trip: {
