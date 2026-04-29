@@ -13,13 +13,20 @@ async function fetchManageData(userId: string, activeGroupId: string) {
   const startOfMonth = startOfMonthBangkok();
   const endOfMonth = endOfMonthBangkok();
 
-  const [allCars, debts, recentTripsRaw, groupMembersRaw] = await Promise.all([
+  // Pending debts span 1 year back through far future (matches the history page)
+  // so unpaid debts from previous months still surface in the Manage list.
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  oneYearAgo.setDate(1);
+  const farFuture = new Date(2099, 11, 31);
+
+  const [allCars, debts, recentTripsRaw, groupMembersRaw, myCarPayments] = await Promise.all([
     prisma.car.findMany({
       where: { ownerId: userId },
       select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
       orderBy: { name: "asc" },
     }),
-    calculateDebts(startOfMonth, endOfMonth, activeGroupId),
+    calculateDebts(oneYearAgo, farFuture, activeGroupId),
     prisma.trip.findMany({
       where: {
         car: { ownerId: userId },
@@ -36,16 +43,19 @@ async function fetchManageData(userId: string, activeGroupId: string) {
       where: { partyGroupId: activeGroupId, status: MemberStatus.ACTIVE },
       include: { user: { select: { id: true, name: true, image: true } } },
     }),
+    // Payments scoped to this owner's cars across the same range as debts
+    prisma.payment.findMany({
+      where: {
+        trip: {
+          car: { ownerId: userId },
+          partyGroupId: activeGroupId,
+          date: { gte: oneYearAgo, lte: farFuture },
+        },
+      },
+      select: { userId: true, amount: true },
+    }),
   ]);
 
-  // Fetch payments only for trips from this owner's cars (not all group trips)
-  const myTripIds = recentTripsRaw.map((t) => t.id);
-  const myCarPayments = myTripIds.length > 0
-    ? await prisma.payment.findMany({
-        where: { tripId: { in: myTripIds } },
-        select: { userId: true, amount: true },
-      })
-    : [];
   const myCarPaidPerUser: Record<string, number> = {};
   for (const p of myCarPayments) {
     myCarPaidPerUser[p.userId] = (myCarPaidPerUser[p.userId] ?? 0) + p.amount;
