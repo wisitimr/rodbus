@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaTx } from "@/lib/prisma";
 import { GroupRole, MemberStatus, type User } from "@prisma/client";
 
 const ACTIVE_GROUP_COOKIE = "activeGroupId";
@@ -81,7 +81,9 @@ async function loadUserWithMemberships(clerkId: string) {
 async function upsertFirstTimeUser(clerkId: string) {
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
-  const row = await prisma.user.upsert({
+  // upsert runs as a multi-statement transaction, which the Neon HTTP
+  // driver does not support — use the WS-backed client.
+  const row = await prismaTx.user.upsert({
     where: { clerkId: clerkUser.id },
     update: {
       name: clerkUser.fullName ?? clerkUser.firstName,
