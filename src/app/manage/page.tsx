@@ -5,19 +5,13 @@ import { calculateDebts } from "@/lib/cost-splitting";
 import { headers } from "next/headers";
 import { detectLocale, formatDateMedium, type Locale } from "@/lib/i18n";
 import ManageContent from "./manage-content";
-import { startOfMonthBangkok, endOfMonthBangkok } from "@/lib/timezone";
 import { MemberStatus } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 
 async function fetchManageData(userId: string, activeGroupId: string) {
-  const startOfMonth = startOfMonthBangkok();
-  const endOfMonth = endOfMonthBangkok();
-
-  // Pending debts span 1 year back through far future (matches the history page)
-  // so unpaid debts from previous months still surface in the Manage list.
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-  oneYearAgo.setDate(1);
+  // Pending debts and trips span all time so every unsettled trip shows up
+  // in Manage, not just the current month.
+  const allTimeStart = new Date(0);
   const farFuture = new Date(2099, 11, 31);
 
   const [allCars, debts, recentTripsRaw, groupMembersRaw, myCarPayments] = await Promise.all([
@@ -26,12 +20,11 @@ async function fetchManageData(userId: string, activeGroupId: string) {
       select: { id: true, name: true, licensePlate: true, defaultGasCost: true },
       orderBy: { name: "asc" },
     }),
-    calculateDebts(oneYearAgo, farFuture, activeGroupId),
+    calculateDebts(allTimeStart, farFuture, activeGroupId),
     prisma.trip.findMany({
       where: {
         car: { ownerId: userId },
         partyGroupId: activeGroupId,
-        date: { gte: startOfMonth, lte: endOfMonth },
       },
       include: {
         car: { select: { name: true, licensePlate: true } },
@@ -43,13 +36,13 @@ async function fetchManageData(userId: string, activeGroupId: string) {
       where: { partyGroupId: activeGroupId, status: MemberStatus.ACTIVE },
       include: { user: { select: { id: true, name: true, image: true } } },
     }),
-    // Payments scoped to this owner's cars across the same range as debts
+    // Payments scoped to this owner's cars across all time so settlement totals
+    // line up with the all-time debt range above.
     prisma.payment.findMany({
       where: {
         trip: {
           car: { ownerId: userId },
           partyGroupId: activeGroupId,
-          date: { gte: oneYearAgo, lte: farFuture },
         },
       },
       select: { userId: true, amount: true },
@@ -147,6 +140,26 @@ export default async function ManagePage() {
     ids.forEach((id, i) => tripNumberMap.set(id, i + 1));
   }
 
+  // Determine which trips still have any unpaid passenger share so the Trips
+  // tab can hide trips that are fully cleared. Mirrors getPendingBreakdown's
+  // greedy oldest-first allocation in manage-content.tsx.
+  const tripsWithDebts = new Set<string>();
+  const unsettledTripIds = new Set<string>();
+  for (const d of serializedDebts) {
+    let remaining = d.totalPaid;
+    for (const entry of d.breakdown) {
+      tripsWithDebts.add(entry.tripId);
+      if (remaining >= entry.share) {
+        remaining = Math.round((remaining - entry.share) * 100) / 100;
+      } else {
+        unsettledTripIds.add(entry.tripId);
+        remaining = 0;
+      }
+    }
+  }
+  const isClearedTrip = (id: string) =>
+    tripsWithDebts.has(id) && !unsettledTripIds.has(id);
+
   const recentTripsForSharing = recentTripsRaw
     .slice(-5)
     .reverse()
@@ -161,20 +174,23 @@ export default async function ManagePage() {
       tripNumber: tripNumberMap.get(trip.id) ?? 1,
     }));
 
-  const allTrips = [...recentTripsRaw].reverse().map((trip) => ({
-    id: trip.id,
-    carId: trip.carId,
-    carName: trip.car.name,
-    licensePlate: trip.car.licensePlate,
-    date: formatDateMedium(new Date(trip.date), locale),
-    gasCost: trip.gasCost,
-    parkingCost: trip.parkingCost,
-    headcount: trip.checkIns.length + 1,
-    tripNumber: tripNumberMap.get(trip.id) ?? 1,
-    sharedParkingTripIds: trip.sharedParkingTripIds,
-    checkInUserIds: trip.checkIns.map((ci) => ci.userId),
-    parkingPaidById: trip.parkingPaidById,
-  }));
+  const allTrips = [...recentTripsRaw]
+    .filter((trip) => !isClearedTrip(trip.id))
+    .reverse()
+    .map((trip) => ({
+      id: trip.id,
+      carId: trip.carId,
+      carName: trip.car.name,
+      licensePlate: trip.car.licensePlate,
+      date: formatDateMedium(new Date(trip.date), locale),
+      gasCost: trip.gasCost,
+      parkingCost: trip.parkingCost,
+      headcount: trip.checkIns.length + 1,
+      tripNumber: tripNumberMap.get(trip.id) ?? 1,
+      sharedParkingTripIds: trip.sharedParkingTripIds,
+      checkInUserIds: trip.checkIns.map((ci) => ci.userId),
+      parkingPaidById: trip.parkingPaidById,
+    }));
 
   const groupMembers = groupMembersRaw.map((m) => ({
     id: m.user.id,
