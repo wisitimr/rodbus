@@ -406,6 +406,7 @@ export default function ManageContent({ cars, debts, locale, recentTrips, allTri
     startTransition(async () => {
       try {
         await markAsSettled(userId, partyGroupId, settleNote.trim() || undefined, tripIds);
+        router.refresh();
       } catch {
         setLoadingAction(null);
         setSettlingTripIds(new Set());
