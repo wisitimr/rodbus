@@ -1199,7 +1199,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
                             className="flex w-full items-center justify-center gap-2 rounded-xl bg-settled px-4 py-3 text-sm font-semibold text-white transition hover:bg-settled/90 active:scale-[0.98] disabled:opacity-50"
                           >
                             <CheckCircle2 className="h-4 w-4" />
-                            {t.markAsSettled} {selected.size < pendingBreakdown.length ? `(${selected.size}/${pendingBreakdown.length})` : ""} ฿{Math.round(selectedAmount * 100 / 100).toFixed(2)}
+                            {t.markAsSettled} {selected.size < pendingBreakdown.length ? `(${selected.size}/${pendingBreakdown.length})` : ""} ฿{selectedAmount.toFixed(2)}
                           </button>
                         ) : (
                           <div className="rounded-xl border-2 border-settled bg-settled/5 p-3 animate-fade-in">
