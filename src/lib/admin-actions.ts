@@ -1,7 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaTx } from "@/lib/prisma";
 import { requireGroupAdmin } from "@/lib/party-group";
 import { revalidateTag } from "next/cache";
 import { bangkokDateToUTC, todayBangkokUTC } from "@/lib/timezone";
@@ -163,7 +163,7 @@ export async function recordPayment(
     payments[payments.length - 1].amount += remaining;
   }
 
-  await prisma.payment.createMany({
+  await prismaTx.payment.createMany({
     data: payments.map((p) => ({
       userId,
       tripId: p.tripId,
@@ -212,7 +212,9 @@ export async function markAsSettled(userId: string, partyGroupId: string, note?:
     throw new Error("User has no pending debt");
   }
 
-  await prisma.payment.createMany({
+  // createMany goes through prismaTx (WS) — HTTP adapter rejects the
+  // implicit transaction Prisma wraps batch writes in.
+  await prismaTx.payment.createMany({
     data: tripsToSettle.map((entry) => ({
       userId,
       tripId: entry.tripId,
