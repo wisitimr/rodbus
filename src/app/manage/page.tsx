@@ -78,7 +78,6 @@ export default async function ManagePage() {
   const { allCars, debts, recentTripsRaw, myCarPaidPerUser, groupMembersRaw } = await getCachedManageData(userId, activeGroupId);
 
   const carIds = allCars.map((c) => c.id);
-  const ownedCarId = allCars[0]?.id ?? "";
 
   const serializedDebts = debts
     .map((d) => {
@@ -208,7 +207,6 @@ export default async function ManagePage() {
           defaultGasCost: c.defaultGasCost,
         }))}
         debts={serializedDebts}
-        carId={ownedCarId}
         locale={locale}
         recentTrips={recentTripsForSharing}
         allTrips={allTrips}
