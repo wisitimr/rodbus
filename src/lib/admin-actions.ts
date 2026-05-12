@@ -179,25 +179,39 @@ export async function recordPayment(
   revalidateTag("nav");
 }
 
-/** Clear the pending balance for a user. If tripIds provided, settle only those trips. */
-export async function markAsSettled(userId: string, carId: string, partyGroupId: string, note?: string, tripIds?: string[]) {
-  await requireGroupAdmin(partyGroupId);
+/** Clear the pending balance for a user. If tripIds provided, settle only those trips.
+ * Scopes to trips on cars owned by the calling admin (across all their cars). */
+export async function markAsSettled(userId: string, partyGroupId: string, note?: string, tripIds?: string[]) {
+  const { user: adminUser } = await requireGroupAdmin(partyGroupId);
   if (note && note.length > 30) {
     throw new Error("Note must be 30 characters or less");
   }
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
-  const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);
+  const result = await calculateUserPendingBreakdown(userId, partyGroupId);
 
-  const tripsToSettle = tripIds
+  let tripsToSettle = tripIds
     ? result.perTrip.filter((entry) => tripIds.includes(entry.tripId))
     : result.perTrip;
+
+  // Restrict to trips on cars owned by the calling admin — Manage shows debts
+  // across all of the admin's cars, so settlement must cover them too.
+  if (tripsToSettle.length > 0) {
+    const ownedTrips = await prisma.trip.findMany({
+      where: {
+        id: { in: tripsToSettle.map((e) => e.tripId) },
+        car: { ownerId: adminUser.id },
+      },
+      select: { id: true },
+    });
+    const ownedIds = new Set(ownedTrips.map((t) => t.id));
+    tripsToSettle = tripsToSettle.filter((e) => ownedIds.has(e.tripId));
+  }
 
   if (tripsToSettle.length === 0) {
     throw new Error("User has no pending debt");
   }
 
-  // Create one payment per trip
   await prisma.payment.createMany({
     data: tripsToSettle.map((entry) => ({
       userId,

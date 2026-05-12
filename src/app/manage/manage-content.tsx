@@ -77,7 +77,6 @@ interface TripListItem {
 interface ManageContentProps {
   cars: { id: string; name: string; licensePlate: string | null; defaultGasCost: number }[];
   debts: DebtEntry[];
-  carId: string;
   locale: string;
   recentTrips: RecentTrip[];
   allTrips: TripListItem[];
@@ -89,7 +88,7 @@ interface ManageContentProps {
 
 const VISIBLE_TRIPS = 2;
 
-export default function ManageContent({ cars, debts, carId, locale, recentTrips, allTrips, partyGroupId, groupMembers, currentUserId, currentUserName }: ManageContentProps) {
+export default function ManageContent({ cars, debts, locale, recentTrips, allTrips, partyGroupId, groupMembers, currentUserId, currentUserName }: ManageContentProps) {
   const { t } = useT();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("trips");
@@ -406,7 +405,7 @@ export default function ManageContent({ cars, debts, carId, locale, recentTrips,
     if (tripIds) setSettlingTripIds(new Set(tripIds));
     startTransition(async () => {
       try {
-        await markAsSettled(userId, carId, partyGroupId, settleNote.trim() || undefined, tripIds);
+        await markAsSettled(userId, partyGroupId, settleNote.trim() || undefined, tripIds);
       } catch {
         setLoadingAction(null);
         setSettlingTripIds(new Set());
