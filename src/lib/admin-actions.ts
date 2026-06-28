@@ -144,8 +144,14 @@ export async function recordPayment(
     throw new Error("Note must be 30 characters or less");
   }
 
+  // The car owner is the creditor for gas on this car; scope the receivable and
+  // record who the payment is to so split parking creditors aren't conflated.
+  const car = await prisma.car.findUnique({ where: { id: carId }, select: { ownerId: true } });
+  if (!car) throw new Error("Car not found");
+  const creditorId = car.ownerId;
+
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
-  const result = await calculateUserPendingBreakdown(userId, partyGroupId, carId);
+  const result = await calculateUserPendingBreakdown(userId, partyGroupId, { carId, creditorId });
 
   // Distribute payment across trips oldest-first
   let remaining = amount;
@@ -169,6 +175,7 @@ export async function recordPayment(
       tripId: p.tripId,
       amount: p.amount,
       note: note || null,
+      paidToId: creditorId,
     })),
   });
 
@@ -179,8 +186,9 @@ export async function recordPayment(
   revalidateTag("nav");
 }
 
-/** Clear the pending balance for a user. If tripIds provided, settle only those trips.
- * Scopes to trips on cars owned by the calling admin (across all their cars). */
+/** Clear the pending balance a user owes to the calling admin. If tripIds are
+ * provided, settle only those trips. The admin is the creditor: this covers gas
+ * on cars they own plus parking they personally fronted on other people's cars. */
 export async function markAsSettled(userId: string, partyGroupId: string, note?: string, tripIds?: string[]) {
   const { user: adminUser } = await requireGroupAdmin(partyGroupId);
   if (note && note.length > 30) {
@@ -188,25 +196,13 @@ export async function markAsSettled(userId: string, partyGroupId: string, note?:
   }
 
   const { calculateUserPendingBreakdown } = await import("@/lib/cost-splitting");
-  const result = await calculateUserPendingBreakdown(userId, partyGroupId);
+  // Scope to debt owed specifically to this admin (creditor), so parking that
+  // someone else fronted is never cleared by the car owner and vice versa.
+  const result = await calculateUserPendingBreakdown(userId, partyGroupId, { creditorId: adminUser.id });
 
-  let tripsToSettle = tripIds
+  const tripsToSettle = tripIds
     ? result.perTrip.filter((entry) => tripIds.includes(entry.tripId))
     : result.perTrip;
-
-  // Restrict to trips on cars owned by the calling admin — Manage shows debts
-  // across all of the admin's cars, so settlement must cover them too.
-  if (tripsToSettle.length > 0) {
-    const ownedTrips = await prisma.trip.findMany({
-      where: {
-        id: { in: tripsToSettle.map((e) => e.tripId) },
-        car: { ownerId: adminUser.id },
-      },
-      select: { id: true },
-    });
-    const ownedIds = new Set(ownedTrips.map((t) => t.id));
-    tripsToSettle = tripsToSettle.filter((e) => ownedIds.has(e.tripId));
-  }
 
   if (tripsToSettle.length === 0) {
     throw new Error("User has no pending debt");
@@ -220,6 +216,7 @@ export async function markAsSettled(userId: string, partyGroupId: string, note?:
       tripId: entry.tripId,
       amount: entry.amount,
       note: note || null,
+      paidToId: adminUser.id,
     })),
   });
 

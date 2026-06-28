@@ -36,25 +36,28 @@ async function fetchManageData(userId: string, activeGroupId: string) {
       where: { partyGroupId: activeGroupId, status: MemberStatus.ACTIVE },
       include: { user: { select: { id: true, name: true, image: true } } },
     }),
-    // Payments scoped to this owner's cars across all time so settlement totals
-    // line up with the all-time debt range above.
+    // Payments made TO this user (as creditor) across all time so settlement
+    // totals line up with the all-time debt range above. A payment counts when
+    // it explicitly targets this user, or — for legacy rows with no creditor —
+    // when this user owns the trip's car (the implicit creditor).
     prisma.payment.findMany({
       where: {
-        trip: {
-          car: { ownerId: userId },
-          partyGroupId: activeGroupId,
-        },
+        trip: { partyGroupId: activeGroupId },
+        OR: [
+          { paidToId: userId },
+          { paidToId: null, trip: { car: { ownerId: userId } } },
+        ],
       },
       select: { userId: true, amount: true },
     }),
   ]);
 
-  const myCarPaidPerUser: Record<string, number> = {};
+  const myCreditPaidPerUser: Record<string, number> = {};
   for (const p of myCarPayments) {
-    myCarPaidPerUser[p.userId] = (myCarPaidPerUser[p.userId] ?? 0) + p.amount;
+    myCreditPaidPerUser[p.userId] = (myCreditPaidPerUser[p.userId] ?? 0) + p.amount;
   }
 
-  return { allCars, debts, recentTripsRaw, myCarPaidPerUser, groupMembersRaw };
+  return { allCars, debts, recentTripsRaw, myCreditPaidPerUser, groupMembersRaw };
 }
 
 const getCachedManageData = unstable_cache(
@@ -75,34 +78,43 @@ export default async function ManagePage() {
   const userId = user.id;
   const activeGroupId = ctx.activeMembership.partyGroupId;
 
-  const { allCars, debts, recentTripsRaw, myCarPaidPerUser, groupMembersRaw } = await getCachedManageData(userId, activeGroupId);
-
-  const carIds = allCars.map((c) => c.id);
+  const { allCars, debts, recentTripsRaw, myCreditPaidPerUser, groupMembersRaw } = await getCachedManageData(userId, activeGroupId);
 
   const serializedDebts = debts
     .map((d) => {
-      const myCarBreakdown = d.breakdown.filter((b) => carIds.includes(b.carId));
-      const myCarDebt = Math.round(myCarBreakdown.reduce((s, b) => s + b.share, 0) * 100) / 100;
-      // Use car-specific payments instead of global totalPaid to avoid
-      // payments for other owners' trips incorrectly offsetting this owner's debt
-      const myCarPaid = Math.round((myCarPaidPerUser[d.userId] ?? 0) * 100) / 100;
+      // Scope each trip's share to the portion owed to THIS user as creditor:
+      // gas when they own the car, parking when they fronted it (or own the car
+      // and nobody else paid parking).
+      const myBreakdown = d.breakdown
+        .map((b) => {
+          const gasOwed = b.driver.id === userId ? b.gasShare : 0;
+          const parkingCreditorId = b.parkingPaidById ?? b.driver.id;
+          const parkingOwed = parkingCreditorId === userId ? b.parkingShare : 0;
+          const shareOwed = Math.round((gasOwed + parkingOwed) * 100) / 100;
+          return { b, gasOwed, parkingOwed, shareOwed };
+        })
+        .filter((x) => x.shareOwed > 0);
+
+      const myDebt = Math.round(myBreakdown.reduce((s, x) => s + x.shareOwed, 0) * 100) / 100;
+      // Payments made to this user as creditor (explicit or legacy implicit).
+      const myPaid = Math.round((myCreditPaidPerUser[d.userId] ?? 0) * 100) / 100;
       return {
         userId: d.userId,
         userName: d.userName,
         userImage: d.userImage,
-        pendingDebt: Math.round((myCarDebt - myCarPaid) * 100) / 100,
-        totalDebt: myCarDebt,
-        totalPaid: myCarPaid,
-        breakdown: myCarBreakdown.map((b) => ({
+        pendingDebt: Math.round((myDebt - myPaid) * 100) / 100,
+        totalDebt: myDebt,
+        totalPaid: myPaid,
+        breakdown: myBreakdown.map(({ b, gasOwed, parkingOwed, shareOwed }) => ({
           tripId: b.tripId,
           carName: b.carName,
           licensePlate: b.licensePlate,
           date: formatDateMedium(new Date(b.date), locale as Locale),
           dateISO: new Date(b.date).toISOString().split("T")[0],
-          share: b.share,
-          gasShare: b.gasShare,
+          share: shareOwed,
+          gasShare: gasOwed,
           gasCost: b.gasCost,
-          parkingShare: b.parkingShare,
+          parkingShare: parkingOwed,
           parkingCost: b.parkingCost,
           totalCost: b.totalCost,
           headcount: b.headcount,
@@ -140,13 +152,17 @@ export default async function ManagePage() {
   }
 
   // Determine which trips still have any unpaid passenger share so the Trips
-  // tab can hide trips that are fully cleared. Mirrors getPendingBreakdown's
-  // greedy oldest-first allocation in manage-content.tsx.
+  // tab can hide trips that are fully cleared. Uses the group-wide debt (full
+  // share, all of each debtor's payments) so a trip stays visible while ANY
+  // creditor — car owner or a separate parking payer — is still owed money.
   const tripsWithDebts = new Set<string>();
   const unsettledTripIds = new Set<string>();
-  for (const d of serializedDebts) {
+  for (const d of debts) {
+    const sorted = [...d.breakdown].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
     let remaining = d.totalPaid;
-    for (const entry of d.breakdown) {
+    for (const entry of sorted) {
       tripsWithDebts.add(entry.tripId);
       if (remaining >= entry.share) {
         remaining = Math.round((remaining - entry.share) * 100) / 100;
