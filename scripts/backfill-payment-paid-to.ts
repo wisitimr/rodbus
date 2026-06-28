@@ -140,10 +140,15 @@ async function main() {
         }
       }
     } else {
-      // No legacy row left. Recover a partially-migrated state: the gas portion
-      // was already moved to the owner, but the parking credit is missing.
+      // No legacy row left. Recover a partially-migrated state: a prior run
+      // already moved the gas portion to the owner but failed to write the
+      // parking credit. Require a real gas payment as evidence — otherwise
+      // (gasShare === 0) there is nothing proving this parking was ever settled,
+      // and creating a credit would invent a payment that never happened.
+      // Legitimately-settled gas-free parking already became a "to-payer" row
+      // during migration, so it never reaches here.
       const ownerPaid = sum((r) => r.paidToId === c.owner);
-      if (ownerPaid >= c.gasShare) {
+      if (c.gasShare > 0 && ownerPaid >= c.gasShare) {
         const shortfall = round2(c.parkingShare - payerPaid);
         if (shortfall > 0) {
           createOps.push({ userId: c.userId, tripId: c.tripId, amount: shortfall, paidToId: c.payer, reason: "recover-missing-parking" });
