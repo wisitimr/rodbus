@@ -1,0 +1,62 @@
+name: DB Baseline & Migrate
+
+# One-off recovery workflow.
+#
+# Production was originally created with `prisma db push`, so its schema exists
+# but `_prisma_migrations` has no record of the migrations that produced it.
+# Running `prisma migrate deploy` therefore tries to re-run `0001_init` and
+# fails with "relation \"User\" already exists" (and leaves 0001_init marked as
+# failed).
+#
+# This workflow marks every migration EXCEPT the newest one as already applied
+# (baselining, and recovering the failed 0001_init record), then runs
+# `migrate deploy` so only the new migration actually executes against the DB.
+#
+# Safe to re-run: resolving an already-recorded migration is tolerated.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: db-baseline-${{ github.ref }}
+  cancel-in-progress: false
+
+# The single migration that should actually run against the database.
+env:
+  NEW_MIGRATION: "20260628100000_add_payment_paid_to"
+
+jobs:
+  baseline:
+    name: DB Baseline & Migrate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Baseline existing migrations as applied
+        run: |
+          for dir in prisma/migrations/*/; do
+            name=$(basename "$dir")
+            if [ "$name" = "$NEW_MIGRATION" ]; then
+              echo "Skipping $name (will be applied by migrate deploy)"
+              continue
+            fi
+            echo "Marking $name as applied"
+            npx prisma migrate resolve --applied "$name" || true
+          done
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+
+      - name: Apply remaining migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
