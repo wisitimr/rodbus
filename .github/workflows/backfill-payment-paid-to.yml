@@ -1,0 +1,41 @@
+name: Backfill Payment paidToId
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write changes? Leave unchecked for a dry run (no DB writes)."
+        type: boolean
+        default: false
+
+concurrency:
+  group: backfill-payment-paid-to-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    name: Backfill Payment paidToId
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run backfill (${{ inputs.apply && 'apply' || 'dry run' }})
+        run: |
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            echo "Applying backfill — writing changes."
+            npx -y tsx scripts/backfill-payment-paid-to.ts --apply
+          else
+            echo "Dry run — no changes will be written."
+            npx -y tsx scripts/backfill-payment-paid-to.ts
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
