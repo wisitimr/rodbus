@@ -38,6 +38,9 @@ export interface UserDebt {
     tripNumber: number;
     passengers: { id: string; name: string }[];
     driver: { id: string; name: string };
+    // Creditor of the parking portion when someone other than the car owner
+    // fronted parking. Null means the car owner (driver) is owed the parking.
+    parkingPaidById: string | null;
     createdAt: Date;
     sharedParking: SharedParkingInfo | null;
   }[];
@@ -291,6 +294,7 @@ export async function calculateDebts(
         tripNumber: tripNumberMap.get(trip.id) ?? 1,
         passengers: Array.from(passengerMap.values()),
         driver: { id: trip.car.ownerId, name: trip.car.owner.name || "Unknown" },
+        parkingPaidById: hasSeparateParkingPayer ? trip.parkingPaidById : null,
         createdAt: trip.createdAt,
         sharedParking,
       });
@@ -332,6 +336,7 @@ export async function calculateDebts(
           tripNumber: tripNumberMap.get(trip.id) ?? 1,
           passengers: Array.from(passengerMap.values()),
           driver: { id: trip.car.ownerId, name: trip.car.owner.name || "Unknown" },
+          parkingPaidById: trip.parkingPaidById,
           createdAt: trip.createdAt,
           sharedParking,
         });
@@ -447,10 +452,16 @@ export async function calculateDebts(
  * Calculate pending debt for a single user (all-time), broken down per trip.
  * Returns per-trip shares sorted oldest-first, with already-paid amounts subtracted.
  */
-export async function calculateUserPendingBreakdown(userId: string, partyGroupId: string, carId?: string): Promise<{
+export async function calculateUserPendingBreakdown(
+  userId: string,
+  partyGroupId: string,
+  opts?: { carId?: string; creditorId?: string }
+): Promise<{
   totalPending: number;
   perTrip: { tripId: string; date: Date; amount: number }[];
 }> {
+  const carId = opts?.carId;
+  const creditorId = opts?.creditorId;
   const allTripsForUser = await prisma.trip.findMany({
     where: { partyGroupId },
     include: { car: true },
@@ -472,7 +483,16 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
     ? allTripsForUser.filter((t) => t.carId === carId)
     : allTripsForUser;
 
-  const dateShares: { date: Date; amount: number; tripId: string }[] = [];
+  // Track gas and parking portions separately so each can be attributed to its
+  // own creditor (gas -> car owner, parking -> parking payer or car owner).
+  const dateShares: {
+    date: Date;
+    tripId: string;
+    gasAmount: number;
+    parkingAmount: number;
+    ownerId: string;
+    parkingCreditorId: string;
+  }[] = [];
 
   for (const trip of tripsToProcess) {
     if (trip.gasCost === 0 && trip.parkingCost === 0 && trip.sharedParkingTripIds.length === 0) continue;
@@ -530,7 +550,14 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
 
     const share = roundedGas + roundedParking;
     if (share > 0) {
-      dateShares.push({ date: trip.date, amount: share, tripId: trip.id });
+      dateShares.push({
+        date: trip.date,
+        tripId: trip.id,
+        gasAmount: roundedGas,
+        parkingAmount: roundedParking,
+        ownerId: trip.car.ownerId,
+        parkingCreditorId: hasSeparateParkingPayer ? trip.parkingPaidById! : trip.car.ownerId,
+      });
     }
   }
 
@@ -610,30 +637,50 @@ export async function calculateUserPendingBreakdown(userId: string, partyGroupId
 
     const deficit = Math.round((targetPerPerson - currentParkingSum) * 100) / 100;
     if (deficit > 0) {
-      groupEntries[0].amount = Math.round((groupEntries[0].amount + deficit) * 100) / 100;
+      // Redistributed deficit is always a parking amount, owed to the parking creditor.
+      groupEntries[0].parkingAmount = Math.round((groupEntries[0].parkingAmount + deficit) * 100) / 100;
     }
   }
+
+  // The amount this trip contributes toward the requested creditor. With no
+  // creditor filter, the full share (gas + parking) is used.
+  const amountForCreditor = (entry: (typeof dateShares)[number]) => {
+    if (!creditorId) return Math.round((entry.gasAmount + entry.parkingAmount) * 100) / 100;
+    let amt = 0;
+    if (entry.ownerId === creditorId) amt += entry.gasAmount;
+    if (entry.parkingCreditorId === creditorId) amt += entry.parkingAmount;
+    return Math.round(amt * 100) / 100;
+  };
 
   // Subtract payments per trip
   const tripIdsWithDebt = dateShares.map((ds) => ds.tripId);
   const payments = tripIdsWithDebt.length > 0
     ? await prisma.payment.findMany({
         where: { userId, tripId: { in: tripIdsWithDebt } },
-        select: { tripId: true, amount: true },
+        select: { tripId: true, amount: true, paidToId: true },
       })
     : [];
 
-  // Sum payments per trip
+  const ownerByTrip = new Map(dateShares.map((ds) => [ds.tripId, ds.ownerId]));
+
+  // Sum payments per trip, scoped to the requested creditor when one is given.
+  // Legacy payments (paidToId === null) are treated as paid to the car owner.
   const paidPerTrip = new Map<string, number>();
   for (const p of payments) {
+    if (creditorId) {
+      const paidTo = p.paidToId ?? ownerByTrip.get(p.tripId);
+      if (paidTo !== creditorId) continue;
+    }
     paidPerTrip.set(p.tripId, (paidPerTrip.get(p.tripId) ?? 0) + p.amount);
   }
 
   const pending: { tripId: string; date: Date; amount: number }[] = [];
 
   for (const entry of dateShares) {
+    const amount = amountForCreditor(entry);
+    if (amount <= 0) continue;
     const paid = Math.round((paidPerTrip.get(entry.tripId) ?? 0) * 100) / 100;
-    const remaining = Math.round((entry.amount - paid) * 100) / 100;
+    const remaining = Math.round((amount - paid) * 100) / 100;
     if (remaining > 0) {
       pending.push({ tripId: entry.tripId, date: entry.date, amount: remaining });
     }

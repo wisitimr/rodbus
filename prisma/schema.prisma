@@ -111,6 +111,10 @@ model Payment {
   tripId    String
   amount    Float
   note      String?  @db.VarChar(30)
+  // Creditor the payment was made to. Null = legacy/implicit (the trip's car
+  // owner). Set explicitly when someone other than the car owner is owed the
+  // money (e.g. a separate parking payer).
+  paidToId  String?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -118,4 +122,5 @@ model Payment {
   @@index([userId])
   @@index([tripId])
   @@index([userId, tripId])
+  @@index([paidToId])
 }
