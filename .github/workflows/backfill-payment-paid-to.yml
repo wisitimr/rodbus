@@ -34,7 +34,7 @@ jobs:
             npx -y tsx scripts/backfill-payment-paid-to.ts --apply
           else
             echo "Dry run — no changes will be written."
-            npx -y tsx scripts/backfill-payment-paid-to.ts
+            npx -y tsx scripts/backfill-payment-paid-to.ts --verbose
           fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
