@@ -7,36 +7,47 @@
  * as "paid to the car owner", so the parking portion of those old payments would
  * resurface as still owed to the parking payer.
  *
- * This script finds legacy payments (paidToId === null) on trips that had a
- * separate parking payer, splits each into its gas portion (kept with the car
- * owner) and its parking portion (re-attributed to the parking payer), so
- * already-cleared parking does not reappear.
+ * This script reconciles each debtor's parking debt on split-parking trips so
+ * the parking payer is credited:
+ *   - Legacy rows (paidToId === null) are split into a gas portion (kept with
+ *     the car owner) and a parking portion (re-attributed to the parking payer).
+ *   - If a legacy row was already migrated to the owner by an interrupted run
+ *     but its parking credit is missing, the missing parking credit is created.
  *
- * Payments on ordinary trips (no separate parking payer) are left untouched —
- * null already resolves to the car owner, which is correct.
+ * Convergent & idempotent: it computes the target parking credit per
+ * (debtor, trip) and only writes the shortfall, so it is safe to re-run and will
+ * repair a partially-applied state. All writes use the HTTP client with single
+ * statements (no WebSocket / batch transaction), so it runs on plain Node.
  *
- * Idempotent: only rows with paidToId === null are processed, and every row it
- * writes gets a non-null paidToId, so re-running is a no-op.
+ * IMPORTANT: run this BEFORE redeploying the app with the new per-creditor
+ * settle flow. Until then, owner-credited rows on split-parking trips can only
+ * have come from this backfill, which is what lets it safely recover the
+ * parking credit for an interrupted run.
  *
  * Usage:
  *   npx tsx scripts/backfill-payment-paid-to.ts            # dry run (no writes)
  *   npx tsx scripts/backfill-payment-paid-to.ts --apply    # perform the backfill
  */
-import { prisma, prismaTx } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { calculateDebts } from "@/lib/cost-splitting";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+type Credit = {
+  userId: string;
+  tripId: string;
+  payer: string;
+  owner: string;
+  gasShare: number;
+  parkingShare: number;
+};
+
 async function main() {
   const apply = process.argv.includes("--apply");
 
-  // Authoritative gas/parking split per (debtor, trip), including shared-parking
-  // redistribution — exactly how the app now attributes debt.
-  const splitMap = new Map<
-    string,
-    { gas: number; parking: number; ownerId: string; parkingPaidById: string | null }
-  >();
-
+  // Target gas/parking split per (debtor, trip) on split-parking trips, using
+  // the same attribution the app now uses (incl. shared-parking redistribution).
+  const credits: Credit[] = [];
   const groups = await prisma.partyGroup.findMany({ select: { id: true } });
   const allStart = new Date(0);
   const farFuture = new Date(2099, 11, 31);
@@ -44,89 +55,97 @@ async function main() {
     const debts = await calculateDebts(allStart, farFuture, g.id);
     for (const d of debts) {
       for (const b of d.breakdown) {
-        splitMap.set(`${d.userId}|${b.tripId}`, {
-          gas: b.gasShare,
-          parking: b.parkingShare,
-          ownerId: b.driver.id,
-          parkingPaidById: b.parkingPaidById,
-        });
+        if (b.parkingPaidById && b.parkingShare > 0) {
+          credits.push({
+            userId: d.userId,
+            tripId: b.tripId,
+            payer: b.parkingPaidById,
+            owner: b.driver.id,
+            gasShare: b.gasShare,
+            parkingShare: b.parkingShare,
+          });
+        }
       }
     }
   }
 
-  // Legacy payments on trips that recorded a separate parking payer.
-  const payments = await prisma.payment.findMany({
-    where: { paidToId: null, trip: { parkingPaidById: { not: null } } },
-    select: {
-      id: true,
-      userId: true,
-      tripId: true,
-      amount: true,
-      note: true,
-      trip: { select: { parkingPaidById: true, car: { select: { ownerId: true } } } },
-    },
-  });
-
-  const updates: { id: string; amount: number; paidToId: string }[] = [];
-  const inserts: {
-    userId: string;
-    tripId: string;
-    amount: number;
-    note: string | null;
-    paidToId: string;
-  }[] = [];
-
+  // Existing payments for the involved trips, grouped by (user, trip).
+  const tripIds = [...new Set(credits.map((c) => c.tripId))];
+  const payments =
+    tripIds.length > 0
+      ? await prisma.payment.findMany({
+          where: { tripId: { in: tripIds } },
+          select: { id: true, userId: true, tripId: true, amount: true, paidToId: true },
+        })
+      : [];
+  const byKey = new Map<string, typeof payments>();
   for (const p of payments) {
-    const ownerId = p.trip.car.ownerId;
-    const payerId = p.trip.parkingPaidById;
-    // Skip when the "payer" is actually the owner — nothing to re-attribute.
-    if (!payerId || payerId === ownerId) continue;
+    const k = `${p.userId}|${p.tripId}`;
+    const list = byKey.get(k);
+    if (list) list.push(p);
+    else byKey.set(k, [p]);
+  }
 
-    const split = splitMap.get(`${p.userId}|${p.tripId}`);
-    const gasShare = split ? split.gas : 0;
+  const updateOps: { id: string; amount: number; paidToId: string }[] = [];
+  const createOps: { userId: string; tripId: string; amount: number; paidToId: string }[] = [];
 
-    // Allocate the recorded amount to gas first, the remainder to the parking payer.
-    const gasPaid = round2(Math.min(p.amount, gasShare));
-    const parkingPaid = round2(p.amount - gasPaid);
+  for (const c of credits) {
+    const rows = byKey.get(`${c.userId}|${c.tripId}`) ?? [];
+    const sum = (pred: (r: (typeof rows)[number]) => boolean) =>
+      round2(rows.filter(pred).reduce((s, r) => s + r.amount, 0));
 
-    if (gasPaid > 0) {
-      updates.push({ id: p.id, amount: gasPaid, paidToId: ownerId });
-      if (parkingPaid > 0) {
-        inserts.push({
-          userId: p.userId,
-          tripId: p.tripId,
-          amount: parkingPaid,
-          note: p.note,
-          paidToId: payerId,
-        });
+    const payerPaid = sum((r) => r.paidToId === c.payer);
+    if (payerPaid >= c.parkingShare) continue; // already fully credited
+
+    const nullRows = rows.filter((r) => r.paidToId === null);
+
+    if (nullRows.length > 0) {
+      // Fresh legacy rows: split gas (owner) from parking (payer).
+      for (const nr of nullRows) {
+        const gasPaid = round2(Math.min(nr.amount, c.gasShare));
+        const parkingPaid = round2(nr.amount - gasPaid);
+        if (gasPaid > 0) {
+          updateOps.push({ id: nr.id, amount: gasPaid, paidToId: c.owner });
+          if (parkingPaid > 0) {
+            createOps.push({ userId: c.userId, tripId: c.tripId, amount: parkingPaid, paidToId: c.payer });
+          }
+        } else {
+          // No gas portion (e.g. the owner clearing their own parking debt) —
+          // the whole legacy payment belongs to the parking payer.
+          updateOps.push({ id: nr.id, amount: nr.amount, paidToId: c.payer });
+        }
       }
     } else {
-      // No gas portion for this debtor (e.g. the owner clearing their own
-      // parking debt) — the whole payment belongs to the parking payer.
-      updates.push({ id: p.id, amount: p.amount, paidToId: payerId });
+      // No legacy row left. Recover a partially-migrated state: the gas portion
+      // was already moved to the owner, but the parking credit is missing.
+      const ownerPaid = sum((r) => r.paidToId === c.owner);
+      if (ownerPaid >= c.gasShare) {
+        const shortfall = round2(c.parkingShare - payerPaid);
+        if (shortfall > 0) {
+          createOps.push({ userId: c.userId, tripId: c.tripId, amount: shortfall, paidToId: c.payer });
+        }
+      }
     }
   }
 
-  console.log(`Groups scanned:            ${groups.length}`);
-  console.log(`Legacy split-parking rows: ${payments.length}`);
-  console.log(`Rows to update (gas):      ${updates.length}`);
-  console.log(`New parking rows to add:   ${inserts.length}`);
+  console.log(`Groups scanned:                 ${groups.length}`);
+  console.log(`Split-parking debt rows:        ${credits.length}`);
+  console.log(`Legacy rows to update (gas):    ${updateOps.length}`);
+  console.log(`Parking credit rows to create:  ${createOps.length}`);
 
   if (!apply) {
     console.log("\nDry run — no changes written. Re-run with --apply to commit.");
     return;
   }
 
-  for (const u of updates) {
+  for (const u of updateOps) {
     await prisma.payment.update({
       where: { id: u.id },
       data: { amount: u.amount, paidToId: u.paidToId },
     });
   }
-  if (inserts.length > 0) {
-    // createMany goes through the WS client — the HTTP adapter rejects the
-    // implicit transaction Prisma wraps batch writes in.
-    await prismaTx.payment.createMany({ data: inserts });
+  for (const c of createOps) {
+    await prisma.payment.create({ data: c });
   }
 
   console.log("\nBackfill applied.");
