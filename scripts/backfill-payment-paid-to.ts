@@ -86,8 +86,32 @@ async function main() {
     else byKey.set(k, [p]);
   }
 
+  const verbose = process.argv.includes("--verbose");
+
+  // Snapshot of the current payment state on the involved trips, so a dry run
+  // shows whether/what a prior run already wrote.
+  let stateNull = 0;
+  let stateOwner = 0;
+  let statePayer = 0;
+  let stateOther = 0;
+  const ownerIds = new Set(credits.map((c) => c.owner));
+  const payerIds = new Set(credits.map((c) => c.payer));
+  for (const p of payments) {
+    if (p.paidToId === null) stateNull++;
+    else if (ownerIds.has(p.paidToId)) stateOwner++;
+    else if (payerIds.has(p.paidToId)) statePayer++;
+    else stateOther++;
+  }
+
+  type CreateOp = {
+    userId: string;
+    tripId: string;
+    amount: number;
+    paidToId: string;
+    reason: string;
+  };
   const updateOps: { id: string; amount: number; paidToId: string }[] = [];
-  const createOps: { userId: string; tripId: string; amount: number; paidToId: string }[] = [];
+  const createOps: CreateOp[] = [];
 
   for (const c of credits) {
     const rows = byKey.get(`${c.userId}|${c.tripId}`) ?? [];
@@ -107,7 +131,7 @@ async function main() {
         if (gasPaid > 0) {
           updateOps.push({ id: nr.id, amount: gasPaid, paidToId: c.owner });
           if (parkingPaid > 0) {
-            createOps.push({ userId: c.userId, tripId: c.tripId, amount: parkingPaid, paidToId: c.payer });
+            createOps.push({ userId: c.userId, tripId: c.tripId, amount: parkingPaid, paidToId: c.payer, reason: "split-legacy" });
           }
         } else {
           // No gas portion (e.g. the owner clearing their own parking debt) —
@@ -122,7 +146,7 @@ async function main() {
       if (ownerPaid >= c.gasShare) {
         const shortfall = round2(c.parkingShare - payerPaid);
         if (shortfall > 0) {
-          createOps.push({ userId: c.userId, tripId: c.tripId, amount: shortfall, paidToId: c.payer });
+          createOps.push({ userId: c.userId, tripId: c.tripId, amount: shortfall, paidToId: c.payer, reason: "recover-missing-parking" });
         }
       }
     }
@@ -130,11 +154,30 @@ async function main() {
 
   console.log(`Groups scanned:                 ${groups.length}`);
   console.log(`Split-parking debt rows:        ${credits.length}`);
+  console.log(`Existing payments on trips:     ${payments.length} (null=${stateNull}, to-owner=${stateOwner}, to-payer=${statePayer}, other=${stateOther})`);
   console.log(`Legacy rows to update (gas):    ${updateOps.length}`);
   console.log(`Parking credit rows to create:  ${createOps.length}`);
+  const byReason = createOps.reduce<Record<string, number>>((m, o) => {
+    m[o.reason] = (m[o.reason] ?? 0) + 1;
+    return m;
+  }, {});
+  console.log(`  by reason:                    ${JSON.stringify(byReason)}`);
 
   if (!apply) {
+    if (verbose) {
+      console.log("\nProposed parking credits:");
+      for (const o of createOps) {
+        const rows = byKey.get(`${o.userId}|${o.tripId}`) ?? [];
+        const existing = rows
+          .map((r) => `${r.paidToId === null ? "null" : r.paidToId}:${r.amount}`)
+          .join(",");
+        console.log(
+          `  user=${o.userId} trip=${o.tripId} +${o.amount}->payer=${o.paidToId} [${o.reason}] existing=[${existing}]`
+        );
+      }
+    }
     console.log("\nDry run — no changes written. Re-run with --apply to commit.");
+    console.log("Tip: add --verbose to list every proposed row.");
     return;
   }
 
@@ -145,7 +188,9 @@ async function main() {
     });
   }
   for (const c of createOps) {
-    await prisma.payment.create({ data: c });
+    await prisma.payment.create({
+      data: { userId: c.userId, tripId: c.tripId, amount: c.amount, paidToId: c.paidToId },
+    });
   }
 
   console.log("\nBackfill applied.");
